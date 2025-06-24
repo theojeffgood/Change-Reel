@@ -35,7 +35,7 @@ Change Reel helps engineering teams, product managers, and stakeholders gain vis
 
 1. Clone the repository:
 ```bash
-git clone <repository-url>
+git clone https://github.com/theojeffgood/Change-Reel.git
 cd change-reel
 ```
 

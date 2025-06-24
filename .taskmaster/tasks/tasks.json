@@ -5,7 +5,7 @@
         "id": 1,
         "title": "Setup Next.js Project with Tailwind CSS",
         "description": "Initialize the project with Next.js framework and configure Tailwind CSS for styling as specified in the technical architecture.",
-        "status": "in-progress",
+        "status": "done",
         "dependencies": [],
         "priority": "high",
         "details": "1. Create a new Next.js project using `npx create-next-app@latest change-reel`\n2. Configure Tailwind CSS following the official documentation\n3. Set up project structure with directories for components, pages, styles, utils, and API routes\n4. Configure ESLint and Prettier for code quality\n5. Initialize Git repository\n6. Create a basic README.md with project overview\n7. Set up Docker configuration for containerization",
@@ -365,7 +365,7 @@
     ],
     "metadata": {
       "created": "2025-06-24T18:47:19.240Z",
-      "updated": "2025-06-24T21:50:48.377Z",
+      "updated": "2025-06-24T22:03:03.498Z",
       "description": "Tasks for master context"
     }
   },

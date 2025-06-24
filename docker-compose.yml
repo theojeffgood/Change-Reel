@@ -1,0 +1,36 @@
+version: '3.8'
+
+services:
+  change-reel:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    ports:
+      - '3000:3000'
+    environment:
+      - NODE_ENV=production
+    restart: unless-stopped
+    volumes:
+      # Mount for development (comment out for production)
+      - .:/app
+      - /app/node_modules
+      - /app/.next
+    depends_on:
+      - db
+
+  # Optional: Local PostgreSQL for development
+  # Remove if using Supabase
+  db:
+    image: postgres:15-alpine
+    environment:
+      POSTGRES_DB: change_reel
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+    ports:
+      - '5432:5432'
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    restart: unless-stopped
+
+volumes:
+  postgres_data:

@@ -1,0 +1,418 @@
+{
+  "master": {
+    "tasks": [
+      {
+        "id": 1,
+        "title": "Setup Next.js Project with Tailwind CSS",
+        "description": "Initialize the project with Next.js framework and configure Tailwind CSS for styling as specified in the technical architecture.",
+        "status": "in-progress",
+        "dependencies": [],
+        "priority": "high",
+        "details": "1. Create a new Next.js project using `npx create-next-app@latest change-reel`\n2. Configure Tailwind CSS following the official documentation\n3. Set up project structure with directories for components, pages, styles, utils, and API routes\n4. Configure ESLint and Prettier for code quality\n5. Initialize Git repository\n6. Create a basic README.md with project overview\n7. Set up Docker configuration for containerization",
+        "testStrategy": "Verify that the Next.js application runs correctly with `npm run dev` and that Tailwind CSS styles are properly applied to a sample component.",
+        "subtasks": []
+      },
+      {
+        "id": 2,
+        "title": "Configure Supabase Integration",
+        "description": "Set up Supabase for database and storage services for the MVP instead of file-based storage.",
+        "status": "pending",
+        "dependencies": [
+          1
+        ],
+        "priority": "high",
+        "details": "The Supabase project 'Change Reel' has already been created with environment variables set up. Focus on:\n\n1. Install the Supabase client library in the Next.js application\n2. Create a configuration file for Supabase client initialization\n3. Set up the connection to the existing Supabase project using the environment variables\n4. Design and create database tables for repository, commit, and configuration data\n5. Create a data access layer for CRUD operations using Supabase\n6. Implement error handling and data validation\n7. Test Supabase database operations\n8. Configure Supabase storage buckets if needed for larger assets\n\nNote: Authentication features will be deferred to post-MVP.",
+        "testStrategy": "Verify that the Supabase client is properly initialized in the Next.js app. Test that data can be properly stored, retrieved, updated, and deleted using Supabase. Test with sample data representing commits and configuration. Ensure environment variables are properly accessed and used in the connection setup.",
+        "subtasks": [
+          {
+            "id": 1,
+            "title": "Install Supabase client library",
+            "description": "Add the Supabase JavaScript client library to the Next.js project",
+            "status": "pending",
+            "dependencies": [],
+            "details": "",
+            "testStrategy": ""
+          },
+          {
+            "id": 2,
+            "title": "Create Supabase client configuration",
+            "description": "Create a utility file to initialize the Supabase client using the existing environment variables for the 'Change Reel' project",
+            "status": "pending",
+            "dependencies": [],
+            "details": "",
+            "testStrategy": ""
+          },
+          {
+            "id": 3,
+            "title": "Design database schema",
+            "description": "Design the database tables needed for repositories, commits, and configuration data",
+            "status": "pending",
+            "dependencies": [],
+            "details": "",
+            "testStrategy": ""
+          },
+          {
+            "id": 4,
+            "title": "Implement data access layer",
+            "description": "Create service functions for CRUD operations against the Supabase database",
+            "status": "pending",
+            "dependencies": [],
+            "details": "",
+            "testStrategy": ""
+          },
+          {
+            "id": 5,
+            "title": "Test connection and operations",
+            "description": "Write tests to verify the Supabase connection and basic data operations",
+            "status": "pending",
+            "dependencies": [],
+            "details": "",
+            "testStrategy": ""
+          }
+        ]
+      },
+      {
+        "id": 4,
+        "title": "Create Database Models and Migrations",
+        "description": "Implement the data models using Supabase database for the MVP.",
+        "status": "pending",
+        "dependencies": [
+          2
+        ],
+        "priority": "high",
+        "details": "1. Create SQL schema for the following data models in Supabase:\n   - User (id, email, name, created_at, updated_at)\n   - Project (id, name, provider, webhook_url, email_distribution_list, user_id, created_at, updated_at)\n   - Commit (id, sha, author, timestamp, summary, type, is_published, email_sent, project_id, created_at, updated_at)\n2. Implement proper relationships between tables (User-Project, Project-Commit)\n3. Create database migrations for initial schema setup\n4. Create TypeScript interfaces for each model\n5. Set up Supabase client configuration for database access\n6. Implement functions for data querying and filtering using Supabase API\n7. Create backup and restore functionality for database",
+        "testStrategy": "Verify that data models are correctly implemented in Supabase and that data can be stored and retrieved according to the defined schema. Test relationships between tables, data validation, and querying functionality. Create test fixtures to validate database operations.",
+        "subtasks": [
+          {
+            "id": 1,
+            "title": "Set up Supabase project and connection",
+            "description": "Create a new Supabase project and configure connection details in the application",
+            "status": "done",
+            "dependencies": [],
+            "details": "<info added on 2025-06-24T21:44:11.235Z>\n✅ COMPLETED: User has already created Supabase project called \"Change Reel\" and set up environment variables:\n- NEXT_PUBLIC_SUPABASE_URL  \n- NEXT_PUBLIC_SUPABASE_ANON_KEY\n\nProject is ready for database configuration and table creation.\n</info added on 2025-06-24T21:44:11.235Z>",
+            "testStrategy": ""
+          },
+          {
+            "id": 2,
+            "title": "Create SQL migration scripts",
+            "description": "Develop SQL migration scripts to create User, Project, and Commit tables with proper relationships",
+            "status": "pending",
+            "dependencies": [],
+            "details": "",
+            "testStrategy": ""
+          },
+          {
+            "id": 3,
+            "title": "Implement TypeScript interfaces",
+            "description": "Create TypeScript interfaces that match the database schema for type safety",
+            "status": "pending",
+            "dependencies": [],
+            "details": "",
+            "testStrategy": ""
+          },
+          {
+            "id": 4,
+            "title": "Develop database access layer",
+            "description": "Create functions to interact with Supabase for CRUD operations on all models",
+            "status": "pending",
+            "dependencies": [],
+            "details": "",
+            "testStrategy": ""
+          },
+          {
+            "id": 5,
+            "title": "Implement query and filtering functions",
+            "description": "Create utility functions for querying and filtering data from Supabase",
+            "status": "pending",
+            "dependencies": [],
+            "details": "",
+            "testStrategy": ""
+          },
+          {
+            "id": 6,
+            "title": "Create backup and restore functionality",
+            "description": "Implement methods to backup and restore database data",
+            "status": "pending",
+            "dependencies": [],
+            "details": "",
+            "testStrategy": ""
+          },
+          {
+            "id": 7,
+            "title": "Write tests for database operations",
+            "description": "Create comprehensive tests for all database operations and data model validations",
+            "status": "pending",
+            "dependencies": [],
+            "details": "",
+            "testStrategy": ""
+          }
+        ]
+      },
+      {
+        "id": 5,
+        "title": "Implement GitHub Webhook Integration",
+        "description": "Create API endpoints to receive and process GitHub webhook events for commit notifications.",
+        "status": "pending",
+        "dependencies": [
+          4
+        ],
+        "priority": "high",
+        "details": "1. Create a Next.js API route at `/api/webhooks/github`\n2. Implement webhook signature verification for security\n3. Parse incoming webhook payloads to extract commit information\n4. Filter events to only process push events\n5. Store relevant commit metadata in the JSON file storage\n6. Add manual webhook setup instructions for the configured repository\n7. Add error handling and logging for webhook processing\n8. Implement retry logic for failed webhook processing",
+        "testStrategy": "Test webhook endpoint with sample GitHub webhook payloads. Verify signature validation, proper event filtering, and correct data storage in the JSON files.",
+        "subtasks": []
+      },
+      {
+        "id": 6,
+        "title": "Develop GitHub API Integration for Diff Retrieval",
+        "description": "Implement functionality to fetch commit diffs from GitHub using their API.",
+        "status": "pending",
+        "dependencies": [
+          5
+        ],
+        "priority": "high",
+        "details": "1. Create a GitHub API client utility using Octokit.js\n2. Configure the client to use the access token from environment variables\n3. Implement functions to fetch commit details by SHA\n4. Retrieve raw diffs for commits using the GitHub API\n5. Handle pagination for large diffs\n6. Implement caching to avoid redundant API calls\n7. Add error handling for API rate limits and failures\n8. Create utility functions to parse and clean diff content\n9. Implement filtering for noise files (package-lock.json, generated files)",
+        "testStrategy": "Test diff retrieval with various commit types and sizes. Verify that diffs are correctly fetched, parsed, and filtered according to requirements.",
+        "subtasks": []
+      },
+      {
+        "id": 7,
+        "title": "Implement OpenAI Integration for Diff Summarization",
+        "description": "Develop functionality to send commit diffs to OpenAI API and generate natural language summaries.",
+        "status": "pending",
+        "dependencies": [
+          6
+        ],
+        "priority": "high",
+        "details": "1. Set up OpenAI API client with proper authentication\n2. Implement the prompt template as specified in the PRD appendix\n3. Create a service to process diffs and send them to OpenAI\n4. Parse and store the generated summaries in the JSON file storage\n5. Implement detection of change types (feature, fix, refactor, chore)\n6. Add error handling and retry logic for API failures\n7. Implement rate limiting to manage API costs\n8. Create a simple job system for processing summaries sequentially",
+        "testStrategy": "Test summarization with various types of diffs. Verify that summaries are concise, accurate, and properly categorized by change type.",
+        "subtasks": []
+      },
+      {
+        "id": 8,
+        "title": "Create Simple Job Processing System",
+        "description": "Implement a basic job processing system to handle commit ingestion, diff fetching, and summarization sequentially.",
+        "status": "pending",
+        "dependencies": [
+          5,
+          6,
+          7
+        ],
+        "priority": "high",
+        "details": "1. Create a simple job queue using file-based storage\n2. Implement job handlers for commit processing, diff fetching, and summarization\n3. Create a basic job runner that processes jobs sequentially\n4. Implement job scheduling, retries, and error handling\n5. Add logging for job execution\n6. Create utility functions for job management\n7. Implement job status tracking in the file storage",
+        "testStrategy": "Test the job system with various scenarios including success cases, failures with retries, and sequential job execution. Verify that jobs are processed correctly and with appropriate retry behavior.",
+        "subtasks": []
+      },
+      {
+        "id": 9,
+        "title": "Implement Resend Email Integration",
+        "description": "Develop functionality to send templated changelog emails using the Resend API.",
+        "status": "pending",
+        "dependencies": [
+          7,
+          8
+        ],
+        "priority": "medium",
+        "details": "1. Set up Resend API client with proper authentication\n2. Create HTML email templates based on the sample in the PRD\n3. Implement email sending service with templating functionality\n4. Add support for batching multiple commits into a single email\n5. Implement basic email scheduling (daily digest)\n6. Track sent emails in the JSON file storage\n7. Implement retry logic for failed email deliveries\n8. Create preview functionality for email templates",
+        "testStrategy": "Test email sending with various configurations. Verify that emails are correctly formatted, contain the expected commit summaries, and are properly tracked in the storage.",
+        "subtasks": []
+      },
+      {
+        "id": 10,
+        "title": "Develop Basic Admin UI",
+        "description": "Create a simple admin interface for viewing the configured repository and generated summaries.",
+        "status": "pending",
+        "dependencies": [
+          4
+        ],
+        "priority": "medium",
+        "details": "1. Design and implement a basic admin page using React and Tailwind CSS\n2. Create components for viewing repository configuration\n3. Implement UI for viewing recent commits and their summaries\n4. Add simple filtering options for commits\n5. Implement responsive design for mobile and desktop\n6. Add loading states and error handling\n7. Create simple data fetching from the file storage\n8. Implement basic state management",
+        "testStrategy": "Test the admin UI across different screen sizes and browsers. Verify that all data is properly displayed and that filtering works correctly.",
+        "subtasks": []
+      },
+      {
+        "id": 11,
+        "title": "Create Commit History View",
+        "description": "Implement a simple page showing commits and their summaries for the configured repository.",
+        "status": "pending",
+        "dependencies": [
+          10
+        ],
+        "priority": "medium",
+        "details": "1. Design and implement a commit history page layout\n2. Create components for displaying commit history with summaries\n3. Implement basic filtering and sorting options for commits\n4. Add simple pagination for commit history\n5. Create UI for viewing diff details\n6. Implement summary display with formatting\n7. Add copy functionality for summaries\n8. Create simple navigation between admin and history views",
+        "testStrategy": "Test the commit history view with various data sets. Verify that commits are correctly displayed, filters work as expected, and navigation functions properly.",
+        "subtasks": []
+      },
+      {
+        "id": 12,
+        "title": "Implement Public Changelog Page",
+        "description": "Create a simple publicly accessible changelog page that displays published commit summaries.",
+        "status": "pending",
+        "dependencies": [
+          7
+        ],
+        "priority": "medium",
+        "details": "1. Design and implement a basic public changelog page layout\n2. Create a static route for accessing the changelog\n3. Implement server-side rendering for SEO and performance\n4. Add simple filtering options by date range\n5. Create a clean, responsive design that works well on all devices\n6. Implement basic pagination for large changelogs\n7. Add metadata for social sharing\n8. Create a simple RSS feed option for the changelog",
+        "testStrategy": "Test the public changelog page with various data sets. Verify that it renders correctly, is publicly accessible, and properly displays commit summaries.",
+        "subtasks": []
+      },
+      {
+        "id": 13,
+        "title": "Develop Basic Summary Management",
+        "description": "Create a simple interface for viewing generated summaries and manually publishing them.",
+        "status": "pending",
+        "dependencies": [
+          7,
+          9
+        ],
+        "priority": "medium",
+        "details": "1. Design and implement a basic summary management page\n2. Create components for reviewing generated summaries\n3. Implement simple editing functionality for summaries\n4. Add manual publishing controls\n5. Create a basic approval workflow\n6. Implement batch operations for multiple commits\n7. Add simple usage statistics\n8. Create export functionality for summaries",
+        "testStrategy": "Test the summary management functionality with various scenarios. Verify that summaries can be reviewed and edited, and that manual publishing works correctly.",
+        "subtasks": []
+      },
+      {
+        "id": 14,
+        "title": "Implement Manual Repository Configuration",
+        "description": "Create a simple interface for configuring the GitHub repository via environment variables.",
+        "status": "pending",
+        "dependencies": [],
+        "priority": "high",
+        "details": "1. Design and implement a basic configuration page\n2. Create form for viewing current repository configuration\n3. Add documentation for setting up GitHub access token\n4. Create instructions for manual webhook setup\n5. Implement configuration validation\n6. Add UI for testing the repository connection\n7. Create simple setup guide\n8. Implement configuration export/import functionality",
+        "testStrategy": "Test the configuration interface. Verify that current configuration is correctly displayed and that validation works properly.",
+        "subtasks": []
+      },
+      {
+        "id": 15,
+        "title": "Implement Simple Email Configuration",
+        "description": "Create functionality for configuring email recipients for changelog notifications.",
+        "status": "pending",
+        "dependencies": [
+          9
+        ],
+        "priority": "medium",
+        "details": "1. Design and implement a basic email configuration page\n2. Create form for managing email recipients\n3. Implement validation for email addresses\n4. Store email configuration in JSON file storage\n5. Add support for adding multiple recipients\n6. Implement simple email frequency settings\n7. Create test email functionality\n8. Add export/import for email configuration",
+        "testStrategy": "Test the email configuration with various scenarios. Verify that recipients can be added and removed correctly, and that validation works properly.",
+        "subtasks": []
+      },
+      {
+        "id": 16,
+        "title": "Develop Basic Settings UI",
+        "description": "Create simple user interface for managing application-wide settings.",
+        "status": "pending",
+        "dependencies": [
+          10
+        ],
+        "priority": "medium",
+        "details": "1. Design and implement a basic settings page\n2. Create components for managing application settings\n3. Implement OpenAI API configuration\n4. Add email notification settings\n5. Create webhook configuration options\n6. Implement simple theme settings\n7. Add import/export functionality for settings\n8. Create documentation for configuration options",
+        "testStrategy": "Test the settings UI with various configurations. Verify that settings can be updated and are correctly applied throughout the application.",
+        "subtasks": []
+      },
+      {
+        "id": 17,
+        "title": "Implement Basic Security Features",
+        "description": "Develop essential security features for the MVP.",
+        "status": "pending",
+        "dependencies": [
+          5
+        ],
+        "priority": "high",
+        "details": "1. Implement secure storage of API tokens in environment variables\n2. Create secure webhook signature verification\n3. Add CSRF protection for forms\n4. Implement basic rate limiting for API endpoints\n5. Create simple logging for security-relevant actions\n6. Add secure headers\n7. Implement basic access controls\n8. Create security documentation",
+        "testStrategy": "Test security features with basic checks. Verify that API tokens are properly protected and that webhook verification prevents tampering.",
+        "subtasks": []
+      },
+      {
+        "id": 18,
+        "title": "Create Docker Deployment Configuration",
+        "description": "Develop Docker configuration for containerized deployment as specified in the technical architecture.",
+        "status": "pending",
+        "dependencies": [
+          1
+        ],
+        "priority": "medium",
+        "details": "1. Create Dockerfile for the application\n2. Implement docker-compose configuration for local development\n3. Optimize Docker image for production\n4. Create deployment scripts for AWS EC2\n5. Implement environment variable management\n6. Add health checks and monitoring\n7. Create backup and restore procedures for file storage\n8. Document deployment process",
+        "testStrategy": "Test Docker configuration by building and running the container locally. Verify that the application runs correctly in the containerized environment and that file storage persists correctly.",
+        "subtasks": []
+      },
+      {
+        "id": 19,
+        "title": "Implement Performance Optimizations",
+        "description": "Optimize application performance to meet the non-functional requirement of webhook-to-summary latency < 10s.",
+        "status": "pending",
+        "dependencies": [
+          5,
+          6,
+          7,
+          8
+        ],
+        "priority": "medium",
+        "details": "1. Implement simple caching for file operations\n2. Optimize file read/write operations\n3. Add efficient job processing\n4. Optimize OpenAI API usage with prompt engineering\n5. Add basic performance monitoring\n6. Implement lazy loading for UI components\n7. Create simple performance testing tools\n8. Document performance optimization strategies",
+        "testStrategy": "Conduct performance testing with simulated load. Measure webhook-to-summary latency and optimize until it consistently meets the < 10s requirement.",
+        "subtasks": []
+      },
+      {
+        "id": 20,
+        "title": "Develop Basic Scalability Features",
+        "description": "Implement essential features to ensure the system can handle the required load for the MVP.",
+        "status": "pending",
+        "dependencies": [
+          8,
+          19
+        ],
+        "priority": "medium",
+        "details": "1. Optimize file storage for performance\n2. Implement efficient job processing\n3. Add caching for frequently accessed data\n4. Create simple monitoring for system health\n5. Implement efficient queue management for job processing\n6. Add logging for performance metrics\n7. Create backup and restore procedures\n8. Document scaling limitations and future improvements",
+        "testStrategy": "Conduct basic load testing with simulated commits. Verify that the system can handle the expected load without degradation in performance or reliability.",
+        "subtasks": []
+      }
+    ],
+    "metadata": {
+      "created": "2025-06-24T18:47:19.240Z",
+      "updated": "2025-06-24T21:50:48.377Z",
+      "description": "Tasks for master context"
+    }
+  },
+  "post-mvp": {
+    "tasks": [
+      {
+        "id": 1,
+        "title": "Implement GitHub OAuth Authentication System",
+        "description": "Create a comprehensive GitHub OAuth authentication system for multi-user support, including signup, login, user sessions, and secure token management using Supabase auth helpers.",
+        "details": "1. Set up a GitHub OAuth application:\n   - Register a new OAuth application in GitHub Developer settings\n   - Configure callback URL to match your application's authentication redirect endpoint\n   - Store client ID and client secret securely in environment variables\n\n2. Implement Supabase authentication:\n   - Install required packages: `npm install @supabase/supabase-js @supabase/auth-helpers-nextjs`\n   - Configure Supabase client with project URL and anon key\n   - Set up GitHub OAuth provider in Supabase dashboard\n\n3. Create authentication endpoints:\n   - Implement `/api/auth/signin` endpoint to initiate GitHub OAuth flow\n   - Create `/api/auth/callback` endpoint to handle GitHub OAuth callback\n   - Implement session management using Supabase auth helpers\n\n4. Develop frontend components:\n   - Create sign-in button component that redirects to GitHub authentication\n   - Implement user profile component to display authenticated user information\n   - Add sign-out functionality\n\n5. Implement secure token management:\n   - Set up proper token storage using HTTP-only cookies\n   - Configure token refresh mechanisms\n   - Implement middleware to validate authentication on protected routes\n\n6. Add user session persistence:\n   - Implement session checking on application load\n   - Create context provider for user authentication state\n   - Add loading states for authentication processes\n\n7. Handle error scenarios:\n   - Implement proper error handling for authentication failures\n   - Create user-friendly error messages\n   - Add logging for authentication issues",
+        "testStrategy": "1. Unit Tests:\n   - Test authentication endpoints with mocked GitHub OAuth responses\n   - Verify token management functions correctly handle various scenarios\n   - Test session persistence mechanisms\n\n2. Integration Tests:\n   - Create test cases for the complete authentication flow\n   - Verify proper redirection to GitHub and back to the application\n   - Test error handling with simulated failure scenarios\n\n3. Manual Testing:\n   - Complete end-to-end testing of the GitHub authentication flow\n   - Verify user information is correctly retrieved from GitHub\n   - Test session persistence across page refreshes and browser restarts\n   - Validate secure storage of tokens in HTTP-only cookies\n   - Test sign-out functionality and proper session termination\n\n4. Security Testing:\n   - Verify tokens are properly secured and not exposed to client-side JavaScript\n   - Test CSRF protection mechanisms\n   - Ensure proper handling of expired tokens\n   - Validate that authentication state is properly maintained across the application\n\n5. User Acceptance Testing:\n   - Verify the authentication UI is intuitive and user-friendly\n   - Test the flow on different browsers and devices\n   - Ensure proper error messages are displayed for authentication failures",
+        "status": "pending",
+        "dependencies": [],
+        "priority": "high",
+        "subtasks": []
+      },
+      {
+        "id": 2,
+        "title": "Implement User Dashboard for Repository Management",
+        "description": "Create a comprehensive user dashboard that allows users to manage multiple connected GitHub repositories, configure changelog settings, and set up email distribution lists with repository connection/disconnection flows.",
+        "details": "1. Dashboard Layout and Navigation:\n   - Design a responsive dashboard layout with sidebar navigation\n   - Implement sections for repositories, changelog settings, and distribution lists\n   - Create a header with user profile information and account settings\n\n2. Repository Connection Management:\n   - Implement repository listing with connection status indicators\n   - Create a repository connection flow:\n     - Fetch user's available GitHub repositories using GitHub API\n     - Display repositories with connection options\n     - Store connection preferences in Supabase database\n   - Implement repository disconnection with confirmation dialog\n   - Add search and filter functionality for repositories\n\n3. Changelog Configuration:\n   - Create forms for configuring changelog settings per repository:\n     - Version tracking preferences\n     - Changelog format templates\n     - Release note categorization rules\n     - Custom fields and metadata options\n   - Implement save/reset functionality for changelog settings\n   - Add preview capability for changelog format\n\n4. Email Distribution Lists:\n   - Implement CRUD operations for distribution lists:\n     - Create new list with name and description\n     - Add/remove email addresses to lists\n     - Associate lists with specific repositories\n   - Add validation for email formats\n   - Implement import/export functionality for email lists\n\n5. Project-Specific Configuration:\n   - Create project configuration panels for each connected repository\n   - Implement settings for notification preferences\n   - Add webhook configuration options for CI/CD integration\n   - Create user role management for repository collaborators\n\n6. State Management:\n   - Implement Redux or Context API for managing dashboard state\n   - Create actions and reducers for all dashboard operations\n   - Ensure proper loading states and error handling\n\n7. API Integration:\n   - Create API endpoints for all dashboard operations\n   - Implement proper authentication checks using GitHub OAuth tokens\n   - Ensure secure handling of repository access permissions",
+        "testStrategy": "1. Unit Tests:\n   - Test all dashboard components in isolation\n   - Verify form validation logic for all configuration forms\n   - Test state management actions and reducers\n   - Validate API endpoint handlers\n\n2. Integration Tests:\n   - Test the complete repository connection/disconnection flow\n   - Verify changelog configuration saves correctly to the database\n   - Test email distribution list CRUD operations\n   - Ensure project-specific configurations are properly associated with repositories\n\n3. End-to-End Tests:\n   - Create test scenarios for the entire user journey\n   - Test dashboard navigation and responsive behavior\n   - Verify all forms submit correctly and display appropriate feedback\n   - Test with multiple repositories to ensure proper isolation of settings\n\n4. User Acceptance Testing:\n   - Create a test plan for manual verification of dashboard functionality\n   - Include test cases for all major features\n   - Document expected behavior for edge cases\n   - Prepare test data for different repository configurations\n\n5. Performance Testing:\n   - Test dashboard loading times with multiple connected repositories\n   - Verify efficient API usage when fetching repository data\n   - Test responsiveness under various network conditions",
+        "status": "pending",
+        "dependencies": [
+          1
+        ],
+        "priority": "medium",
+        "subtasks": []
+      },
+      {
+        "id": 3,
+        "title": "Implement Supabase Authentication Features",
+        "description": "Implement Supabase authentication features and auth-specific database configurations to enhance the existing Supabase database integration in the MVP.",
+        "status": "pending",
+        "dependencies": [
+          1
+        ],
+        "priority": "medium",
+        "details": "1. Supabase Authentication Setup:\n   - Configure Supabase authentication providers (email/password, OAuth providers)\n   - Set up email templates for authentication flows (verification, password reset)\n   - Configure authentication security settings (session duration, refresh tokens)\n   - Install required packages if not already present: `@supabase/auth-helpers-nextjs`\n\n2. Authentication Helpers Implementation:\n   - Create authentication utility functions:\n     - User sign-up and email verification\n     - Login and session management\n     - Password reset flow\n     - OAuth provider integration (GitHub, Google)\n   - Implement server-side authentication helpers\n   - Example auth helper:\n     ```javascript\n     export const signUpUser = async (email, password) => {\n       const { data, error } = await supabase.auth.signUp({\n         email,\n         password,\n       });\n       return { data, error };\n     };\n     ```\n\n3. User Session Management:\n   - Implement session persistence across page reloads\n   - Create protected route middleware using Supabase auth\n   - Add session timeout handling and refresh mechanisms\n   - Implement user context provider for React components\n   - Example session check:\n     ```javascript\n     export const getUserSession = async () => {\n       const { data: { session }, error } = await supabase.auth.getSession();\n       return { session, error };\n     };\n     ```\n\n4. Auth-Specific Database Configurations:\n   - Set up Row Level Security (RLS) policies for user data\n   - Create database triggers for user creation events\n   - Configure user profile tables with appropriate relations to auth.users\n   - Example RLS policy:\n     ```sql\n     CREATE POLICY \"Users can only access their own data\"\n     ON public.user_profiles\n     FOR ALL\n     USING (auth.uid() = user_id);\n     ```\n\n5. User Profile Management:\n   - Create API endpoints for user profile management\n   - Implement user avatar/image upload and storage\n   - Add user preference settings tied to authentication\n   - Create user onboarding flow after registration\n\n6. Multi-factor Authentication (Optional):\n   - Implement second-factor authentication options\n   - Add phone verification or authenticator app integration\n   - Create backup recovery codes system\n\n7. Auth Event Hooks:\n   - Set up webhooks for authentication events\n   - Create logging for auth events (login attempts, password changes)\n   - Implement security notifications for suspicious activities",
+        "testStrategy": "1. Unit Tests:\n   - Test all authentication utility functions\n   - Verify password policies and validation\n   - Test session management functions\n   - Validate error handling for auth operations\n\n2. Integration Tests:\n   - Test complete authentication flows (signup, verification, login)\n   - Verify session persistence across page navigation\n   - Test protected routes with authenticated and unauthenticated users\n   - Validate Row Level Security policies\n\n3. Security Tests:\n   - Test password strength requirements\n   - Verify email verification workflow\n   - Test account recovery processes\n   - Attempt unauthorized access to verify security controls\n   - Example security test:\n     ```javascript\n     const testRowLevelSecurity = async () => {\n       // Create two test users\n       const user1 = await createTestUser();\n       const user2 = await createTestUser();\n       \n       // Create data for user1\n       const { data: profile1 } = await supabase\n         .from('user_profiles')\n         .insert({ user_id: user1.id, name: 'Test User 1' });\n       \n       // Try to access user1's data as user2\n       const supabaseClient2 = createSupabaseClient(user2.token);\n       const { data, error } = await supabaseClient2\n         .from('user_profiles')\n         .select('*')\n         .eq('user_id', user1.id);\n       \n       // Should return no data due to RLS\n       expect(data).toHaveLength(0);\n     };\n     ```\n\n4. User Experience Tests:\n   - Test login/signup forms with various inputs\n   - Verify error messages are clear and helpful\n   - Test responsive design of authentication pages\n   - Validate accessibility of auth components\n\n5. Edge Case Testing:\n   - Test session expiration and renewal\n   - Verify behavior with network interruptions\n   - Test concurrent login attempts\n   - Validate behavior with browser storage cleared",
+        "subtasks": []
+      }
+    ],
+    "metadata": {
+      "created": "2025-06-24T19:27:25.651Z",
+      "updated": "2025-06-24T19:29:43.954Z",
+      "description": "Features deferred to post-MVP phase including authentication, user management, and multi-repo support"
+    }
+  }
+}

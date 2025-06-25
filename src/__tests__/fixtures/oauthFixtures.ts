@@ -5,197 +5,238 @@
  * and various authentication states for comprehensive test coverage.
  */
 
-// Mock OAuth tokens and session data
+import { Session } from 'next-auth';
+
+// OAuth Token Fixtures
 export const mockOAuthTokens = {
-  validGitHubToken: 'ghp_1234567890abcdef1234567890abcdef12345678',
-  validFineGrainedToken: 'github_pat_11ABCDEFG_1234567890abcdef1234567890abcdef1234567890abcdef1234567890abcdef',
-  expiredToken: 'ghp_expired_token_1234567890abcdef12345678',
-  invalidToken: 'invalid_token_format',
-  shortToken: 'ghp_short',
-  revokedToken: 'ghp_revoked_token_1234567890abcdef12345678',
+  valid: {
+    access_token: 'ghp_test_token_1234567890abcdef',
+    token_type: 'bearer',
+    scope: 'repo,write:repo_hook,user:email',
+    expires_at: Math.floor(Date.now() / 1000) + 3600, // 1 hour from now
+  },
+  expired: {
+    access_token: 'ghp_test_expired_token',
+    token_type: 'bearer',
+    scope: 'repo,write:repo_hook,user:email',
+    expires_at: Math.floor(Date.now() / 1000) - 3600, // 1 hour ago
+  },
+  invalid: {
+    access_token: 'invalid_token',
+    token_type: 'bearer',
+    scope: 'repo',
+    expires_at: Math.floor(Date.now() / 1000) + 3600,
+  }
 };
 
-export const mockOAuthSessions = {
-  authenticatedSession: {
+// NextAuth Session Fixtures
+export const mockSessions = {
+  authenticated: {
     user: {
-      id: '12345678',
-      login: 'testuser',
+      id: 'github_user_123',
       name: 'Test User',
       email: 'test@example.com',
-      avatar_url: 'https://avatars.githubusercontent.com/u/12345678?v=4',
+      image: 'https://github.com/testuser.png',
     },
-    accessToken: mockOAuthTokens.validGitHubToken,
-    provider: 'github',
-    expires: new Date(Date.now() + 3600000).toISOString(), // 1 hour from now
-  },
-  expiredSession: {
+    accessToken: 'ghp_test_token_1234567890abcdef',
+    expires: new Date(Date.now() + 3600 * 1000).toISOString(),
+  } as Session,
+  unauthenticated: null,
+  expired: {
     user: {
-      id: '12345678',
-      login: 'testuser',
+      id: 'github_user_123',
       name: 'Test User',
       email: 'test@example.com',
-      avatar_url: 'https://avatars.githubusercontent.com/u/12345678?v=4',
     },
-    accessToken: mockOAuthTokens.expiredToken,
-    provider: 'github',
-    expires: new Date(Date.now() - 3600000).toISOString(), // 1 hour ago
-  },
-  unauthenticatedSession: null,
-  incompleteSession: {
-    user: {
-      id: '12345678',
-      login: 'testuser',
-    },
-    // Missing accessToken
-  },
+    accessToken: 'ghp_test_expired_token',
+    expires: new Date(Date.now() - 3600 * 1000).toISOString(),
+  } as Session,
 };
 
-// Mock GitHub API responses
-export const mockGitHubApiResponses = {
-  userInfo: {
-    id: 12345678,
-    login: 'testuser',
-    name: 'Test User',
-    email: 'test@example.com',
-    avatar_url: 'https://avatars.githubusercontent.com/u/12345678?v=4',
-    type: 'User',
-    public_repos: 15,
-    followers: 100,
-    following: 50,
-  },
-  repositories: [
-    {
-      id: 123456789,
-      name: 'test-repo',
-      full_name: 'testuser/test-repo',
-      description: 'A test repository for development',
-      private: false,
-      html_url: 'https://github.com/testuser/test-repo',
-      default_branch: 'main',
-      permissions: {
-        admin: true,
-        push: true,
-        pull: true,
-      },
-      owner: {
-        login: 'testuser',
-        id: 12345678,
-      },
-    },
-    {
-      id: 987654321,
-      name: 'private-repo',
-      full_name: 'testuser/private-repo',
-      description: 'A private repository',
-      private: true,
-      html_url: 'https://github.com/testuser/private-repo',
-      default_branch: 'main',
-      permissions: {
-        admin: false,
-        push: true,
-        pull: true,
-      },
-      owner: {
-        login: 'testuser',
-        id: 12345678,
-      },
-    },
-    {
-      id: 555666777,
-      name: 'read-only-repo',
-      full_name: 'testuser/read-only-repo',
-      description: 'A repository with read-only access',
-      private: false,
-      html_url: 'https://github.com/testuser/read-only-repo',
-      default_branch: 'main',
-      permissions: {
-        admin: false,
-        push: false,
-        pull: true,
-      },
-      owner: {
-        login: 'testuser',
-        id: 12345678,
-      },
-    },
-  ],
-  repositoryDetails: {
+// GitHub Repository Fixtures
+export const mockRepositories = {
+  public: {
     id: 123456789,
     name: 'test-repo',
     full_name: 'testuser/test-repo',
-    description: 'A test repository for development',
     private: false,
+    description: 'A test repository',
     html_url: 'https://github.com/testuser/test-repo',
-    clone_url: 'https://github.com/testuser/test-repo.git',
-    ssh_url: 'git@github.com:testuser/test-repo.git',
-    default_branch: 'main',
-    language: 'TypeScript',
-    stargazers_count: 42,
-    watchers_count: 15,
-    forks_count: 5,
-    open_issues_count: 3,
     permissions: {
       admin: true,
       push: true,
       pull: true,
     },
-    owner: {
-      login: 'testuser',
-      id: 12345678,
-      avatar_url: 'https://avatars.githubusercontent.com/u/12345678?v=4',
+  },
+  private: {
+    id: 987654321,
+    name: 'private-repo',
+    full_name: 'testuser/private-repo',
+    private: true,
+    description: 'A private test repository',
+    html_url: 'https://github.com/testuser/private-repo',
+    permissions: {
+      admin: false,
+      push: true,
+      pull: true,
     },
   },
-  webhooks: [
-    {
-      id: 111222333,
-      name: 'web',
-      active: true,
-      events: ['push', 'pull_request'],
-      config: {
-        url: 'https://example.com/webhook',
-        content_type: 'json',
-        insecure_ssl: '0',
-      },
+  noAccess: {
+    id: 555666777,
+    name: 'no-access-repo',
+    full_name: 'otheruser/no-access-repo',
+    private: true,
+    description: 'Repository with no access',
+    html_url: 'https://github.com/otheruser/no-access-repo',
+    permissions: {
+      admin: false,
+      push: false,
+      pull: false,
     },
-  ],
+  },
 };
 
-// Mock error responses
-export const mockErrorResponses = {
-  invalidToken: {
+// GitHub API Response Fixtures
+export const mockGitHubAPIResponses = {
+  repositories: [mockRepositories.public, mockRepositories.private],
+  user: {
+    id: 123456,
+    login: 'testuser',
+    name: 'Test User',
+    email: 'test@example.com',
+    avatar_url: 'https://github.com/testuser.png',
+  },
+  repositoryDetails: {
+    success: mockRepositories.public,
+    notFound: null,
+    forbidden: null,
+  },
+  webhooks: {
+    existing: [
+      {
+        id: 12345,
+        name: 'web',
+        active: true,
+        events: ['push'],
+        config: {
+          url: 'https://example.com/webhooks/github',
+          content_type: 'json',
+          insecure_ssl: '0',
+        },
+      },
+    ],
+    empty: [],
+  },
+};
+
+// OAuth Validation Fixtures
+export const mockValidationInputs = {
+  validGitHubUrl: 'https://github.com/testuser/test-repo',
+  invalidGitHubUrls: [
+    'https://gitlab.com/testuser/test-repo',
+    'not-a-url',
+    'https://github.com/',
+    'https://github.com/user',
+  ],
+  validEmails: ['test@example.com', 'user.name+tag@domain.co.uk'],
+  invalidEmails: ['invalid-email', '@domain.com', 'user@', 'user@domain'],
+  validTokens: ['ghp_1234567890abcdef', 'github_pat_1234567890abcdef'],
+  invalidTokens: ['invalid_token', 'ghp_short', ''],
+};
+
+// Configuration Form Fixtures
+export const mockConfigurationData = {
+  valid: {
+    repositoryUrl: 'https://github.com/testuser/test-repo',
+    selectedRepository: mockRepositories.public,
+    emailRecipients: ['dev@company.com', 'pm@company.com'],
+  },
+  invalid: {
+    repositoryUrl: 'https://gitlab.com/testuser/test-repo',
+    selectedRepository: null,
+    emailRecipients: ['invalid-email'],
+  },
+  empty: {
+    repositoryUrl: '',
+    selectedRepository: null,
+    emailRecipients: [],
+  },
+};
+
+// API Error Response Fixtures
+export const mockAPIErrors = {
+  unauthorized: {
     status: 401,
-    data: {
-      message: 'Bad credentials',
-      documentation_url: 'https://docs.github.com/rest',
-    },
+    message: 'Unauthorized',
+    documentation_url: 'https://docs.github.com',
   },
-  repositoryNotFound: {
-    status: 404,
-    data: {
-      message: 'Not Found',
-      documentation_url: 'https://docs.github.com/rest/repos/repos#get-a-repository',
-    },
-  },
-  rateLimitExceeded: {
-    status: 429,
-    data: {
-      message: 'API rate limit exceeded',
-      documentation_url: 'https://docs.github.com/rest/overview/resources-in-the-rest-api#rate-limiting',
-    },
-  },
-  insufficientPermissions: {
+  forbidden: {
     status: 403,
-    data: {
-      message: 'Resource not accessible by integration',
-      documentation_url: 'https://docs.github.com/rest',
-    },
+    message: 'Forbidden',
+    documentation_url: 'https://docs.github.com',
+  },
+  notFound: {
+    status: 404,
+    message: 'Not Found',
+    documentation_url: 'https://docs.github.com',
+  },
+  rateLimited: {
+    status: 429,
+    message: 'API rate limit exceeded',
+    documentation_url: 'https://docs.github.com',
   },
   serverError: {
     status: 500,
-    data: {
-      message: 'Internal Server Error',
-    },
+    message: 'Internal Server Error',
   },
+};
+
+// Token Storage Fixtures
+export const mockTokenStorageData = {
+  encrypted: {
+    encrypted_token: 'encrypted_token_data',
+    iv: 'initialization_vector',
+    auth_tag: 'authentication_tag',
+    token_version: 1,
+  },
+  decrypted: {
+    access_token: 'ghp_test_token_1234567890abcdef',
+    token_type: 'bearer',
+    scope: 'repo,write:repo_hook,user:email',
+  },
+};
+
+// Test Helper Functions
+export const createMockSession = (overrides: Partial<Session> = {}): Session => ({
+  ...mockSessions.authenticated,
+  ...overrides,
+});
+
+export const createMockRepository = (overrides: any = {}) => ({
+  ...mockRepositories.public,
+  ...overrides,
+});
+
+export const createMockAPIError = (status: number, message: string) => ({
+  status,
+  message,
+  documentation_url: 'https://docs.github.com',
+});
+
+// MSW (Mock Service Worker) Handlers for API Testing
+export const mockFetch = {
+  success: (data: any) => 
+    Promise.resolve({
+      ok: true,
+      status: 200,
+      json: () => Promise.resolve(data),
+    }),
+  error: (status: number, message: string) =>
+    Promise.resolve({
+      ok: false,
+      status,
+      json: () => Promise.resolve({ message }),
+    }),
 };
 
 // Mock OAuth configuration data
@@ -290,7 +331,7 @@ export const mockWebhookPayloads = {
     ref: 'refs/heads/main',
     before: 'abc123def456',
     after: 'def456ghi789',
-    repository: mockGitHubApiResponses.repositoryDetails,
+    repository: mockGitHubAPIResponses.repositoryDetails,
     pusher: {
       name: 'testuser',
       email: 'test@example.com',
@@ -343,7 +384,7 @@ export const mockWebhookPayloads = {
         sha: 'def456ghi789',
       },
     },
-    repository: mockGitHubApiResponses.repositoryDetails,
+    repository: mockGitHubAPIResponses.repositoryDetails,
   },
 };
 
@@ -398,50 +439,29 @@ export const mockRequestInfo = {
   },
 };
 
-// Utility functions for creating dynamic fixtures
-export const createMockRepository = (overrides: Partial<typeof mockGitHubApiResponses.repositories[0]> = {}) => ({
-  ...mockGitHubApiResponses.repositories[0],
-  ...overrides,
-});
-
-export const createMockSession = (overrides: Partial<typeof mockOAuthSessions.authenticatedSession> = {}) => ({
-  ...mockOAuthSessions.authenticatedSession,
-  ...overrides,
-});
-
-export const createMockConfiguration = (overrides: Partial<typeof mockOAuthConfigurations.validConfiguration> = {}) => ({
-  ...mockOAuthConfigurations.validConfiguration,
-  ...overrides,
-});
-
-export const createMockWebhookPayload = (overrides: Partial<typeof mockWebhookPayloads.pushEvent> = {}) => ({
-  ...mockWebhookPayloads.pushEvent,
-  ...overrides,
-});
-
 // Test scenario generators
 export const createErrorScenarios = () => [
   {
     name: 'Invalid Token',
-    token: mockOAuthTokens.invalidToken,
-    expectedError: mockErrorResponses.invalidToken,
+    token: mockOAuthTokens.invalid.access_token,
+    expectedError: mockAPIErrors.unauthorized,
   },
   {
     name: 'Expired Token',
-    token: mockOAuthTokens.expiredToken,
-    expectedError: mockErrorResponses.invalidToken,
+    token: mockOAuthTokens.expired.access_token,
+    expectedError: mockAPIErrors.unauthorized,
   },
   {
     name: 'Repository Not Found',
-    token: mockOAuthTokens.validGitHubToken,
+    token: mockOAuthTokens.valid.access_token,
     repository: 'nonexistent/repo',
-    expectedError: mockErrorResponses.repositoryNotFound,
+    expectedError: mockAPIErrors.notFound,
   },
   {
     name: 'Insufficient Permissions',
-    token: mockOAuthTokens.validGitHubToken,
-    repository: 'testuser/read-only-repo',
-    expectedError: mockErrorResponses.insufficientPermissions,
+    token: mockOAuthTokens.valid.access_token,
+    repository: 'testuser/no-access-repo',
+    expectedError: mockAPIErrors.forbidden,
   },
 ];
 
@@ -474,9 +494,9 @@ export const createValidationScenarios = () => [
 // Export default fixture object for easy importing
 export default {
   tokens: mockOAuthTokens,
-  sessions: mockOAuthSessions,
-  githubApi: mockGitHubApiResponses,
-  errors: mockErrorResponses,
+  sessions: mockSessions,
+  githubApi: mockGitHubAPIResponses,
+  errors: mockAPIErrors,
   configurations: mockOAuthConfigurations,
   database: mockDatabaseRecords,
   webhooks: mockWebhookPayloads,
@@ -486,8 +506,6 @@ export default {
   creators: {
     createMockRepository,
     createMockSession,
-    createMockConfiguration,
-    createMockWebhookPayload,
   },
   scenarios: {
     createErrorScenarios,

@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import { useSession, signIn, signOut } from 'next-auth/react';
+import { useRouter } from 'next/navigation';
 
 interface GitHubStatus {
   connected: boolean;
@@ -28,6 +29,7 @@ interface Repository {
 
 export default function ConfigurationPage() {
   const { data: session, status } = useSession();
+  const router = useRouter();
   const [githubStatus, setGithubStatus] = useState<GitHubStatus | null>(null);
   const [repositories, setRepositories] = useState<Repository[]>([]);
   const [selectedRepository, setSelectedRepository] = useState<string>('');
@@ -37,6 +39,14 @@ export default function ConfigurationPage() {
   const [newEmail, setNewEmail] = useState('');
   const [showDisconnectConfirm, setShowDisconnectConfirm] = useState(false);
 
+
+  // Redirect unauthenticated users
+  useEffect(() => {
+    if (status === 'unauthenticated') {
+      router.push('/');
+    }
+  }, [status, router]);
+
   // Check GitHub connection status
   useEffect(() => {
     if (session) {
@@ -44,6 +54,8 @@ export default function ConfigurationPage() {
       fetchRepositories();
     }
   }, [session]);
+
+
 
   const checkGitHubStatus = async () => {
     try {
@@ -267,6 +279,8 @@ export default function ConfigurationPage() {
     }
   };
 
+
+
   // Confirmation Dialog Component
   const ConfirmDialog = ({ show, onConfirm, onCancel }: { show: boolean; onConfirm: () => void; onCancel: () => void }) => {
     if (!show) return null;
@@ -322,8 +336,18 @@ export default function ConfigurationPage() {
     return (
       <div className="min-h-screen bg-gray-100 flex items-center justify-center">
         <div className="text-center">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto"></div>
-          <p className="mt-4 text-gray-600">Loading configuration...</p>
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto" aria-label="Loading"></div>
+          <p className="mt-4 text-gray-600">Loading...</p>
+        </div>
+      </div>
+    );
+  }
+
+  if (status === 'unauthenticated') {
+    return (
+      <div className="min-h-screen bg-gray-100 flex items-center justify-center">
+        <div className="text-center">
+          <p className="text-gray-600">Redirecting...</p>
         </div>
       </div>
     );
@@ -332,6 +356,9 @@ export default function ConfigurationPage() {
   return (
     <div className="min-h-screen bg-gray-100 py-12 px-4 sm:px-6 lg:px-8">
       <div className="max-w-4xl mx-auto">
+
+        
+
         
         {/* Confirmation Dialog */}
         <ConfirmDialog 
@@ -360,9 +387,9 @@ export default function ConfigurationPage() {
 
               {/* GitHub Connection Status */}
               <div className="mb-8">
-                <label className="block text-sm font-medium text-gray-700 mb-3">
+                <div className="block text-sm font-medium text-gray-700 mb-3">
                   GitHub Account Connection
-                </label>
+                </div>
                 <div className="border rounded-lg overflow-hidden">
                   {githubStatus?.connected ? (
                     /* Connected State */

@@ -124,6 +124,8 @@
 - Email delivery via Resend
 - Public changelog web page
 - Basic configuration management
+- Comprehensive unit test coverage
+- Modular, testable architecture
 
 **Post-MVP Features (Deferred):**
 - GitHub OAuth authentication
@@ -141,6 +143,9 @@
   - Diff data is processed in-memory and never stored.
 - **Scalability**: Able to support 100k+ commits/month with queued background jobs.
 - **Reliability**: Email and webhook failures must retry with exponential backoff.
+- **Code Quality**: Minimum 80% unit test coverage for all business logic modules.
+- **Testability**: All components designed with dependency injection and clear interfaces.
+- **Maintainability**: Modular architecture with separation of concerns.
 
 ---
 

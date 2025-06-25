@@ -16,58 +16,67 @@
         "id": 2,
         "title": "Configure Supabase Integration",
         "description": "Set up Supabase for database and storage services for the MVP instead of file-based storage.",
-        "status": "pending",
+        "status": "done",
         "dependencies": [
           1
         ],
         "priority": "high",
-        "details": "The Supabase project 'Change Reel' has already been created with environment variables set up. Focus on:\n\n1. Install the Supabase client library in the Next.js application\n2. Create a configuration file for Supabase client initialization\n3. Set up the connection to the existing Supabase project using the environment variables\n4. Design and create database tables for repository, commit, and configuration data\n5. Create a data access layer for CRUD operations using Supabase\n6. Implement error handling and data validation\n7. Test Supabase database operations\n8. Configure Supabase storage buckets if needed for larger assets\n\nNote: Authentication features will be deferred to post-MVP.",
-        "testStrategy": "Verify that the Supabase client is properly initialized in the Next.js app. Test that data can be properly stored, retrieved, updated, and deleted using Supabase. Test with sample data representing commits and configuration. Ensure environment variables are properly accessed and used in the connection setup.",
+        "details": "The Supabase project 'Change Reel' has already been created with environment variables set up. Focus on:\n\n1. Install the Supabase client library in the Next.js application\n2. Create a configuration file for Supabase client initialization\n3. Set up the connection to the existing Supabase project using the environment variables\n4. Design and create database tables for repository, commit, and configuration data\n5. Create a data access layer for CRUD operations using Supabase\n6. Implement error handling and data validation\n7. Test Supabase database operations\n8. Configure Supabase storage buckets if needed for larger assets\n9. Follow dependency injection pattern for all Supabase service implementations\n10. Create comprehensive unit tests with mocked Supabase client\n\nNote: Authentication features will be deferred to post-MVP.",
+        "testStrategy": "Implement comprehensive unit tests with Jest for all Supabase-related functionality. Mock the Supabase client to avoid actual API calls during testing. Verify that the Supabase client is properly initialized in the Next.js app. Test that data can be properly stored, retrieved, updated, and deleted using Supabase. Test with sample data representing commits and configuration. Ensure environment variables are properly accessed and used in the connection setup. Aim for 90% code coverage for core Supabase services. Test error handling scenarios and edge cases like connection failures or invalid data.",
         "subtasks": [
           {
             "id": 1,
             "title": "Install Supabase client library",
             "description": "Add the Supabase JavaScript client library to the Next.js project",
-            "status": "pending",
+            "status": "done",
             "dependencies": [],
-            "details": "",
-            "testStrategy": ""
+            "details": "Install the latest version of the Supabase client library and any related type definitions for TypeScript support.",
+            "testStrategy": "Verify the library is correctly installed and can be imported without errors."
           },
           {
             "id": 2,
             "title": "Create Supabase client configuration",
             "description": "Create a utility file to initialize the Supabase client using the existing environment variables for the 'Change Reel' project",
-            "status": "pending",
+            "status": "done",
             "dependencies": [],
-            "details": "",
-            "testStrategy": ""
+            "details": "Implement using dependency injection pattern to allow for easy mocking in tests. Create interfaces for the Supabase client services.",
+            "testStrategy": "Write unit tests to verify client initialization with mocked environment variables. Test error handling for missing or invalid environment variables."
           },
           {
             "id": 3,
             "title": "Design database schema",
             "description": "Design the database tables needed for repositories, commits, and configuration data",
-            "status": "pending",
+            "status": "done",
             "dependencies": [],
-            "details": "",
-            "testStrategy": ""
+            "details": "Create clear interfaces for all database models. Document relationships between tables.",
+            "testStrategy": "Create test cases to validate schema design against sample data. Verify constraints and relationships work as expected."
           },
           {
             "id": 4,
             "title": "Implement data access layer",
             "description": "Create service functions for CRUD operations against the Supabase database",
-            "status": "pending",
+            "status": "done",
             "dependencies": [],
-            "details": "",
-            "testStrategy": ""
+            "details": "Follow repository pattern with clear interfaces. Implement dependency injection for testability. Create separate modules for different data entities.",
+            "testStrategy": "Write comprehensive unit tests for each CRUD operation with mocked Supabase responses. Test error handling, edge cases, and validation logic. Aim for 90% code coverage."
           },
           {
             "id": 5,
             "title": "Test connection and operations",
             "description": "Write tests to verify the Supabase connection and basic data operations",
-            "status": "pending",
+            "status": "done",
             "dependencies": [],
-            "details": "",
-            "testStrategy": ""
+            "details": "Create both unit tests (with mocks) and integration tests (with test database).",
+            "testStrategy": "Use Jest and MSW to mock Supabase API responses. Create test fixtures for different scenarios. Test error handling for network issues, permission problems, and invalid data."
+          },
+          {
+            "id": 6,
+            "title": "Create test utilities for Supabase mocking",
+            "description": "Develop reusable test utilities for mocking Supabase client in unit tests",
+            "status": "done",
+            "dependencies": [],
+            "details": "Create mock factory functions that can be reused across test files.",
+            "testStrategy": "Verify mock utilities correctly simulate Supabase client behavior for different scenarios."
           }
         ]
       },
@@ -80,8 +89,8 @@
           2
         ],
         "priority": "high",
-        "details": "1. Create SQL schema for the following data models in Supabase:\n   - User (id, email, name, created_at, updated_at)\n   - Project (id, name, provider, webhook_url, email_distribution_list, user_id, created_at, updated_at)\n   - Commit (id, sha, author, timestamp, summary, type, is_published, email_sent, project_id, created_at, updated_at)\n2. Implement proper relationships between tables (User-Project, Project-Commit)\n3. Create database migrations for initial schema setup\n4. Create TypeScript interfaces for each model\n5. Set up Supabase client configuration for database access\n6. Implement functions for data querying and filtering using Supabase API\n7. Create backup and restore functionality for database",
-        "testStrategy": "Verify that data models are correctly implemented in Supabase and that data can be stored and retrieved according to the defined schema. Test relationships between tables, data validation, and querying functionality. Create test fixtures to validate database operations.",
+        "details": "1. Create SQL schema for the following data models in Supabase:\n   - User (id, email, name, created_at, updated_at)\n   - Project (id, name, provider, webhook_url, email_distribution_list, user_id, created_at, updated_at)\n   - Commit (id, sha, author, timestamp, summary, type, is_published, email_sent, project_id, created_at, updated_at)\n2. Implement proper relationships between tables (User-Project, Project-Commit)\n3. Create database migrations for initial schema setup\n4. Create TypeScript interfaces for each model\n5. Set up Supabase client configuration for database access\n6. Implement functions for data querying and filtering using Supabase API\n7. Create backup and restore functionality for database\n8. Follow dependency injection pattern for all database services\n9. Create comprehensive unit tests with mocked database responses\n10. Implement integration tests for database operations",
+        "testStrategy": "Implement comprehensive unit tests with Jest for all database models and operations. Mock Supabase client to avoid actual database calls during testing. Create test fixtures for each model. Verify that data models are correctly implemented in Supabase and that data can be stored and retrieved according to the defined schema. Test relationships between tables, data validation, and querying functionality. Test error handling for database operations. Aim for 90% code coverage for database services. Include integration tests with a test database for critical paths.",
         "subtasks": [
           {
             "id": 1,
@@ -98,8 +107,8 @@
             "description": "Develop SQL migration scripts to create User, Project, and Commit tables with proper relationships",
             "status": "pending",
             "dependencies": [],
-            "details": "",
-            "testStrategy": ""
+            "details": "Create well-documented SQL scripts with clear comments. Include constraints and indexes for performance.",
+            "testStrategy": "Test migration scripts in a development environment before applying to production. Verify tables are created with correct structure and relationships."
           },
           {
             "id": 3,
@@ -107,8 +116,8 @@
             "description": "Create TypeScript interfaces that match the database schema for type safety",
             "status": "pending",
             "dependencies": [],
-            "details": "",
-            "testStrategy": ""
+            "details": "Create interfaces with proper documentation. Include validation methods where appropriate.",
+            "testStrategy": "Verify interfaces match database schema. Test type compatibility with sample data."
           },
           {
             "id": 4,
@@ -116,8 +125,8 @@
             "description": "Create functions to interact with Supabase for CRUD operations on all models",
             "status": "pending",
             "dependencies": [],
-            "details": "",
-            "testStrategy": ""
+            "details": "Follow repository pattern with dependency injection. Create separate modules for different entities.",
+            "testStrategy": "Write unit tests for each CRUD operation with mocked Supabase responses. Test error handling and edge cases. Aim for 90% code coverage."
           },
           {
             "id": 5,
@@ -125,8 +134,8 @@
             "description": "Create utility functions for querying and filtering data from Supabase",
             "status": "pending",
             "dependencies": [],
-            "details": "",
-            "testStrategy": ""
+            "details": "Implement reusable query builders with proper parameter validation.",
+            "testStrategy": "Test query functions with various filter combinations. Verify correct SQL generation. Test with edge cases like empty results or large datasets."
           },
           {
             "id": 6,
@@ -134,8 +143,8 @@
             "description": "Implement methods to backup and restore database data",
             "status": "pending",
             "dependencies": [],
-            "details": "",
-            "testStrategy": ""
+            "details": "Create utilities for exporting and importing data in a consistent format.",
+            "testStrategy": "Test backup and restore with sample datasets. Verify data integrity after restore operations. Test with various data volumes."
           },
           {
             "id": 7,
@@ -143,8 +152,17 @@
             "description": "Create comprehensive tests for all database operations and data model validations",
             "status": "pending",
             "dependencies": [],
-            "details": "",
-            "testStrategy": ""
+            "details": "Create both unit tests with mocks and integration tests with test database.",
+            "testStrategy": "Use Jest and MSW for mocking. Create test fixtures for different scenarios. Test error handling and edge cases. Verify 90% code coverage."
+          },
+          {
+            "id": 8,
+            "title": "Create test utilities for database testing",
+            "description": "Develop reusable test utilities for database testing",
+            "status": "pending",
+            "dependencies": [],
+            "details": "Create mock factory functions and test helpers that can be reused across test files.",
+            "testStrategy": "Verify test utilities correctly simulate database operations for different scenarios."
           }
         ]
       },
@@ -157,9 +175,64 @@
           4
         ],
         "priority": "high",
-        "details": "1. Create a Next.js API route at `/api/webhooks/github`\n2. Implement webhook signature verification for security\n3. Parse incoming webhook payloads to extract commit information\n4. Filter events to only process push events\n5. Store relevant commit metadata in the JSON file storage\n6. Add manual webhook setup instructions for the configured repository\n7. Add error handling and logging for webhook processing\n8. Implement retry logic for failed webhook processing",
-        "testStrategy": "Test webhook endpoint with sample GitHub webhook payloads. Verify signature validation, proper event filtering, and correct data storage in the JSON files.",
-        "subtasks": []
+        "details": "1. Create a Next.js API route at `/api/webhooks/github`\n2. Implement webhook signature verification for security\n3. Parse incoming webhook payloads to extract commit information\n4. Filter events to only process push events\n5. Store relevant commit metadata in the Supabase database\n6. Add manual webhook setup instructions for the configured repository\n7. Add error handling and logging for webhook processing\n8. Implement retry logic for failed webhook processing\n9. Follow dependency injection pattern for webhook processing services\n10. Create comprehensive unit tests with mocked webhook payloads\n11. Implement integration tests for webhook endpoint",
+        "testStrategy": "Implement comprehensive unit tests with Jest for webhook processing logic. Use MSW to mock GitHub webhook requests. Test webhook endpoint with sample GitHub webhook payloads. Verify signature validation, proper event filtering, and correct data storage in the database. Test error handling for invalid signatures, malformed payloads, and database failures. Create test fixtures for different webhook event types. Aim for 90% code coverage for webhook processing logic. Include integration tests that verify end-to-end webhook processing.",
+        "subtasks": [
+          {
+            "id": 1,
+            "title": "Create webhook API endpoint",
+            "description": "Implement Next.js API route for GitHub webhooks",
+            "status": "pending",
+            "dependencies": [],
+            "details": "Create modular handler with clear separation of concerns.",
+            "testStrategy": "Test API endpoint with mocked webhook payloads. Verify correct response codes and error handling."
+          },
+          {
+            "id": 2,
+            "title": "Implement webhook signature verification",
+            "description": "Add security verification for incoming webhook requests",
+            "status": "pending",
+            "dependencies": [],
+            "details": "Follow GitHub's signature verification protocol.",
+            "testStrategy": "Test with valid and invalid signatures. Verify proper rejection of tampered payloads."
+          },
+          {
+            "id": 3,
+            "title": "Create webhook payload parser",
+            "description": "Develop utility to extract relevant data from webhook payloads",
+            "status": "pending",
+            "dependencies": [],
+            "details": "Create modular parser with clear interfaces.",
+            "testStrategy": "Test with various webhook payload types. Verify correct extraction of commit data."
+          },
+          {
+            "id": 4,
+            "title": "Implement webhook event filtering",
+            "description": "Add logic to process only relevant webhook events",
+            "status": "pending",
+            "dependencies": [],
+            "details": "Create configurable filter for different event types.",
+            "testStrategy": "Test with different event types. Verify correct filtering behavior."
+          },
+          {
+            "id": 5,
+            "title": "Create webhook processing service",
+            "description": "Develop service to handle webhook processing workflow",
+            "status": "pending",
+            "dependencies": [],
+            "details": "Follow dependency injection pattern for testability.",
+            "testStrategy": "Write unit tests for processing logic with mocked dependencies. Test error handling and retry logic."
+          },
+          {
+            "id": 6,
+            "title": "Create test fixtures for webhook testing",
+            "description": "Develop sample webhook payloads for testing",
+            "status": "pending",
+            "dependencies": [],
+            "details": "Create realistic webhook payloads for different scenarios.",
+            "testStrategy": "Verify fixtures match actual GitHub webhook format."
+          }
+        ]
       },
       {
         "id": 6,
@@ -170,9 +243,73 @@
           5
         ],
         "priority": "high",
-        "details": "1. Create a GitHub API client utility using Octokit.js\n2. Configure the client to use the access token from environment variables\n3. Implement functions to fetch commit details by SHA\n4. Retrieve raw diffs for commits using the GitHub API\n5. Handle pagination for large diffs\n6. Implement caching to avoid redundant API calls\n7. Add error handling for API rate limits and failures\n8. Create utility functions to parse and clean diff content\n9. Implement filtering for noise files (package-lock.json, generated files)",
-        "testStrategy": "Test diff retrieval with various commit types and sizes. Verify that diffs are correctly fetched, parsed, and filtered according to requirements.",
-        "subtasks": []
+        "details": "1. Create a GitHub API client utility using Octokit.js\n2. Configure the client to use the access token from environment variables\n3. Implement functions to fetch commit details by SHA\n4. Retrieve raw diffs for commits using the GitHub API\n5. Handle pagination for large diffs\n6. Implement caching to avoid redundant API calls\n7. Add error handling for API rate limits and failures\n8. Create utility functions to parse and clean diff content\n9. Implement filtering for noise files (package-lock.json, generated files)\n10. Follow dependency injection pattern for GitHub service\n11. Create comprehensive unit tests with mocked GitHub API responses\n12. Implement integration tests for GitHub API interactions",
+        "testStrategy": "Implement comprehensive unit tests with Jest for all GitHub API integration code. Use MSW to mock GitHub API responses. Test diff retrieval with various commit types and sizes. Verify that diffs are correctly fetched, parsed, and filtered according to requirements. Test error handling for API rate limits, network failures, and invalid responses. Create test fixtures for different diff formats and sizes. Test caching logic and pagination handling. Aim for 90% code coverage for GitHub API integration code. Include integration tests with a test GitHub repository for critical paths.",
+        "subtasks": [
+          {
+            "id": 1,
+            "title": "Create GitHub API client",
+            "description": "Implement Octokit.js client with proper configuration",
+            "status": "pending",
+            "dependencies": [],
+            "details": "Follow dependency injection pattern for testability.",
+            "testStrategy": "Test client initialization with mocked environment variables. Verify error handling for invalid configuration."
+          },
+          {
+            "id": 2,
+            "title": "Implement commit fetching service",
+            "description": "Create service to retrieve commit details from GitHub",
+            "status": "pending",
+            "dependencies": [],
+            "details": "Create modular service with clear interfaces.",
+            "testStrategy": "Test with mocked GitHub API responses. Verify correct handling of various response formats."
+          },
+          {
+            "id": 3,
+            "title": "Develop diff retrieval functionality",
+            "description": "Implement functions to fetch and process commit diffs",
+            "status": "pending",
+            "dependencies": [],
+            "details": "Handle pagination and large diffs efficiently.",
+            "testStrategy": "Test with various diff sizes and formats. Verify pagination handling and error recovery."
+          },
+          {
+            "id": 4,
+            "title": "Create caching mechanism",
+            "description": "Implement caching to reduce API calls",
+            "status": "pending",
+            "dependencies": [],
+            "details": "Use efficient caching strategy with proper invalidation.",
+            "testStrategy": "Test cache hits and misses. Verify cache invalidation works correctly."
+          },
+          {
+            "id": 5,
+            "title": "Implement diff parsing utilities",
+            "description": "Create utilities to parse and clean diff content",
+            "status": "pending",
+            "dependencies": [],
+            "details": "Create modular parsers with clear interfaces.",
+            "testStrategy": "Test with various diff formats. Verify correct parsing and cleaning of content."
+          },
+          {
+            "id": 6,
+            "title": "Develop noise filtering functionality",
+            "description": "Implement filtering for irrelevant files in diffs",
+            "status": "pending",
+            "dependencies": [],
+            "details": "Create configurable filter rules.",
+            "testStrategy": "Test with diffs containing various file types. Verify correct filtering behavior."
+          },
+          {
+            "id": 7,
+            "title": "Create test fixtures for GitHub API testing",
+            "description": "Develop sample API responses for testing",
+            "status": "pending",
+            "dependencies": [],
+            "details": "Create realistic API responses for different scenarios.",
+            "testStrategy": "Verify fixtures match actual GitHub API format."
+          }
+        ]
       },
       {
         "id": 7,
@@ -183,9 +320,73 @@
           6
         ],
         "priority": "high",
-        "details": "1. Set up OpenAI API client with proper authentication\n2. Implement the prompt template as specified in the PRD appendix\n3. Create a service to process diffs and send them to OpenAI\n4. Parse and store the generated summaries in the JSON file storage\n5. Implement detection of change types (feature, fix, refactor, chore)\n6. Add error handling and retry logic for API failures\n7. Implement rate limiting to manage API costs\n8. Create a simple job system for processing summaries sequentially",
-        "testStrategy": "Test summarization with various types of diffs. Verify that summaries are concise, accurate, and properly categorized by change type.",
-        "subtasks": []
+        "details": "1. Set up OpenAI API client with proper authentication\n2. Implement the prompt template as specified in the PRD appendix\n3. Create a service to process diffs and send them to OpenAI\n4. Parse and store the generated summaries in the Supabase database\n5. Implement detection of change types (feature, fix, refactor, chore)\n6. Add error handling and retry logic for API failures\n7. Implement rate limiting to manage API costs\n8. Create a simple job system for processing summaries sequentially\n9. Follow dependency injection pattern for OpenAI service\n10. Create comprehensive unit tests with mocked OpenAI API responses\n11. Implement integration tests for OpenAI API interactions",
+        "testStrategy": "Implement comprehensive unit tests with Jest for all OpenAI integration code. Use MSW to mock OpenAI API responses. Test summarization with various types of diffs. Verify that summaries are concise, accurate, and properly categorized by change type. Test error handling for API failures, rate limits, and invalid responses. Create test fixtures for different diff types and expected summaries. Test prompt template variations and their impact on summary quality. Aim for 90% code coverage for OpenAI integration code. Include integration tests with actual OpenAI API for critical paths (with appropriate safeguards for API costs).",
+        "subtasks": [
+          {
+            "id": 1,
+            "title": "Create OpenAI API client",
+            "description": "Implement OpenAI client with proper configuration",
+            "status": "pending",
+            "dependencies": [],
+            "details": "Follow dependency injection pattern for testability.",
+            "testStrategy": "Test client initialization with mocked environment variables. Verify error handling for invalid configuration."
+          },
+          {
+            "id": 2,
+            "title": "Implement prompt template system",
+            "description": "Create configurable prompt templates for diff summarization",
+            "status": "pending",
+            "dependencies": [],
+            "details": "Create modular template system with variable substitution.",
+            "testStrategy": "Test template rendering with various inputs. Verify correct prompt generation."
+          },
+          {
+            "id": 3,
+            "title": "Develop summarization service",
+            "description": "Create service to process diffs and generate summaries",
+            "status": "pending",
+            "dependencies": [],
+            "details": "Follow dependency injection pattern for testability.",
+            "testStrategy": "Test with mocked OpenAI responses. Verify correct handling of various response formats."
+          },
+          {
+            "id": 4,
+            "title": "Implement change type detection",
+            "description": "Add logic to categorize changes by type",
+            "status": "pending",
+            "dependencies": [],
+            "details": "Create rules-based or ML-based categorization.",
+            "testStrategy": "Test with various change types. Verify correct categorization."
+          },
+          {
+            "id": 5,
+            "title": "Create rate limiting mechanism",
+            "description": "Implement rate limiting for OpenAI API calls",
+            "status": "pending",
+            "dependencies": [],
+            "details": "Use token-based rate limiting with proper accounting.",
+            "testStrategy": "Test rate limiting behavior with simulated API calls. Verify proper throttling."
+          },
+          {
+            "id": 6,
+            "title": "Implement error handling and retries",
+            "description": "Add robust error handling for API interactions",
+            "status": "pending",
+            "dependencies": [],
+            "details": "Create configurable retry strategy with backoff.",
+            "testStrategy": "Test with simulated API failures. Verify retry behavior and error reporting."
+          },
+          {
+            "id": 7,
+            "title": "Create test fixtures for OpenAI testing",
+            "description": "Develop sample API responses for testing",
+            "status": "pending",
+            "dependencies": [],
+            "details": "Create realistic API responses for different scenarios.",
+            "testStrategy": "Verify fixtures match actual OpenAI API format."
+          }
+        ]
       },
       {
         "id": 8,
@@ -198,9 +399,73 @@
           7
         ],
         "priority": "high",
-        "details": "1. Create a simple job queue using file-based storage\n2. Implement job handlers for commit processing, diff fetching, and summarization\n3. Create a basic job runner that processes jobs sequentially\n4. Implement job scheduling, retries, and error handling\n5. Add logging for job execution\n6. Create utility functions for job management\n7. Implement job status tracking in the file storage",
-        "testStrategy": "Test the job system with various scenarios including success cases, failures with retries, and sequential job execution. Verify that jobs are processed correctly and with appropriate retry behavior.",
-        "subtasks": []
+        "details": "1. Create a simple job queue using Supabase database storage\n2. Implement job handlers for commit processing, diff fetching, and summarization\n3. Create a basic job runner that processes jobs sequentially\n4. Implement job scheduling, retries, and error handling\n5. Add logging for job execution\n6. Create utility functions for job management\n7. Implement job status tracking in the database\n8. Follow dependency injection pattern for job processing services\n9. Create comprehensive unit tests with mocked dependencies\n10. Implement integration tests for job processing workflow",
+        "testStrategy": "Implement comprehensive unit tests with Jest for all job processing code. Mock dependencies like database and external services. Test the job system with various scenarios including success cases, failures with retries, and sequential job execution. Verify that jobs are processed correctly and with appropriate retry behavior. Test error handling, job status tracking, and logging. Create test fixtures for different job types and states. Aim for 90% code coverage for job processing code. Include integration tests that verify end-to-end job processing with actual dependencies for critical paths.",
+        "subtasks": [
+          {
+            "id": 1,
+            "title": "Design job queue schema",
+            "description": "Create database schema for job queue",
+            "status": "pending",
+            "dependencies": [],
+            "details": "Design efficient schema with proper indexes.",
+            "testStrategy": "Test schema with sample job data. Verify query performance."
+          },
+          {
+            "id": 2,
+            "title": "Implement job queue service",
+            "description": "Create service for job queue operations",
+            "status": "pending",
+            "dependencies": [],
+            "details": "Follow dependency injection pattern for testability.",
+            "testStrategy": "Test queue operations with mocked database. Verify correct job ordering and status tracking."
+          },
+          {
+            "id": 3,
+            "title": "Develop job handlers",
+            "description": "Create handlers for different job types",
+            "status": "pending",
+            "dependencies": [],
+            "details": "Create modular handlers with clear interfaces.",
+            "testStrategy": "Test handlers with mocked dependencies. Verify correct processing logic."
+          },
+          {
+            "id": 4,
+            "title": "Implement job runner",
+            "description": "Create service to process jobs sequentially",
+            "status": "pending",
+            "dependencies": [],
+            "details": "Create efficient runner with proper error handling.",
+            "testStrategy": "Test runner with various job sequences. Verify correct execution order and error recovery."
+          },
+          {
+            "id": 5,
+            "title": "Create retry mechanism",
+            "description": "Implement retry logic for failed jobs",
+            "status": "pending",
+            "dependencies": [],
+            "details": "Create configurable retry strategy with backoff.",
+            "testStrategy": "Test with simulated failures. Verify retry behavior and maximum attempt enforcement."
+          },
+          {
+            "id": 6,
+            "title": "Implement job status tracking",
+            "description": "Add functionality to track job status",
+            "status": "pending",
+            "dependencies": [],
+            "details": "Create comprehensive status tracking with timestamps.",
+            "testStrategy": "Test status transitions. Verify correct status recording for various scenarios."
+          },
+          {
+            "id": 7,
+            "title": "Create test fixtures for job testing",
+            "description": "Develop sample job data for testing",
+            "status": "pending",
+            "dependencies": [],
+            "details": "Create realistic job data for different scenarios.",
+            "testStrategy": "Verify fixtures cover various job types and states."
+          }
+        ]
       },
       {
         "id": 9,
@@ -212,9 +477,73 @@
           8
         ],
         "priority": "medium",
-        "details": "1. Set up Resend API client with proper authentication\n2. Create HTML email templates based on the sample in the PRD\n3. Implement email sending service with templating functionality\n4. Add support for batching multiple commits into a single email\n5. Implement basic email scheduling (daily digest)\n6. Track sent emails in the JSON file storage\n7. Implement retry logic for failed email deliveries\n8. Create preview functionality for email templates",
-        "testStrategy": "Test email sending with various configurations. Verify that emails are correctly formatted, contain the expected commit summaries, and are properly tracked in the storage.",
-        "subtasks": []
+        "details": "1. Set up Resend API client with proper authentication\n2. Create HTML email templates based on the sample in the PRD\n3. Implement email sending service with templating functionality\n4. Add support for batching multiple commits into a single email\n5. Implement basic email scheduling (daily digest)\n6. Track sent emails in the Supabase database\n7. Implement retry logic for failed email deliveries\n8. Create preview functionality for email templates\n9. Follow dependency injection pattern for email service\n10. Create comprehensive unit tests with mocked Resend API responses\n11. Implement integration tests for email sending workflow",
+        "testStrategy": "Implement comprehensive unit tests with Jest for all email integration code. Use MSW to mock Resend API responses. Test email sending with various configurations. Verify that emails are correctly formatted, contain the expected commit summaries, and are properly tracked in the database. Test error handling for API failures and invalid templates. Create test fixtures for different email templates and content types. Test batching logic and scheduling functionality. Aim for 90% code coverage for email integration code. Include integration tests with actual Resend API for critical paths (with appropriate safeguards).",
+        "subtasks": [
+          {
+            "id": 1,
+            "title": "Create Resend API client",
+            "description": "Implement Resend client with proper configuration",
+            "status": "pending",
+            "dependencies": [],
+            "details": "Follow dependency injection pattern for testability.",
+            "testStrategy": "Test client initialization with mocked environment variables. Verify error handling for invalid configuration."
+          },
+          {
+            "id": 2,
+            "title": "Implement email template system",
+            "description": "Create HTML email templates with variable substitution",
+            "status": "pending",
+            "dependencies": [],
+            "details": "Create modular template system with reusable components.",
+            "testStrategy": "Test template rendering with various inputs. Verify correct HTML generation."
+          },
+          {
+            "id": 3,
+            "title": "Develop email sending service",
+            "description": "Create service to send emails via Resend API",
+            "status": "pending",
+            "dependencies": [],
+            "details": "Follow dependency injection pattern for testability.",
+            "testStrategy": "Test with mocked Resend API responses. Verify correct handling of various response formats."
+          },
+          {
+            "id": 4,
+            "title": "Implement email batching",
+            "description": "Add support for combining multiple commits in one email",
+            "status": "pending",
+            "dependencies": [],
+            "details": "Create efficient batching algorithm with configurable limits.",
+            "testStrategy": "Test with various batch sizes. Verify correct content aggregation."
+          },
+          {
+            "id": 5,
+            "title": "Create email scheduling system",
+            "description": "Implement daily digest email scheduling",
+            "status": "pending",
+            "dependencies": [],
+            "details": "Create configurable scheduling with timezone support.",
+            "testStrategy": "Test scheduling logic with various time configurations. Verify correct trigger timing."
+          },
+          {
+            "id": 6,
+            "title": "Implement email tracking",
+            "description": "Add functionality to track sent emails",
+            "status": "pending",
+            "dependencies": [],
+            "details": "Create comprehensive tracking with metadata.",
+            "testStrategy": "Test tracking for various email scenarios. Verify correct status recording."
+          },
+          {
+            "id": 7,
+            "title": "Create test fixtures for email testing",
+            "description": "Develop sample email data for testing",
+            "status": "pending",
+            "dependencies": [],
+            "details": "Create realistic email content for different scenarios.",
+            "testStrategy": "Verify fixtures cover various email types and formats."
+          }
+        ]
       },
       {
         "id": 10,
@@ -225,9 +554,73 @@
           4
         ],
         "priority": "medium",
-        "details": "1. Design and implement a basic admin page using React and Tailwind CSS\n2. Create components for viewing repository configuration\n3. Implement UI for viewing recent commits and their summaries\n4. Add simple filtering options for commits\n5. Implement responsive design for mobile and desktop\n6. Add loading states and error handling\n7. Create simple data fetching from the file storage\n8. Implement basic state management",
-        "testStrategy": "Test the admin UI across different screen sizes and browsers. Verify that all data is properly displayed and that filtering works correctly.",
-        "subtasks": []
+        "details": "1. Design and implement a basic admin page using React and Tailwind CSS\n2. Create components for viewing repository configuration\n3. Implement UI for viewing recent commits and their summaries\n4. Add simple filtering options for commits\n5. Implement responsive design for mobile and desktop\n6. Add loading states and error handling\n7. Create simple data fetching from the Supabase database\n8. Implement basic state management\n9. Follow component-based architecture with clear interfaces\n10. Create comprehensive unit tests for UI components\n11. Implement integration tests for UI workflows",
+        "testStrategy": "Implement comprehensive unit tests with Jest and React Testing Library for all UI components. Test the admin UI across different screen sizes and browsers. Verify that all data is properly displayed and that filtering works correctly. Test loading states, error handling, and user interactions. Create test fixtures for different data scenarios. Mock API responses for component testing. Aim for 80% code coverage for UI components. Include integration tests that verify end-to-end UI workflows with mocked backend services.",
+        "subtasks": [
+          {
+            "id": 1,
+            "title": "Design component architecture",
+            "description": "Create component hierarchy and interfaces",
+            "status": "pending",
+            "dependencies": [],
+            "details": "Design modular components with clear responsibilities.",
+            "testStrategy": "Review component design for testability and reusability."
+          },
+          {
+            "id": 2,
+            "title": "Implement repository configuration view",
+            "description": "Create UI for viewing repository settings",
+            "status": "pending",
+            "dependencies": [],
+            "details": "Create responsive component with proper data display.",
+            "testStrategy": "Test component rendering with various data states. Verify responsive behavior."
+          },
+          {
+            "id": 3,
+            "title": "Develop commit history component",
+            "description": "Create UI for viewing commit history",
+            "status": "pending",
+            "dependencies": [],
+            "details": "Implement efficient list rendering with pagination.",
+            "testStrategy": "Test with various data volumes. Verify correct rendering and pagination."
+          },
+          {
+            "id": 4,
+            "title": "Implement filtering functionality",
+            "description": "Add UI for filtering commit history",
+            "status": "pending",
+            "dependencies": [],
+            "details": "Create intuitive filter controls with proper validation.",
+            "testStrategy": "Test filter interactions. Verify correct filtering behavior."
+          },
+          {
+            "id": 5,
+            "title": "Create data fetching hooks",
+            "description": "Implement React hooks for data fetching",
+            "status": "pending",
+            "dependencies": [],
+            "details": "Create reusable hooks with proper error handling.",
+            "testStrategy": "Test hooks with mocked API responses. Verify loading states and error handling."
+          },
+          {
+            "id": 6,
+            "title": "Implement state management",
+            "description": "Add state management for UI components",
+            "status": "pending",
+            "dependencies": [],
+            "details": "Use appropriate state management approach (Context, Redux, etc.).",
+            "testStrategy": "Test state transitions. Verify correct state propagation."
+          },
+          {
+            "id": 7,
+            "title": "Create test fixtures for UI testing",
+            "description": "Develop sample data for UI testing",
+            "status": "pending",
+            "dependencies": [],
+            "details": "Create realistic data for different UI scenarios.",
+            "testStrategy": "Verify fixtures cover various UI states and edge cases."
+          }
+        ]
       },
       {
         "id": 11,
@@ -238,9 +631,73 @@
           10
         ],
         "priority": "medium",
-        "details": "1. Design and implement a commit history page layout\n2. Create components for displaying commit history with summaries\n3. Implement basic filtering and sorting options for commits\n4. Add simple pagination for commit history\n5. Create UI for viewing diff details\n6. Implement summary display with formatting\n7. Add copy functionality for summaries\n8. Create simple navigation between admin and history views",
-        "testStrategy": "Test the commit history view with various data sets. Verify that commits are correctly displayed, filters work as expected, and navigation functions properly.",
-        "subtasks": []
+        "details": "1. Design and implement a commit history page layout\n2. Create components for displaying commit history with summaries\n3. Implement basic filtering and sorting options for commits\n4. Add simple pagination for commit history\n5. Create UI for viewing diff details\n6. Implement summary display with formatting\n7. Add copy functionality for summaries\n8. Create simple navigation between admin and history views\n9. Follow component-based architecture with clear interfaces\n10. Create comprehensive unit tests for UI components\n11. Implement integration tests for UI workflows",
+        "testStrategy": "Implement comprehensive unit tests with Jest and React Testing Library for all UI components. Test the commit history view with various data sets. Verify that commits are correctly displayed, filters work as expected, and navigation functions properly. Test loading states, error handling, and user interactions. Create test fixtures for different data scenarios. Mock API responses for component testing. Aim for 80% code coverage for UI components. Include integration tests that verify end-to-end UI workflows with mocked backend services.",
+        "subtasks": [
+          {
+            "id": 1,
+            "title": "Design commit history layout",
+            "description": "Create page layout for commit history",
+            "status": "pending",
+            "dependencies": [],
+            "details": "Design responsive layout with proper information hierarchy.",
+            "testStrategy": "Review layout design for usability and responsiveness."
+          },
+          {
+            "id": 2,
+            "title": "Implement commit list component",
+            "description": "Create component for displaying commit list",
+            "status": "pending",
+            "dependencies": [],
+            "details": "Implement efficient list rendering with virtualization if needed.",
+            "testStrategy": "Test with various data volumes. Verify correct rendering and performance."
+          },
+          {
+            "id": 3,
+            "title": "Develop commit detail component",
+            "description": "Create component for displaying commit details",
+            "status": "pending",
+            "dependencies": [],
+            "details": "Create comprehensive detail view with proper formatting.",
+            "testStrategy": "Test with various commit types. Verify correct rendering of all details."
+          },
+          {
+            "id": 4,
+            "title": "Implement filtering and sorting",
+            "description": "Add UI for filtering and sorting commits",
+            "status": "pending",
+            "dependencies": [],
+            "details": "Create intuitive controls with proper validation.",
+            "testStrategy": "Test filter and sort interactions. Verify correct behavior."
+          },
+          {
+            "id": 5,
+            "title": "Create pagination component",
+            "description": "Implement pagination for commit history",
+            "status": "pending",
+            "dependencies": [],
+            "details": "Create accessible pagination with proper state management.",
+            "testStrategy": "Test pagination with various data volumes. Verify correct page navigation."
+          },
+          {
+            "id": 6,
+            "title": "Implement diff viewer",
+            "description": "Create component for viewing commit diffs",
+            "status": "pending",
+            "dependencies": [],
+            "details": "Implement syntax highlighting and diff visualization.",
+            "testStrategy": "Test with various diff formats. Verify correct rendering and highlighting."
+          },
+          {
+            "id": 7,
+            "title": "Create test fixtures for commit history testing",
+            "description": "Develop sample data for commit history testing",
+            "status": "pending",
+            "dependencies": [],
+            "details": "Create realistic commit data for different scenarios.",
+            "testStrategy": "Verify fixtures cover various commit types and formats."
+          }
+        ]
       },
       {
         "id": 12,
@@ -251,9 +708,73 @@
           7
         ],
         "priority": "medium",
-        "details": "1. Design and implement a basic public changelog page layout\n2. Create a static route for accessing the changelog\n3. Implement server-side rendering for SEO and performance\n4. Add simple filtering options by date range\n5. Create a clean, responsive design that works well on all devices\n6. Implement basic pagination for large changelogs\n7. Add metadata for social sharing\n8. Create a simple RSS feed option for the changelog",
-        "testStrategy": "Test the public changelog page with various data sets. Verify that it renders correctly, is publicly accessible, and properly displays commit summaries.",
-        "subtasks": []
+        "details": "1. Design and implement a basic public changelog page layout\n2. Create a static route for accessing the changelog\n3. Implement server-side rendering for SEO and performance\n4. Add simple filtering options by date range\n5. Create a clean, responsive design that works well on all devices\n6. Implement basic pagination for large changelogs\n7. Add metadata for social sharing\n8. Create a simple RSS feed option for the changelog\n9. Follow component-based architecture with clear interfaces\n10. Create comprehensive unit tests for UI components\n11. Implement integration tests for UI workflows",
+        "testStrategy": "Implement comprehensive unit tests with Jest and React Testing Library for all UI components. Test the public changelog page with various data sets. Verify that it renders correctly, is publicly accessible, and properly displays commit summaries. Test server-side rendering, SEO metadata, and responsive design. Create test fixtures for different data scenarios. Mock API responses for component testing. Aim for 80% code coverage for UI components. Include integration tests that verify end-to-end UI workflows with mocked backend services.",
+        "subtasks": [
+          {
+            "id": 1,
+            "title": "Design changelog page layout",
+            "description": "Create page layout for public changelog",
+            "status": "pending",
+            "dependencies": [],
+            "details": "Design clean, responsive layout with proper information hierarchy.",
+            "testStrategy": "Review layout design for usability and responsiveness."
+          },
+          {
+            "id": 2,
+            "title": "Implement changelog list component",
+            "description": "Create component for displaying changelog entries",
+            "status": "pending",
+            "dependencies": [],
+            "details": "Implement efficient list rendering with proper formatting.",
+            "testStrategy": "Test with various data volumes. Verify correct rendering and formatting."
+          },
+          {
+            "id": 3,
+            "title": "Develop date filtering component",
+            "description": "Create UI for filtering changelog by date",
+            "status": "pending",
+            "dependencies": [],
+            "details": "Create intuitive date picker with proper validation.",
+            "testStrategy": "Test date filter interactions. Verify correct filtering behavior."
+          },
+          {
+            "id": 4,
+            "title": "Implement server-side rendering",
+            "description": "Add SSR support for changelog page",
+            "status": "pending",
+            "dependencies": [],
+            "details": "Implement efficient data fetching for SSR.",
+            "testStrategy": "Test SSR rendering. Verify correct initial HTML generation."
+          },
+          {
+            "id": 5,
+            "title": "Create SEO metadata component",
+            "description": "Add proper metadata for search engines",
+            "status": "pending",
+            "dependencies": [],
+            "details": "Implement comprehensive metadata with dynamic content.",
+            "testStrategy": "Test metadata generation. Verify correct tags for various pages."
+          },
+          {
+            "id": 6,
+            "title": "Implement RSS feed generator",
+            "description": "Create RSS feed for changelog updates",
+            "status": "pending",
+            "dependencies": [],
+            "details": "Implement standard-compliant RSS feed.",
+            "testStrategy": "Test RSS feed generation. Verify correct format and content."
+          },
+          {
+            "id": 7,
+            "title": "Create test fixtures for changelog testing",
+            "description": "Develop sample data for changelog testing",
+            "status": "pending",
+            "dependencies": [],
+            "details": "Create realistic changelog data for different scenarios.",
+            "testStrategy": "Verify fixtures cover various entry types and formats."
+          }
+        ]
       },
       {
         "id": 13,
@@ -265,9 +786,73 @@
           9
         ],
         "priority": "medium",
-        "details": "1. Design and implement a basic summary management page\n2. Create components for reviewing generated summaries\n3. Implement simple editing functionality for summaries\n4. Add manual publishing controls\n5. Create a basic approval workflow\n6. Implement batch operations for multiple commits\n7. Add simple usage statistics\n8. Create export functionality for summaries",
-        "testStrategy": "Test the summary management functionality with various scenarios. Verify that summaries can be reviewed and edited, and that manual publishing works correctly.",
-        "subtasks": []
+        "details": "1. Design and implement a basic summary management page\n2. Create components for reviewing generated summaries\n3. Implement simple editing functionality for summaries\n4. Add manual publishing controls\n5. Create a basic approval workflow\n6. Implement batch operations for multiple commits\n7. Add simple usage statistics\n8. Create export functionality for summaries\n9. Follow component-based architecture with clear interfaces\n10. Create comprehensive unit tests for UI components\n11. Implement integration tests for UI workflows",
+        "testStrategy": "Implement comprehensive unit tests with Jest and React Testing Library for all UI components. Test the summary management functionality with various scenarios. Verify that summaries can be reviewed and edited, and that manual publishing works correctly. Test user interactions, form validation, and state management. Create test fixtures for different data scenarios. Mock API responses for component testing. Aim for 80% code coverage for UI components. Include integration tests that verify end-to-end UI workflows with mocked backend services.",
+        "subtasks": [
+          {
+            "id": 1,
+            "title": "Design summary management layout",
+            "description": "Create page layout for summary management",
+            "status": "pending",
+            "dependencies": [],
+            "details": "Design intuitive layout with proper workflow.",
+            "testStrategy": "Review layout design for usability and workflow efficiency."
+          },
+          {
+            "id": 2,
+            "title": "Implement summary review component",
+            "description": "Create component for reviewing generated summaries",
+            "status": "pending",
+            "dependencies": [],
+            "details": "Create comprehensive review interface with proper formatting.",
+            "testStrategy": "Test with various summary types. Verify correct rendering and interaction."
+          },
+          {
+            "id": 3,
+            "title": "Develop summary editing functionality",
+            "description": "Add UI for editing summaries",
+            "status": "pending",
+            "dependencies": [],
+            "details": "Implement rich text editing with proper validation.",
+            "testStrategy": "Test editing interactions. Verify correct behavior and validation."
+          },
+          {
+            "id": 4,
+            "title": "Implement publishing controls",
+            "description": "Create UI for publishing summaries",
+            "status": "pending",
+            "dependencies": [],
+            "details": "Create intuitive publishing workflow with confirmation.",
+            "testStrategy": "Test publishing interactions. Verify correct state transitions."
+          },
+          {
+            "id": 5,
+            "title": "Create batch operations component",
+            "description": "Add UI for batch operations on summaries",
+            "status": "pending",
+            "dependencies": [],
+            "details": "Implement efficient batch selection and processing.",
+            "testStrategy": "Test batch operations with various selections. Verify correct behavior."
+          },
+          {
+            "id": 6,
+            "title": "Implement usage statistics component",
+            "description": "Create UI for displaying usage statistics",
+            "status": "pending",
+            "dependencies": [],
+            "details": "Create informative statistics with proper visualization.",
+            "testStrategy": "Test with various data sets. Verify correct calculation and display."
+          },
+          {
+            "id": 7,
+            "title": "Create test fixtures for summary management testing",
+            "description": "Develop sample data for summary management testing",
+            "status": "pending",
+            "dependencies": [],
+            "details": "Create realistic summary data for different scenarios.",
+            "testStrategy": "Verify fixtures cover various summary states and formats."
+          }
+        ]
       },
       {
         "id": 14,
@@ -276,9 +861,73 @@
         "status": "pending",
         "dependencies": [],
         "priority": "high",
-        "details": "1. Design and implement a basic configuration page\n2. Create form for viewing current repository configuration\n3. Add documentation for setting up GitHub access token\n4. Create instructions for manual webhook setup\n5. Implement configuration validation\n6. Add UI for testing the repository connection\n7. Create simple setup guide\n8. Implement configuration export/import functionality",
-        "testStrategy": "Test the configuration interface. Verify that current configuration is correctly displayed and that validation works properly.",
-        "subtasks": []
+        "details": "1. Design and implement a basic configuration page\n2. Create form for viewing current repository configuration\n3. Add documentation for setting up GitHub access token\n4. Create instructions for manual webhook setup\n5. Implement configuration validation\n6. Add UI for testing the repository connection\n7. Create simple setup guide\n8. Implement configuration export/import functionality\n9. Follow component-based architecture with clear interfaces\n10. Create comprehensive unit tests for UI components\n11. Implement integration tests for configuration workflow",
+        "testStrategy": "Implement comprehensive unit tests with Jest and React Testing Library for all UI components. Test the configuration interface with various scenarios. Verify that current configuration is correctly displayed and that validation works properly. Test form submission, error handling, and connection testing. Create test fixtures for different configuration states. Mock API responses for component testing. Aim for 80% code coverage for UI components. Include integration tests that verify end-to-end configuration workflows with mocked backend services.",
+        "subtasks": [
+          {
+            "id": 1,
+            "title": "Design configuration page layout",
+            "description": "Create page layout for repository configuration",
+            "status": "pending",
+            "dependencies": [],
+            "details": "Design intuitive layout with proper form organization.",
+            "testStrategy": "Review layout design for usability and clarity."
+          },
+          {
+            "id": 2,
+            "title": "Implement configuration form component",
+            "description": "Create form for repository configuration",
+            "status": "pending",
+            "dependencies": [],
+            "details": "Implement form with proper validation and error handling.",
+            "testStrategy": "Test form interactions and validation. Verify correct behavior for various inputs."
+          },
+          {
+            "id": 3,
+            "title": "Develop documentation components",
+            "description": "Create UI for displaying setup documentation",
+            "status": "pending",
+            "dependencies": [],
+            "details": "Create clear, step-by-step instructions with visual aids.",
+            "testStrategy": "Review documentation for clarity and completeness."
+          },
+          {
+            "id": 4,
+            "title": "Implement connection testing functionality",
+            "description": "Add UI for testing repository connection",
+            "status": "pending",
+            "dependencies": [],
+            "details": "Create interactive testing with clear feedback.",
+            "testStrategy": "Test connection testing with various scenarios. Verify correct feedback."
+          },
+          {
+            "id": 5,
+            "title": "Create configuration validation service",
+            "description": "Implement validation for repository configuration",
+            "status": "pending",
+            "dependencies": [],
+            "details": "Create comprehensive validation with helpful error messages.",
+            "testStrategy": "Test validation with various inputs. Verify correct validation results."
+          },
+          {
+            "id": 6,
+            "title": "Implement export/import functionality",
+            "description": "Add UI for exporting and importing configuration",
+            "status": "pending",
+            "dependencies": [],
+            "details": "Create secure export/import with proper validation.",
+            "testStrategy": "Test export and import with various configurations. Verify data integrity."
+          },
+          {
+            "id": 7,
+            "title": "Create test fixtures for configuration testing",
+            "description": "Develop sample data for configuration testing",
+            "status": "pending",
+            "dependencies": [],
+            "details": "Create realistic configuration data for different scenarios.",
+            "testStrategy": "Verify fixtures cover various configuration states."
+          }
+        ]
       },
       {
         "id": 15,
@@ -289,9 +938,73 @@
           9
         ],
         "priority": "medium",
-        "details": "1. Design and implement a basic email configuration page\n2. Create form for managing email recipients\n3. Implement validation for email addresses\n4. Store email configuration in JSON file storage\n5. Add support for adding multiple recipients\n6. Implement simple email frequency settings\n7. Create test email functionality\n8. Add export/import for email configuration",
-        "testStrategy": "Test the email configuration with various scenarios. Verify that recipients can be added and removed correctly, and that validation works properly.",
-        "subtasks": []
+        "details": "1. Design and implement a basic email configuration page\n2. Create form for managing email recipients\n3. Implement validation for email addresses\n4. Store email configuration in Supabase database\n5. Add support for adding multiple recipients\n6. Implement simple email frequency settings\n7. Create test email functionality\n8. Add export/import for email configuration\n9. Follow component-based architecture with clear interfaces\n10. Create comprehensive unit tests for UI components\n11. Implement integration tests for email configuration workflow",
+        "testStrategy": "Implement comprehensive unit tests with Jest and React Testing Library for all UI components. Test the email configuration with various scenarios. Verify that recipients can be added and removed correctly, and that validation works properly. Test form submission, error handling, and test email functionality. Create test fixtures for different configuration states. Mock API responses for component testing. Aim for 80% code coverage for UI components. Include integration tests that verify end-to-end email configuration workflows with mocked backend services.",
+        "subtasks": [
+          {
+            "id": 1,
+            "title": "Design email configuration layout",
+            "description": "Create page layout for email configuration",
+            "status": "pending",
+            "dependencies": [],
+            "details": "Design intuitive layout with proper form organization.",
+            "testStrategy": "Review layout design for usability and clarity."
+          },
+          {
+            "id": 2,
+            "title": "Implement recipient management component",
+            "description": "Create UI for managing email recipients",
+            "status": "pending",
+            "dependencies": [],
+            "details": "Implement dynamic list with add/remove functionality.",
+            "testStrategy": "Test recipient management interactions. Verify correct behavior for various operations."
+          },
+          {
+            "id": 3,
+            "title": "Develop email validation service",
+            "description": "Implement validation for email addresses",
+            "status": "pending",
+            "dependencies": [],
+            "details": "Create comprehensive validation with helpful error messages.",
+            "testStrategy": "Test validation with various inputs. Verify correct validation results."
+          },
+          {
+            "id": 4,
+            "title": "Implement frequency settings component",
+            "description": "Create UI for configuring email frequency",
+            "status": "pending",
+            "dependencies": [],
+            "details": "Create intuitive frequency selection with proper validation.",
+            "testStrategy": "Test frequency settings interactions. Verify correct behavior."
+          },
+          {
+            "id": 5,
+            "title": "Develop test email functionality",
+            "description": "Add UI for sending test emails",
+            "status": "pending",
+            "dependencies": [],
+            "details": "Create interactive testing with clear feedback.",
+            "testStrategy": "Test email sending with various scenarios. Verify correct feedback."
+          },
+          {
+            "id": 6,
+            "title": "Implement export/import functionality",
+            "description": "Add UI for exporting and importing email configuration",
+            "status": "pending",
+            "dependencies": [],
+            "details": "Create secure export/import with proper validation.",
+            "testStrategy": "Test export and import with various configurations. Verify data integrity."
+          },
+          {
+            "id": 7,
+            "title": "Create test fixtures for email configuration testing",
+            "description": "Develop sample data for email configuration testing",
+            "status": "pending",
+            "dependencies": [],
+            "details": "Create realistic configuration data for different scenarios.",
+            "testStrategy": "Verify fixtures cover various configuration states."
+          }
+        ]
       },
       {
         "id": 16,
@@ -302,9 +1015,73 @@
           10
         ],
         "priority": "medium",
-        "details": "1. Design and implement a basic settings page\n2. Create components for managing application settings\n3. Implement OpenAI API configuration\n4. Add email notification settings\n5. Create webhook configuration options\n6. Implement simple theme settings\n7. Add import/export functionality for settings\n8. Create documentation for configuration options",
-        "testStrategy": "Test the settings UI with various configurations. Verify that settings can be updated and are correctly applied throughout the application.",
-        "subtasks": []
+        "details": "1. Design and implement a basic settings page\n2. Create components for managing application settings\n3. Implement OpenAI API configuration\n4. Add email notification settings\n5. Create webhook configuration options\n6. Implement simple theme settings\n7. Add import/export functionality for settings\n8. Create documentation for configuration options\n9. Follow component-based architecture with clear interfaces\n10. Create comprehensive unit tests for UI components\n11. Implement integration tests for settings workflow",
+        "testStrategy": "Implement comprehensive unit tests with Jest and React Testing Library for all UI components. Test the settings UI with various configurations. Verify that settings can be updated and are correctly applied throughout the application. Test form submission, validation, and error handling. Create test fixtures for different settings states. Mock API responses for component testing. Aim for 80% code coverage for UI components. Include integration tests that verify end-to-end settings workflows with mocked backend services.",
+        "subtasks": [
+          {
+            "id": 1,
+            "title": "Design settings page layout",
+            "description": "Create page layout for application settings",
+            "status": "pending",
+            "dependencies": [],
+            "details": "Design intuitive layout with proper organization.",
+            "testStrategy": "Review layout design for usability and clarity."
+          },
+          {
+            "id": 2,
+            "title": "Implement API configuration component",
+            "description": "Create UI for configuring API settings",
+            "status": "pending",
+            "dependencies": [],
+            "details": "Implement form with proper validation and security.",
+            "testStrategy": "Test API configuration interactions. Verify correct behavior and validation."
+          },
+          {
+            "id": 3,
+            "title": "Develop notification settings component",
+            "description": "Create UI for configuring notifications",
+            "status": "pending",
+            "dependencies": [],
+            "details": "Create comprehensive notification options with proper validation.",
+            "testStrategy": "Test notification settings with various configurations. Verify correct behavior."
+          },
+          {
+            "id": 4,
+            "title": "Implement webhook configuration component",
+            "description": "Create UI for configuring webhooks",
+            "status": "pending",
+            "dependencies": [],
+            "details": "Implement webhook settings with validation and testing.",
+            "testStrategy": "Test webhook configuration with various inputs. Verify correct validation."
+          },
+          {
+            "id": 5,
+            "title": "Develop theme settings component",
+            "description": "Create UI for configuring application theme",
+            "status": "pending",
+            "dependencies": [],
+            "details": "Implement theme selection with live preview.",
+            "testStrategy": "Test theme switching. Verify correct application of theme styles."
+          },
+          {
+            "id": 6,
+            "title": "Implement settings persistence service",
+            "description": "Create service for saving and loading settings",
+            "status": "pending",
+            "dependencies": [],
+            "details": "Implement efficient storage with proper validation.",
+            "testStrategy": "Test settings persistence with various configurations. Verify data integrity."
+          },
+          {
+            "id": 7,
+            "title": "Create test fixtures for settings testing",
+            "description": "Develop sample data for settings testing",
+            "status": "pending",
+            "dependencies": [],
+            "details": "Create realistic settings data for different scenarios.",
+            "testStrategy": "Verify fixtures cover various settings states."
+          }
+        ]
       },
       {
         "id": 17,
@@ -315,9 +1092,73 @@
           5
         ],
         "priority": "high",
-        "details": "1. Implement secure storage of API tokens in environment variables\n2. Create secure webhook signature verification\n3. Add CSRF protection for forms\n4. Implement basic rate limiting for API endpoints\n5. Create simple logging for security-relevant actions\n6. Add secure headers\n7. Implement basic access controls\n8. Create security documentation",
-        "testStrategy": "Test security features with basic checks. Verify that API tokens are properly protected and that webhook verification prevents tampering.",
-        "subtasks": []
+        "details": "1. Implement secure storage of API tokens in environment variables\n2. Create secure webhook signature verification\n3. Add CSRF protection for forms\n4. Implement basic rate limiting for API endpoints\n5. Create simple logging for security-relevant actions\n6. Add secure headers\n7. Implement basic access controls\n8. Create security documentation\n9. Follow security best practices for all implementations\n10. Create comprehensive unit tests for security features\n11. Implement security-focused integration tests",
+        "testStrategy": "Implement comprehensive unit tests with Jest for all security features. Test security features with basic checks and penetration testing approaches. Verify that API tokens are properly protected and that webhook verification prevents tampering. Test CSRF protection, rate limiting, and access controls with various scenarios. Create test fixtures for different security scenarios. Aim for 90% code coverage for security-related code. Include integration tests that verify end-to-end security workflows with simulated attacks.",
+        "subtasks": [
+          {
+            "id": 1,
+            "title": "Implement secure token storage",
+            "description": "Create secure storage for API tokens",
+            "status": "pending",
+            "dependencies": [],
+            "details": "Implement environment variable handling with proper validation.",
+            "testStrategy": "Test token storage with various scenarios. Verify proper protection and access control."
+          },
+          {
+            "id": 2,
+            "title": "Develop webhook signature verification",
+            "description": "Implement secure verification for webhook signatures",
+            "status": "pending",
+            "dependencies": [],
+            "details": "Create cryptographically secure verification.",
+            "testStrategy": "Test with valid and invalid signatures. Verify proper rejection of tampered payloads."
+          },
+          {
+            "id": 3,
+            "title": "Implement CSRF protection",
+            "description": "Add CSRF protection for forms and API endpoints",
+            "status": "pending",
+            "dependencies": [],
+            "details": "Implement standard CSRF protection with proper token management.",
+            "testStrategy": "Test CSRF protection with simulated attacks. Verify proper rejection of invalid requests."
+          },
+          {
+            "id": 4,
+            "title": "Create rate limiting middleware",
+            "description": "Implement rate limiting for API endpoints",
+            "status": "pending",
+            "dependencies": [],
+            "details": "Create configurable rate limiting with proper storage.",
+            "testStrategy": "Test rate limiting with various request patterns. Verify proper throttling."
+          },
+          {
+            "id": 5,
+            "title": "Implement security logging",
+            "description": "Add logging for security-relevant actions",
+            "status": "pending",
+            "dependencies": [],
+            "details": "Create comprehensive logging with proper sanitization.",
+            "testStrategy": "Test logging with various security events. Verify proper information capture."
+          },
+          {
+            "id": 6,
+            "title": "Add secure headers middleware",
+            "description": "Implement secure HTTP headers",
+            "status": "pending",
+            "dependencies": [],
+            "details": "Add standard security headers with proper configuration.",
+            "testStrategy": "Test headers with various requests. Verify proper header values."
+          },
+          {
+            "id": 7,
+            "title": "Create test fixtures for security testing",
+            "description": "Develop sample data for security testing",
+            "status": "pending",
+            "dependencies": [],
+            "details": "Create realistic test scenarios for security features.",
+            "testStrategy": "Verify fixtures cover various security scenarios and attack vectors."
+          }
+        ]
       },
       {
         "id": 18,
@@ -328,9 +1169,73 @@
           1
         ],
         "priority": "medium",
-        "details": "1. Create Dockerfile for the application\n2. Implement docker-compose configuration for local development\n3. Optimize Docker image for production\n4. Create deployment scripts for AWS EC2\n5. Implement environment variable management\n6. Add health checks and monitoring\n7. Create backup and restore procedures for file storage\n8. Document deployment process",
-        "testStrategy": "Test Docker configuration by building and running the container locally. Verify that the application runs correctly in the containerized environment and that file storage persists correctly.",
-        "subtasks": []
+        "details": "1. Create Dockerfile for the application\n2. Implement docker-compose configuration for local development\n3. Optimize Docker image for production\n4. Create deployment scripts for AWS EC2\n5. Implement environment variable management\n6. Add health checks and monitoring\n7. Create backup and restore procedures for database\n8. Document deployment process\n9. Follow best practices for Docker security\n10. Create comprehensive tests for Docker configuration\n11. Implement CI/CD pipeline for Docker builds",
+        "testStrategy": "Implement comprehensive tests for Docker configuration. Test Docker configuration by building and running the container locally. Verify that the application runs correctly in the containerized environment and that database connections work properly. Test environment variable handling, health checks, and backup procedures. Create test scripts for verifying Docker builds. Test deployment scripts with staging environment. Include security scanning for Docker images.",
+        "subtasks": [
+          {
+            "id": 1,
+            "title": "Create Dockerfile",
+            "description": "Develop Dockerfile for the application",
+            "status": "pending",
+            "dependencies": [],
+            "details": "Create efficient, multi-stage Dockerfile with proper optimization.",
+            "testStrategy": "Test Docker build process. Verify image size and contents."
+          },
+          {
+            "id": 2,
+            "title": "Implement docker-compose configuration",
+            "description": "Create docker-compose setup for local development",
+            "status": "pending",
+            "dependencies": [],
+            "details": "Create comprehensive configuration with all required services.",
+            "testStrategy": "Test docker-compose setup. Verify all services start correctly and interact properly."
+          },
+          {
+            "id": 3,
+            "title": "Develop production optimization",
+            "description": "Optimize Docker image for production",
+            "status": "pending",
+            "dependencies": [],
+            "details": "Implement size and security optimizations.",
+            "testStrategy": "Test optimized image. Verify performance and security improvements."
+          },
+          {
+            "id": 4,
+            "title": "Create deployment scripts",
+            "description": "Develop scripts for deploying to AWS EC2",
+            "status": "pending",
+            "dependencies": [],
+            "details": "Create automated deployment with proper error handling.",
+            "testStrategy": "Test deployment scripts with staging environment. Verify successful deployment."
+          },
+          {
+            "id": 5,
+            "title": "Implement environment variable management",
+            "description": "Create system for managing environment variables",
+            "status": "pending",
+            "dependencies": [],
+            "details": "Implement secure variable management with validation.",
+            "testStrategy": "Test environment variable handling. Verify proper loading and validation."
+          },
+          {
+            "id": 6,
+            "title": "Add health checks",
+            "description": "Implement health check endpoints and monitoring",
+            "status": "pending",
+            "dependencies": [],
+            "details": "Create comprehensive health checks for all services.",
+            "testStrategy": "Test health checks with various service states. Verify correct reporting."
+          },
+          {
+            "id": 7,
+            "title": "Create test scripts for Docker verification",
+            "description": "Develop automated tests for Docker configuration",
+            "status": "pending",
+            "dependencies": [],
+            "details": "Create comprehensive test suite for Docker setup.",
+            "testStrategy": "Verify tests cover build, run, and deployment scenarios."
+          }
+        ]
       },
       {
         "id": 19,
@@ -344,9 +1249,73 @@
           8
         ],
         "priority": "medium",
-        "details": "1. Implement simple caching for file operations\n2. Optimize file read/write operations\n3. Add efficient job processing\n4. Optimize OpenAI API usage with prompt engineering\n5. Add basic performance monitoring\n6. Implement lazy loading for UI components\n7. Create simple performance testing tools\n8. Document performance optimization strategies",
-        "testStrategy": "Conduct performance testing with simulated load. Measure webhook-to-summary latency and optimize until it consistently meets the < 10s requirement.",
-        "subtasks": []
+        "details": "1. Implement efficient caching for database operations\n2. Optimize database queries and indexes\n3. Add efficient job processing\n4. Optimize OpenAI API usage with prompt engineering\n5. Add basic performance monitoring\n6. Implement lazy loading for UI components\n7. Create performance testing tools\n8. Document performance optimization strategies\n9. Follow performance best practices for all implementations\n10. Create comprehensive performance tests\n11. Implement performance benchmarking",
+        "testStrategy": "Implement comprehensive performance tests with appropriate benchmarking tools. Conduct performance testing with simulated load. Measure webhook-to-summary latency and optimize until it consistently meets the < 10s requirement. Test caching effectiveness, database query performance, and API response times. Create test fixtures for performance testing. Implement automated performance regression testing. Document performance test results and optimization impacts.",
+        "subtasks": [
+          {
+            "id": 1,
+            "title": "Implement database caching",
+            "description": "Create caching for database operations",
+            "status": "pending",
+            "dependencies": [],
+            "details": "Implement efficient caching with proper invalidation.",
+            "testStrategy": "Test caching with various query patterns. Measure performance improvements."
+          },
+          {
+            "id": 2,
+            "title": "Optimize database queries",
+            "description": "Improve database query performance",
+            "status": "pending",
+            "dependencies": [],
+            "details": "Analyze and optimize critical queries. Add proper indexes.",
+            "testStrategy": "Benchmark queries before and after optimization. Verify performance improvements."
+          },
+          {
+            "id": 3,
+            "title": "Enhance job processing efficiency",
+            "description": "Optimize job processing system",
+            "status": "pending",
+            "dependencies": [],
+            "details": "Implement efficient job scheduling and execution.",
+            "testStrategy": "Test job processing with various workloads. Measure throughput and latency."
+          },
+          {
+            "id": 4,
+            "title": "Optimize OpenAI prompt engineering",
+            "description": "Improve prompt efficiency for OpenAI API",
+            "status": "pending",
+            "dependencies": [],
+            "details": "Refine prompts for better performance and token efficiency.",
+            "testStrategy": "Test various prompt formulations. Measure response time and quality."
+          },
+          {
+            "id": 5,
+            "title": "Implement performance monitoring",
+            "description": "Add monitoring for performance metrics",
+            "status": "pending",
+            "dependencies": [],
+            "details": "Create comprehensive monitoring with proper alerting.",
+            "testStrategy": "Verify monitoring accuracy with controlled performance scenarios."
+          },
+          {
+            "id": 6,
+            "title": "Optimize UI performance",
+            "description": "Improve frontend performance",
+            "status": "pending",
+            "dependencies": [],
+            "details": "Implement lazy loading, code splitting, and rendering optimizations.",
+            "testStrategy": "Measure UI performance metrics before and after optimization."
+          },
+          {
+            "id": 7,
+            "title": "Create performance testing framework",
+            "description": "Develop tools for performance testing",
+            "status": "pending",
+            "dependencies": [],
+            "details": "Create automated performance testing with proper metrics.",
+            "testStrategy": "Verify testing framework accuracy with controlled scenarios."
+          }
+        ]
       },
       {
         "id": 20,
@@ -358,61 +1327,79 @@
           19
         ],
         "priority": "medium",
-        "details": "1. Optimize file storage for performance\n2. Implement efficient job processing\n3. Add caching for frequently accessed data\n4. Create simple monitoring for system health\n5. Implement efficient queue management for job processing\n6. Add logging for performance metrics\n7. Create backup and restore procedures\n8. Document scaling limitations and future improvements",
-        "testStrategy": "Conduct basic load testing with simulated commits. Verify that the system can handle the expected load without degradation in performance or reliability.",
-        "subtasks": []
+        "details": "1. Optimize database for performance\n2. Implement efficient job processing\n3. Add caching for frequently accessed data\n4. Create simple monitoring for system health\n5. Implement efficient queue management for job processing\n6. Add logging for performance metrics\n7. Create backup and restore procedures\n8. Document scaling limitations and future improvements\n9. Follow scalability best practices for all implementations\n10. Create comprehensive load tests\n11. Implement scalability benchmarking",
+        "testStrategy": "Implement comprehensive load tests with appropriate benchmarking tools. Conduct basic load testing with simulated commits and users. Verify that the system can handle the expected load without degradation in performance or reliability. Test database scaling, job processing throughput, and API response times under load. Create test fixtures for load testing. Implement automated scalability regression testing. Document load test results and scaling limitations.",
+        "subtasks": [
+          {
+            "id": 1,
+            "title": "Optimize database scaling",
+            "description": "Improve database performance for scaling",
+            "status": "pending",
+            "dependencies": [],
+            "details": "Implement connection pooling and query optimization.",
+            "testStrategy": "Test database performance under various loads. Measure throughput and response times."
+          },
+          {
+            "id": 2,
+            "title": "Enhance job processing scalability",
+            "description": "Optimize job system for higher throughput",
+            "status": "pending",
+            "dependencies": [],
+            "details": "Implement efficient queue management and processing.",
+            "testStrategy": "Test job processing with increasing workloads. Measure throughput scaling."
+          },
+          {
+            "id": 3,
+            "title": "Implement distributed caching",
+            "description": "Create scalable caching system",
+            "status": "pending",
+            "dependencies": [],
+            "details": "Implement efficient caching with proper distribution.",
+            "testStrategy": "Test caching under load. Measure hit rates and response times."
+          },
+          {
+            "id": 4,
+            "title": "Create system health monitoring",
+            "description": "Implement monitoring for system components",
+            "status": "pending",
+            "dependencies": [],
+            "details": "Create comprehensive monitoring with proper alerting.",
+            "testStrategy": "Verify monitoring accuracy with simulated system issues."
+          },
+          {
+            "id": 5,
+            "title": "Optimize API endpoint scaling",
+            "description": "Improve API performance under load",
+            "status": "pending",
+            "dependencies": [],
+            "details": "Implement efficient request handling and response caching.",
+            "testStrategy": "Test API endpoints under increasing load. Measure throughput and response times."
+          },
+          {
+            "id": 6,
+            "title": "Implement performance logging",
+            "description": "Add logging for performance metrics",
+            "status": "pending",
+            "dependencies": [],
+            "details": "Create comprehensive logging with proper aggregation.",
+            "testStrategy": "Verify logging accuracy with controlled performance scenarios."
+          },
+          {
+            "id": 7,
+            "title": "Create load testing framework",
+            "description": "Develop tools for load testing",
+            "status": "pending",
+            "dependencies": [],
+            "details": "Create automated load testing with proper metrics.",
+            "testStrategy": "Verify testing framework accuracy with controlled scenarios."
+          }
+        ]
       }
     ],
     "metadata": {
       "created": "2025-06-24T18:47:19.240Z",
-      "updated": "2025-06-24T22:03:03.498Z",
+      "updated": "2025-06-25T05:17:54.013Z",
       "description": "Tasks for master context"
-    }
-  },
-  "post-mvp": {
-    "tasks": [
-      {
-        "id": 1,
-        "title": "Implement GitHub OAuth Authentication System",
-        "description": "Create a comprehensive GitHub OAuth authentication system for multi-user support, including signup, login, user sessions, and secure token management using Supabase auth helpers.",
-        "details": "1. Set up a GitHub OAuth application:\n   - Register a new OAuth application in GitHub Developer settings\n   - Configure callback URL to match your application's authentication redirect endpoint\n   - Store client ID and client secret securely in environment variables\n\n2. Implement Supabase authentication:\n   - Install required packages: `npm install @supabase/supabase-js @supabase/auth-helpers-nextjs`\n   - Configure Supabase client with project URL and anon key\n   - Set up GitHub OAuth provider in Supabase dashboard\n\n3. Create authentication endpoints:\n   - Implement `/api/auth/signin` endpoint to initiate GitHub OAuth flow\n   - Create `/api/auth/callback` endpoint to handle GitHub OAuth callback\n   - Implement session management using Supabase auth helpers\n\n4. Develop frontend components:\n   - Create sign-in button component that redirects to GitHub authentication\n   - Implement user profile component to display authenticated user information\n   - Add sign-out functionality\n\n5. Implement secure token management:\n   - Set up proper token storage using HTTP-only cookies\n   - Configure token refresh mechanisms\n   - Implement middleware to validate authentication on protected routes\n\n6. Add user session persistence:\n   - Implement session checking on application load\n   - Create context provider for user authentication state\n   - Add loading states for authentication processes\n\n7. Handle error scenarios:\n   - Implement proper error handling for authentication failures\n   - Create user-friendly error messages\n   - Add logging for authentication issues",
-        "testStrategy": "1. Unit Tests:\n   - Test authentication endpoints with mocked GitHub OAuth responses\n   - Verify token management functions correctly handle various scenarios\n   - Test session persistence mechanisms\n\n2. Integration Tests:\n   - Create test cases for the complete authentication flow\n   - Verify proper redirection to GitHub and back to the application\n   - Test error handling with simulated failure scenarios\n\n3. Manual Testing:\n   - Complete end-to-end testing of the GitHub authentication flow\n   - Verify user information is correctly retrieved from GitHub\n   - Test session persistence across page refreshes and browser restarts\n   - Validate secure storage of tokens in HTTP-only cookies\n   - Test sign-out functionality and proper session termination\n\n4. Security Testing:\n   - Verify tokens are properly secured and not exposed to client-side JavaScript\n   - Test CSRF protection mechanisms\n   - Ensure proper handling of expired tokens\n   - Validate that authentication state is properly maintained across the application\n\n5. User Acceptance Testing:\n   - Verify the authentication UI is intuitive and user-friendly\n   - Test the flow on different browsers and devices\n   - Ensure proper error messages are displayed for authentication failures",
-        "status": "pending",
-        "dependencies": [],
-        "priority": "high",
-        "subtasks": []
-      },
-      {
-        "id": 2,
-        "title": "Implement User Dashboard for Repository Management",
-        "description": "Create a comprehensive user dashboard that allows users to manage multiple connected GitHub repositories, configure changelog settings, and set up email distribution lists with repository connection/disconnection flows.",
-        "details": "1. Dashboard Layout and Navigation:\n   - Design a responsive dashboard layout with sidebar navigation\n   - Implement sections for repositories, changelog settings, and distribution lists\n   - Create a header with user profile information and account settings\n\n2. Repository Connection Management:\n   - Implement repository listing with connection status indicators\n   - Create a repository connection flow:\n     - Fetch user's available GitHub repositories using GitHub API\n     - Display repositories with connection options\n     - Store connection preferences in Supabase database\n   - Implement repository disconnection with confirmation dialog\n   - Add search and filter functionality for repositories\n\n3. Changelog Configuration:\n   - Create forms for configuring changelog settings per repository:\n     - Version tracking preferences\n     - Changelog format templates\n     - Release note categorization rules\n     - Custom fields and metadata options\n   - Implement save/reset functionality for changelog settings\n   - Add preview capability for changelog format\n\n4. Email Distribution Lists:\n   - Implement CRUD operations for distribution lists:\n     - Create new list with name and description\n     - Add/remove email addresses to lists\n     - Associate lists with specific repositories\n   - Add validation for email formats\n   - Implement import/export functionality for email lists\n\n5. Project-Specific Configuration:\n   - Create project configuration panels for each connected repository\n   - Implement settings for notification preferences\n   - Add webhook configuration options for CI/CD integration\n   - Create user role management for repository collaborators\n\n6. State Management:\n   - Implement Redux or Context API for managing dashboard state\n   - Create actions and reducers for all dashboard operations\n   - Ensure proper loading states and error handling\n\n7. API Integration:\n   - Create API endpoints for all dashboard operations\n   - Implement proper authentication checks using GitHub OAuth tokens\n   - Ensure secure handling of repository access permissions",
-        "testStrategy": "1. Unit Tests:\n   - Test all dashboard components in isolation\n   - Verify form validation logic for all configuration forms\n   - Test state management actions and reducers\n   - Validate API endpoint handlers\n\n2. Integration Tests:\n   - Test the complete repository connection/disconnection flow\n   - Verify changelog configuration saves correctly to the database\n   - Test email distribution list CRUD operations\n   - Ensure project-specific configurations are properly associated with repositories\n\n3. End-to-End Tests:\n   - Create test scenarios for the entire user journey\n   - Test dashboard navigation and responsive behavior\n   - Verify all forms submit correctly and display appropriate feedback\n   - Test with multiple repositories to ensure proper isolation of settings\n\n4. User Acceptance Testing:\n   - Create a test plan for manual verification of dashboard functionality\n   - Include test cases for all major features\n   - Document expected behavior for edge cases\n   - Prepare test data for different repository configurations\n\n5. Performance Testing:\n   - Test dashboard loading times with multiple connected repositories\n   - Verify efficient API usage when fetching repository data\n   - Test responsiveness under various network conditions",
-        "status": "pending",
-        "dependencies": [
-          1
-        ],
-        "priority": "medium",
-        "subtasks": []
-      },
-      {
-        "id": 3,
-        "title": "Implement Supabase Authentication Features",
-        "description": "Implement Supabase authentication features and auth-specific database configurations to enhance the existing Supabase database integration in the MVP.",
-        "status": "pending",
-        "dependencies": [
-          1
-        ],
-        "priority": "medium",
-        "details": "1. Supabase Authentication Setup:\n   - Configure Supabase authentication providers (email/password, OAuth providers)\n   - Set up email templates for authentication flows (verification, password reset)\n   - Configure authentication security settings (session duration, refresh tokens)\n   - Install required packages if not already present: `@supabase/auth-helpers-nextjs`\n\n2. Authentication Helpers Implementation:\n   - Create authentication utility functions:\n     - User sign-up and email verification\n     - Login and session management\n     - Password reset flow\n     - OAuth provider integration (GitHub, Google)\n   - Implement server-side authentication helpers\n   - Example auth helper:\n     ```javascript\n     export const signUpUser = async (email, password) => {\n       const { data, error } = await supabase.auth.signUp({\n         email,\n         password,\n       });\n       return { data, error };\n     };\n     ```\n\n3. User Session Management:\n   - Implement session persistence across page reloads\n   - Create protected route middleware using Supabase auth\n   - Add session timeout handling and refresh mechanisms\n   - Implement user context provider for React components\n   - Example session check:\n     ```javascript\n     export const getUserSession = async () => {\n       const { data: { session }, error } = await supabase.auth.getSession();\n       return { session, error };\n     };\n     ```\n\n4. Auth-Specific Database Configurations:\n   - Set up Row Level Security (RLS) policies for user data\n   - Create database triggers for user creation events\n   - Configure user profile tables with appropriate relations to auth.users\n   - Example RLS policy:\n     ```sql\n     CREATE POLICY \"Users can only access their own data\"\n     ON public.user_profiles\n     FOR ALL\n     USING (auth.uid() = user_id);\n     ```\n\n5. User Profile Management:\n   - Create API endpoints for user profile management\n   - Implement user avatar/image upload and storage\n   - Add user preference settings tied to authentication\n   - Create user onboarding flow after registration\n\n6. Multi-factor Authentication (Optional):\n   - Implement second-factor authentication options\n   - Add phone verification or authenticator app integration\n   - Create backup recovery codes system\n\n7. Auth Event Hooks:\n   - Set up webhooks for authentication events\n   - Create logging for auth events (login attempts, password changes)\n   - Implement security notifications for suspicious activities",
-        "testStrategy": "1. Unit Tests:\n   - Test all authentication utility functions\n   - Verify password policies and validation\n   - Test session management functions\n   - Validate error handling for auth operations\n\n2. Integration Tests:\n   - Test complete authentication flows (signup, verification, login)\n   - Verify session persistence across page navigation\n   - Test protected routes with authenticated and unauthenticated users\n   - Validate Row Level Security policies\n\n3. Security Tests:\n   - Test password strength requirements\n   - Verify email verification workflow\n   - Test account recovery processes\n   - Attempt unauthorized access to verify security controls\n   - Example security test:\n     ```javascript\n     const testRowLevelSecurity = async () => {\n       // Create two test users\n       const user1 = await createTestUser();\n       const user2 = await createTestUser();\n       \n       // Create data for user1\n       const { data: profile1 } = await supabase\n         .from('user_profiles')\n         .insert({ user_id: user1.id, name: 'Test User 1' });\n       \n       // Try to access user1's data as user2\n       const supabaseClient2 = createSupabaseClient(user2.token);\n       const { data, error } = await supabaseClient2\n         .from('user_profiles')\n         .select('*')\n         .eq('user_id', user1.id);\n       \n       // Should return no data due to RLS\n       expect(data).toHaveLength(0);\n     };\n     ```\n\n4. User Experience Tests:\n   - Test login/signup forms with various inputs\n   - Verify error messages are clear and helpful\n   - Test responsive design of authentication pages\n   - Validate accessibility of auth components\n\n5. Edge Case Testing:\n   - Test session expiration and renewal\n   - Verify behavior with network interruptions\n   - Test concurrent login attempts\n   - Validate behavior with browser storage cleared",
-        "subtasks": []
-      }
-    ],
-    "metadata": {
-      "created": "2025-06-24T19:27:25.651Z",
-      "updated": "2025-06-24T19:29:43.954Z",
-      "description": "Features deferred to post-MVP phase including authentication, user management, and multi-repo support"
     }
   }
 }

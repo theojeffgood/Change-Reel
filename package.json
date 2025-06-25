@@ -26,6 +26,7 @@
     "@tailwindcss/postcss": "^4",
     "@testing-library/jest-dom": "^6.6.3",
     "@testing-library/react": "^16.3.0",
+    "@testing-library/user-event": "^14.6.1",
     "@types/jest": "^30.0.0",
     "@types/node": "^20",
     "@types/react": "^19",
@@ -53,16 +54,19 @@
       "**/*.(test|spec).(ts|tsx)"
     ],
     "testPathIgnorePatterns": [
-      "**/__tests__/**/fixtures/**",
-      "**/__tests__/**/mocks/**",
-      "**/node_modules/**"
+      "<rootDir>/src/__tests__/fixtures/",
+      "<rootDir>/src/__tests__/mocks/",
+      "<rootDir>/node_modules/"
     ],
     "transform": {
-      "^.+\\.(ts|tsx)$": ["ts-jest", {
-        "tsconfig": {
-          "jsx": "react-jsx"
+      "^.+\\.(ts|tsx)$": [
+        "ts-jest",
+        {
+          "tsconfig": {
+            "jsx": "react-jsx"
+          }
         }
-      }]
+      ]
     },
     "collectCoverageFrom": [
       "src/**/*.{ts,tsx}",
@@ -85,6 +89,10 @@
       }
     },
     "coverageDirectory": "coverage",
-    "coverageReporters": ["text", "lcov", "html"]
+    "coverageReporters": [
+      "text",
+      "lcov",
+      "html"
+    ]
   }
 }

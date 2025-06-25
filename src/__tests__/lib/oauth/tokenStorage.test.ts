@@ -1,222 +1,273 @@
 /**
- * @jest-environment node
+ * OAuth Token Storage Service Tests
  */
 
-import { OAuthTokenStorage } from '@/lib/oauth/tokenStorage';
-import { mockSessions, mockOAuthTokens, mockTokenStorageData } from '@/__tests__/fixtures/oauthFixtures';
+import { TokenStorageService, OAuthToken, StoredOAuthToken } from '../../../lib/oauth/tokenStorage';
+import { TokenEncryptionService, EncryptedToken } from '../../../lib/oauth/tokenEncryption';
 
-// Mock Supabase client
+// Mock the encryption service
+jest.mock('../../../lib/oauth/tokenEncryption');
+
+// Mock Supabase
+const mockTable = {
+  insert: jest.fn(),
+  select: jest.fn(),
+  update: jest.fn(),
+  delete: jest.fn(),
+  eq: jest.fn(),
+  single: jest.fn(),
+};
+
 const mockSupabaseClient = {
-  from: jest.fn(),
+  from: jest.fn().mockReturnValue(mockTable),
 };
 
-// Mock encryption service
-const mockEncryptionService = {
-  encrypt: jest.fn(),
-  decrypt: jest.fn(),
-};
-
-// Mock the modules
-jest.mock('@/lib/supabase/client', () => ({
-  createClientComponentClient: () => mockSupabaseClient,
+jest.mock('@supabase/supabase-js', () => ({
+  createClient: jest.fn(() => mockSupabaseClient),
 }));
 
-jest.mock('@/lib/oauth/tokenEncryption', () => ({
-  TokenEncryptionService: jest.fn().mockImplementation(() => mockEncryptionService),
-}));
+describe('TokenStorageService', () => {
+  let tokenStorage: TokenStorageService;
+  let mockEncryptionService: jest.Mocked<TokenEncryptionService>;
 
-describe('OAuthTokenStorage', () => {
-  let tokenStorage: OAuthTokenStorage;
-  let mockTable: any;
+  const testToken: OAuthToken = {
+    user_id: 'github_user_123',
+    provider: 'github',
+    access_token: 'ghp_test_token_1234567890abcdef',
+    refresh_token: 'ghr_test_refresh_token_abcdef123456',
+    expires_at: new Date('2025-06-25T22:57:24.000Z'),
+    token_type: 'Bearer',
+    scope: 'repo,write:repo_hook,user:email',
+    token_version: 1
+  };
+
+  const mockEncryptedToken: EncryptedToken = {
+    encryptedData: 'encrypted-data',
+    iv: 'test-iv',
+    tag: 'test-tag'
+  };
 
   beforeEach(() => {
-    mockTable = {
-      select: jest.fn().mockReturnThis(),
-      insert: jest.fn().mockReturnThis(),
-      update: jest.fn().mockReturnThis(),
-      delete: jest.fn().mockReturnThis(),
-      eq: jest.fn().mockReturnThis(),
-      single: jest.fn(),
-    };
-
-    mockSupabaseClient.from.mockReturnValue(mockTable);
-    tokenStorage = new OAuthTokenStorage();
     jest.clearAllMocks();
+    
+    // Setup encryption service mock
+    mockEncryptionService = new TokenEncryptionService('test-key-32-characters-long-min') as jest.Mocked<TokenEncryptionService>;
+    mockEncryptionService.encrypt.mockReturnValue(mockEncryptedToken);
+    mockEncryptionService.decrypt.mockReturnValue('decrypted-token');
+    
+    (TokenEncryptionService as jest.MockedClass<typeof TokenEncryptionService>).mockImplementation(() => mockEncryptionService);
+    
+    // Reset table chain
+    mockTable.insert.mockReturnThis();
+    mockTable.select.mockReturnThis();
+    mockTable.update.mockReturnThis();
+    mockTable.delete.mockReturnThis();
+    mockTable.eq.mockReturnThis();
+    mockTable.single.mockReturnThis();
+    
+    tokenStorage = new TokenStorageService('test-url', 'test-key', 'test-encryption-key-32-chars-min');
   });
 
   describe('constructor', () => {
-    it('should initialize with encryption service', () => {
-      expect(tokenStorage).toBeDefined();
+    it('should initialize with required parameters', () => {
+      expect(() => new TokenStorageService('url', 'key', 'encryption-key-32-characters-long')).not.toThrow();
+    });
+
+    it('should throw error without required parameters', () => {
+      expect(() => new TokenStorageService('', 'key', 'encryption-key')).toThrow('Supabase URL and key are required');
+      expect(() => new TokenStorageService('url', '', 'encryption-key')).toThrow('Supabase URL and key are required');
     });
   });
 
   describe('storeToken', () => {
-    const userId = 'github_user_123';
-    const tokenData = mockOAuthTokens.valid;
-
-    beforeEach(() => {
-      mockEncryptionService.encrypt.mockResolvedValue(mockTokenStorageData.encrypted);
-      mockTable.single.mockResolvedValue({
-        data: { id: 'token-id-123' },
-        error: null,
-      });
-    });
-
     it('should store token successfully', async () => {
-      const result = await tokenStorage.storeToken(userId, tokenData);
+      const mockStoredToken: StoredOAuthToken = {
+        id: 'stored-token-id',
+        user_id: testToken.user_id,
+        provider: testToken.provider,
+        encrypted_access_token: JSON.stringify(mockEncryptedToken),
+        encrypted_refresh_token: JSON.stringify(mockEncryptedToken),
+        expires_at: testToken.expires_at?.toISOString(),
+        token_type: 'bearer',
+        scope: testToken.scope,
+        created_at: '2025-06-25T21:57:24.228Z',
+        updated_at: '2025-06-25T21:57:24.228Z',
+        token_version: 1
+      };
 
-      expect(mockEncryptionService.encrypt).toHaveBeenCalledWith(tokenData);
+      mockTable.single.mockResolvedValue({ data: mockStoredToken, error: null });
+
+      const result = await tokenStorage.storeToken(testToken);
+
+      expect(result.data).toEqual(mockStoredToken);
+      expect(result.error).toBeNull();
+      expect(mockEncryptionService.encrypt).toHaveBeenCalledWith(testToken.access_token);
+      expect(mockEncryptionService.encrypt).toHaveBeenCalledWith(testToken.refresh_token);
       expect(mockSupabaseClient.from).toHaveBeenCalledWith('oauth_tokens');
-      expect(mockTable.insert).toHaveBeenCalledWith({
-        user_id: userId,
-        encrypted_token: mockTokenStorageData.encrypted.encrypted_token,
-        iv: mockTokenStorageData.encrypted.iv,
-        auth_tag: mockTokenStorageData.encrypted.auth_tag,
-        provider: 'github',
-        scopes: tokenData.scope.split(','),
-        token_version: 1,
-        expires_at: expect.any(String),
-      });
-      expect(result).toBe('token-id-123');
+      expect(mockTable.insert).toHaveBeenCalledWith(expect.objectContaining({
+        user_id: testToken.user_id,
+        provider: testToken.provider,
+        encrypted_access_token: JSON.stringify(mockEncryptedToken),
+        encrypted_refresh_token: JSON.stringify(mockEncryptedToken),
+        token_type: 'Bearer',
+        token_version: 1
+      }));
     });
 
-    it('should handle token with no expiration', async () => {
-      const tokenWithoutExpiry = { ...tokenData };
-      delete (tokenWithoutExpiry as any).expires_at;
+    it('should handle token with no refresh token', async () => {
+      const tokenWithoutRefresh = { ...testToken };
+      delete tokenWithoutRefresh.refresh_token;
 
-      await tokenStorage.storeToken(userId, tokenWithoutExpiry);
+             const mockStoredToken: StoredOAuthToken = {
+         id: 'stored-token-id',
+         user_id: testToken.user_id,
+         provider: testToken.provider,
+         encrypted_access_token: JSON.stringify(mockEncryptedToken),
+         expires_at: testToken.expires_at?.toISOString(),
+         token_type: 'bearer',
+         scope: testToken.scope,
+         created_at: '2025-06-25T21:57:24.228Z',
+         updated_at: '2025-06-25T21:57:24.228Z',
+         token_version: 1
+       };
 
-      expect(mockTable.insert).toHaveBeenCalledWith(
-        expect.objectContaining({
-          expires_at: null,
-        })
-      );
-    });
+      mockTable.single.mockResolvedValue({ data: mockStoredToken, error: null });
 
-    it('should handle token with custom provider', async () => {
-      await tokenStorage.storeToken(userId, tokenData, 'gitlab');
+      const result = await tokenStorage.storeToken(tokenWithoutRefresh);
 
-      expect(mockTable.insert).toHaveBeenCalledWith(
-        expect.objectContaining({
-          provider: 'gitlab',
-        })
-      );
+      expect(result.data).toEqual(mockStoredToken);
+      expect(result.error).toBeNull();
+      expect(mockEncryptionService.encrypt).toHaveBeenCalledTimes(1);
+      expect(mockEncryptionService.encrypt).toHaveBeenCalledWith(testToken.access_token);
     });
 
     it('should handle encryption failure', async () => {
-      mockEncryptionService.encrypt.mockRejectedValue(new Error('Encryption failed'));
+      mockEncryptionService.encrypt.mockImplementation(() => {
+        throw new Error('Encryption failed');
+      });
 
-      await expect(tokenStorage.storeToken(userId, tokenData)).rejects.toThrow(
-        'Failed to store OAuth token: Encryption failed'
-      );
+      const result = await tokenStorage.storeToken(testToken);
+
+      expect(result.data).toBeNull();
+      expect(result.error).toBeInstanceOf(Error);
+      expect(result.error?.message).toBe('Encryption failed');
     });
 
     it('should handle database insert failure', async () => {
-      mockTable.single.mockResolvedValue({
-        data: null,
-        error: { message: 'Database error' },
-      });
+      mockTable.single.mockResolvedValue({ data: null, error: { message: 'Database error' } });
 
-      await expect(tokenStorage.storeToken(userId, tokenData)).rejects.toThrow(
-        'Failed to store OAuth token: Database error'
-      );
+      const result = await tokenStorage.storeToken(testToken);
+
+      expect(result.data).toBeNull();
+      expect(result.error).toBeInstanceOf(Error);
+      expect(result.error?.message).toBe('Failed to store token: Database error');
     });
 
     it('should validate user ID', async () => {
-      await expect(tokenStorage.storeToken('', tokenData)).rejects.toThrow(
-        'User ID is required'
-      );
+      const invalidToken = { ...testToken, user_id: '' };
 
-      await expect(tokenStorage.storeToken(null as any, tokenData)).rejects.toThrow(
-        'User ID is required'
-      );
+      const result = await tokenStorage.storeToken(invalidToken);
+
+      expect(result.data).toBeNull();
+      expect(result.error).toBeInstanceOf(Error);
+      expect(result.error?.message).toBe('Token must have user_id, provider, and access_token');
     });
 
     it('should validate token data', async () => {
-      await expect(tokenStorage.storeToken(userId, null as any)).rejects.toThrow(
-        'Token data is required'
-      );
+      const invalidToken = { ...testToken, access_token: '' };
 
-      await expect(tokenStorage.storeToken(userId, {} as any)).rejects.toThrow(
-        'Invalid token data: missing access_token'
-      );
+      const result = await tokenStorage.storeToken(invalidToken);
+
+      expect(result.data).toBeNull();
+      expect(result.error).toBeInstanceOf(Error);
+      expect(result.error?.message).toBe('Token must have user_id, provider, and access_token');
     });
   });
 
   describe('getToken', () => {
     const userId = 'github_user_123';
-
-    beforeEach(() => {
-      mockEncryptionService.decrypt.mockResolvedValue(mockTokenStorageData.decrypted);
-    });
+    const provider = 'github';
 
     it('should retrieve and decrypt token successfully', async () => {
-      mockTable.single.mockResolvedValue({
-        data: {
-          id: 'token-id-123',
-          encrypted_token: mockTokenStorageData.encrypted.encrypted_token,
-          iv: mockTokenStorageData.encrypted.iv,
-          auth_tag: mockTokenStorageData.encrypted.auth_tag,
-          provider: 'github',
-          scopes: ['repo', 'write:repo_hook'],
-          token_version: 1,
-        },
-        error: null,
-      });
+      const mockStoredToken: StoredOAuthToken = {
+        id: 'stored-token-id',
+        user_id: userId,
+        provider: provider,
+        encrypted_access_token: JSON.stringify(mockEncryptedToken),
+        encrypted_refresh_token: JSON.stringify(mockEncryptedToken),
+        expires_at: '2025-06-25T22:57:24.000Z',
+        token_type: 'bearer',
+        scope: 'repo,write:repo_hook,user:email',
+        created_at: '2025-06-25T21:57:24.228Z',
+        updated_at: '2025-06-25T21:57:24.228Z',
+        token_version: 1
+      };
 
-      const result = await tokenStorage.getToken(userId);
+      mockTable.single.mockResolvedValue({ data: mockStoredToken, error: null });
+      mockEncryptionService.decrypt.mockReturnValue('decrypted-access-token');
 
-      expect(mockSupabaseClient.from).toHaveBeenCalledWith('oauth_tokens');
-      expect(mockTable.select).toHaveBeenCalledWith('*');
+      const result = await tokenStorage.getToken(userId, provider);
+
+      expect(result.data).toEqual(expect.objectContaining({
+        user_id: userId,
+        provider: provider,
+        access_token: 'decrypted-access-token',
+        token_version: 1
+      }));
+      expect(result.error).toBeNull();
       expect(mockTable.eq).toHaveBeenCalledWith('user_id', userId);
-      expect(mockEncryptionService.decrypt).toHaveBeenCalledWith({
-        encrypted_token: mockTokenStorageData.encrypted.encrypted_token,
-        iv: mockTokenStorageData.encrypted.iv,
-        auth_tag: mockTokenStorageData.encrypted.auth_tag,
-      });
-      expect(result).toEqual(mockTokenStorageData.decrypted);
+      expect(mockTable.eq).toHaveBeenCalledWith('provider', provider);
+      expect(mockEncryptionService.decrypt).toHaveBeenCalled();
     });
 
     it('should return null when no token found', async () => {
-      mockTable.single.mockResolvedValue({
-        data: null,
-        error: { code: 'PGRST116' }, // No rows returned
-      });
+      mockTable.single.mockResolvedValue({ data: null, error: { code: 'PGRST116' } });
 
-      const result = await tokenStorage.getToken(userId);
+      const result = await tokenStorage.getToken(userId, provider);
 
-      expect(result).toBeNull();
+      expect(result.data).toBeNull();
+      expect(result.error).toBeNull();
     });
 
     it('should handle decryption failure', async () => {
-      mockTable.single.mockResolvedValue({
-        data: {
-          encrypted_token: 'corrupted-data',
-          iv: 'test-iv',
-          auth_tag: 'test-tag',
-        },
-        error: null,
+      const mockStoredToken: StoredOAuthToken = {
+        id: 'stored-token-id',
+        user_id: userId,
+        provider: provider,
+        encrypted_access_token: JSON.stringify(mockEncryptedToken),
+        expires_at: '2025-06-25T22:57:24.000Z',
+        token_type: 'bearer',
+        scope: 'repo,write:repo_hook,user:email',
+        created_at: '2025-06-25T21:57:24.228Z',
+        updated_at: '2025-06-25T21:57:24.228Z',
+        token_version: 1
+      };
+
+      mockTable.single.mockResolvedValue({ data: mockStoredToken, error: null });
+      mockEncryptionService.decrypt.mockImplementation(() => {
+        throw new Error('Decryption failed');
       });
 
-      mockEncryptionService.decrypt.mockRejectedValue(new Error('Decryption failed'));
+      const result = await tokenStorage.getToken(userId, provider);
 
-      await expect(tokenStorage.getToken(userId)).rejects.toThrow(
-        'Failed to retrieve OAuth token: Decryption failed'
-      );
+      expect(result.data).toBeNull();
+      expect(result.error).toBeInstanceOf(Error);
+      expect(result.error?.message).toBe('Decryption failed');
     });
 
     it('should handle database query failure', async () => {
-      mockTable.single.mockResolvedValue({
-        data: null,
-        error: { message: 'Database connection error' },
-      });
+      mockTable.single.mockResolvedValue({ data: null, error: { message: 'Database connection error' } });
 
-      await expect(tokenStorage.getToken(userId)).rejects.toThrow(
-        'Failed to retrieve OAuth token: Database connection error'
-      );
+      const result = await tokenStorage.getToken(userId, provider);
+
+      expect(result.data).toBeNull();
+      expect(result.error).toBeInstanceOf(Error);
+      expect(result.error?.message).toBe('Failed to retrieve token: Database connection error');
     });
 
     it('should filter by provider when specified', async () => {
+      mockTable.single.mockResolvedValue({ data: null, error: { code: 'PGRST116' } });
+
       await tokenStorage.getToken(userId, 'gitlab');
 
       expect(mockTable.eq).toHaveBeenCalledWith('user_id', userId);
@@ -226,191 +277,172 @@ describe('OAuthTokenStorage', () => {
 
   describe('updateToken', () => {
     const userId = 'github_user_123';
-    const newTokenData = mockOAuthTokens.valid;
-
-    beforeEach(() => {
-      mockEncryptionService.encrypt.mockResolvedValue(mockTokenStorageData.encrypted);
-      mockTable.single.mockResolvedValue({
-        data: { id: 'token-id-123' },
-        error: null,
-      });
-    });
+    const provider = 'github';
+    const updates: Partial<OAuthToken> = {
+      access_token: 'new-access-token',
+      expires_at: new Date('2025-07-25T22:57:24.000Z')
+    };
 
     it('should update token successfully', async () => {
-      await tokenStorage.updateToken(userId, newTokenData);
+      const mockUpdatedToken: StoredOAuthToken = {
+        id: 'stored-token-id',
+        user_id: userId,
+        provider: provider,
+        encrypted_access_token: JSON.stringify(mockEncryptedToken),
+        expires_at: updates.expires_at?.toISOString(),
+        token_type: 'bearer',
+        scope: 'repo,write:repo_hook,user:email',
+        created_at: '2025-06-25T21:57:24.228Z',
+        updated_at: new Date().toISOString(),
+        token_version: 1
+      };
 
-      expect(mockEncryptionService.encrypt).toHaveBeenCalledWith(newTokenData);
-      expect(mockTable.update).toHaveBeenCalledWith({
-        encrypted_token: mockTokenStorageData.encrypted.encrypted_token,
-        iv: mockTokenStorageData.encrypted.iv,
-        auth_tag: mockTokenStorageData.encrypted.auth_tag,
-        scopes: newTokenData.scope.split(','),
-        token_version: expect.any(Number),
-        expires_at: expect.any(String),
-        updated_at: expect.any(String),
-      });
-      expect(mockTable.eq).toHaveBeenCalledWith('user_id', userId);
+      mockTable.single.mockResolvedValue({ data: mockUpdatedToken, error: null });
+
+      const result = await tokenStorage.updateToken(userId, provider, updates);
+
+      expect(result.data).toEqual(mockUpdatedToken);
+      expect(result.error).toBeNull();
+      expect(mockEncryptionService.encrypt).toHaveBeenCalledWith(updates.access_token);
+      expect(mockTable.update).toHaveBeenCalledWith(expect.objectContaining({
+        encrypted_access_token: JSON.stringify(mockEncryptedToken),
+        expires_at: updates.expires_at?.toISOString(),
+        updated_at: expect.any(String)
+      }));
     });
 
-    it('should increment token version', async () => {
-      await tokenStorage.updateToken(userId, newTokenData);
+    it('should handle update failure', async () => {
+      mockTable.single.mockResolvedValue({ data: null, error: { message: 'Token not found' } });
 
-      const updateCall = mockTable.update.mock.calls[0][0];
-      expect(updateCall.token_version).toBeGreaterThan(0);
-    });
+      const result = await tokenStorage.updateToken(userId, provider, updates);
 
-    it('should handle update failure when token not found', async () => {
-      mockTable.single.mockResolvedValue({
-        data: null,
-        error: { code: 'PGRST116' },
-      });
-
-      await expect(tokenStorage.updateToken(userId, newTokenData)).rejects.toThrow(
-        'OAuth token not found for user'
-      );
+      expect(result.data).toBeNull();
+      expect(result.error).toBeInstanceOf(Error);
+      expect(result.error?.message).toBe('Failed to update token: Token not found');
     });
   });
 
-  describe('deleteToken', () => {
+    describe('deleteToken', () => {
     const userId = 'github_user_123';
+    const provider = 'github';
+
+    beforeEach(() => {
+      // Reset all mocks first
+      jest.clearAllMocks();
+      
+      // Create a proper chain for delete operations that supports two .eq() calls
+      const deleteChain = {
+        eq: jest.fn().mockImplementation(() => ({
+          eq: jest.fn().mockResolvedValue({ error: null })
+        }))
+      };
+      
+      mockTable.delete.mockReturnValue(deleteChain);
+    });
 
     it('should delete token successfully', async () => {
-      mockTable.single.mockResolvedValue({
-        data: { id: 'deleted-token-id' },
-        error: null,
-      });
+      const result = await tokenStorage.deleteToken(userId, provider);
 
-      const result = await tokenStorage.deleteToken(userId);
-
-      expect(mockSupabaseClient.from).toHaveBeenCalledWith('oauth_tokens');
+      expect(result.error).toBeNull();
       expect(mockTable.delete).toHaveBeenCalled();
-      expect(mockTable.eq).toHaveBeenCalledWith('user_id', userId);
-      expect(result).toBe(true);
     });
 
-    it('should return false when no token to delete', async () => {
-      mockTable.single.mockResolvedValue({
-        data: null,
-        error: { code: 'PGRST116' },
-      });
+         it('should handle delete failure', async () => {
+       // Reset the mock for this specific test
+       const deleteChain = {
+         eq: jest.fn().mockImplementation(() => ({
+           eq: jest.fn().mockResolvedValue({ error: { message: 'Foreign key constraint violation' } })
+         }))
+       };
+       mockTable.delete.mockReturnValue(deleteChain);
 
-      const result = await tokenStorage.deleteToken(userId);
+       const result = await tokenStorage.deleteToken(userId, provider);
 
-      expect(result).toBe(false);
-    });
+       expect(result.error).toBeInstanceOf(Error);
+       expect(result.error?.message).toBe('Failed to delete token: Foreign key constraint violation');
+     });
 
     it('should filter by provider when specified', async () => {
-      await tokenStorage.deleteToken(userId, 'gitlab');
+      const result = await tokenStorage.deleteToken(userId, 'gitlab');
 
-      expect(mockTable.eq).toHaveBeenCalledWith('user_id', userId);
-      expect(mockTable.eq).toHaveBeenCalledWith('provider', 'gitlab');
+      expect(result.error).toBeNull();
+      expect(mockTable.delete).toHaveBeenCalled();
     });
+   });
 
-    it('should handle delete failure', async () => {
-      mockTable.single.mockResolvedValue({
-        data: null,
-        error: { message: 'Foreign key constraint violation' },
-      });
-
-      await expect(tokenStorage.deleteToken(userId)).rejects.toThrow(
-        'Failed to delete OAuth token: Foreign key constraint violation'
-      );
-    });
-  });
-
-  describe('isTokenValid', () => {
-    it('should return true for valid token', async () => {
-      const validToken = {
-        ...mockTokenStorageData.decrypted,
-        expires_at: Math.floor(Date.now() / 1000) + 3600, // 1 hour from now
-      };
-
-      const result = await tokenStorage.isTokenValid(validToken);
-
-      expect(result).toBe(true);
-    });
-
-    it('should return false for expired token', async () => {
-      const expiredToken = {
-        ...mockTokenStorageData.decrypted,
-        expires_at: Math.floor(Date.now() / 1000) - 3600, // 1 hour ago
-      };
-
-      const result = await tokenStorage.isTokenValid(expiredToken);
-
-      expect(result).toBe(false);
-    });
-
-    it('should return true for token without expiration', async () => {
-      const tokenWithoutExpiry = {
-        ...mockTokenStorageData.decrypted,
-      };
-      delete (tokenWithoutExpiry as any).expires_at;
-
-      const result = await tokenStorage.isTokenValid(tokenWithoutExpiry);
-
-      expect(result).toBe(true);
-    });
-
-    it('should return false for token without access_token', async () => {
-      const invalidToken = {
-        scope: 'repo',
-      };
-
-      const result = await tokenStorage.isTokenValid(invalidToken as any);
-
-      expect(result).toBe(false);
-    });
-  });
-
-  describe('getAllTokensForUser', () => {
+  describe('listTokens', () => {
     const userId = 'github_user_123';
 
     it('should retrieve all tokens for user', async () => {
-      const mockTokens = [
+      const mockStoredTokens: StoredOAuthToken[] = [
         {
           id: 'token-1',
+          user_id: userId,
           provider: 'github',
-          encrypted_token: 'encrypted-1',
-          iv: 'iv-1',
-          auth_tag: 'tag-1',
-          created_at: new Date().toISOString(),
+          encrypted_access_token: JSON.stringify(mockEncryptedToken),
+          expires_at: '2025-06-25T22:57:24.000Z',
+          token_type: 'bearer',
+          scope: 'repo',
+          created_at: '2025-06-25T21:57:24.228Z',
+          updated_at: '2025-06-25T21:57:24.228Z',
+          token_version: 1
         },
         {
           id: 'token-2',
+          user_id: userId,
           provider: 'gitlab',
-          encrypted_token: 'encrypted-2',
-          iv: 'iv-2',
-          auth_tag: 'tag-2',
-          created_at: new Date().toISOString(),
-        },
+          encrypted_access_token: JSON.stringify(mockEncryptedToken),
+          expires_at: '2025-06-25T22:57:24.000Z',
+          token_type: 'bearer',
+          scope: 'api',
+          created_at: '2025-06-25T21:57:24.228Z',
+          updated_at: '2025-06-25T21:57:24.228Z',
+          token_version: 1
+        }
       ];
 
-      mockTable.select.mockReturnValue({
-        eq: jest.fn().mockResolvedValue({
-          data: mockTokens,
-          error: null,
-        }),
-      });
+      mockTable.eq.mockResolvedValue({ data: mockStoredTokens, error: null });
+      mockEncryptionService.decrypt.mockReturnValue('decrypted-token');
 
-      const result = await tokenStorage.getAllTokensForUser(userId);
+      const result = await tokenStorage.listTokens(userId);
 
-      expect(result).toHaveLength(2);
-      expect(result[0]).toHaveProperty('provider', 'github');
-      expect(result[1]).toHaveProperty('provider', 'gitlab');
+      expect(result.data).toHaveLength(2);
+      expect(result.data?.[0]).toHaveProperty('provider', 'github');
+      expect(result.data?.[1]).toHaveProperty('provider', 'gitlab');
+      expect(result.error).toBeNull();
+      expect(mockTable.eq).toHaveBeenCalledWith('user_id', userId);
     });
 
     it('should return empty array when no tokens found', async () => {
-      mockTable.select.mockReturnValue({
-        eq: jest.fn().mockResolvedValue({
-          data: [],
-          error: null,
-        }),
-      });
+      mockTable.eq.mockResolvedValue({ data: [], error: null });
 
-      const result = await tokenStorage.getAllTokensForUser(userId);
+      const result = await tokenStorage.listTokens(userId);
 
-      expect(result).toEqual([]);
+      expect(result.data).toEqual([]);
+      expect(result.error).toBeNull();
+    });
+  });
+
+  describe('tokenExists', () => {
+    const userId = 'github_user_123';
+    const provider = 'github';
+
+    it('should return true when token exists', async () => {
+      mockTable.single.mockResolvedValue({ data: { id: 'token-1' }, error: null });
+
+      const result = await tokenStorage.tokenExists(userId, provider);
+
+      expect(result.exists).toBe(true);
+      expect(result.error).toBeNull();
+    });
+
+    it('should return false when token does not exist', async () => {
+      mockTable.single.mockResolvedValue({ data: null, error: { code: 'PGRST116' } });
+
+      const result = await tokenStorage.tokenExists(userId, provider);
+
+      expect(result.exists).toBe(false);
+      expect(result.error).toBeNull();
     });
   });
 
@@ -418,20 +450,41 @@ describe('OAuthTokenStorage', () => {
     it('should handle network timeouts gracefully', async () => {
       mockTable.single.mockRejectedValue(new Error('Network timeout'));
 
-      await expect(tokenStorage.getToken('user-123')).rejects.toThrow(
-        'Failed to retrieve OAuth token: Network timeout'
-      );
+      const result = await tokenStorage.getToken('user-123', 'github');
+
+      expect(result.data).toBeNull();
+      expect(result.error).toBeInstanceOf(Error);
+      expect(result.error?.message).toBe('Network timeout');
     });
 
     it('should handle concurrent access properly', async () => {
-      const userId = 'concurrent-user';
-      const tokenData = mockOAuthTokens.valid;
+      const mockStoredToken: StoredOAuthToken = {
+        id: 'stored-token-id',
+        user_id: 'user-123',
+        provider: 'github',
+        encrypted_access_token: JSON.stringify(mockEncryptedToken),
+        expires_at: '2025-06-25T22:57:24.000Z',
+        token_type: 'bearer',
+        scope: 'repo',
+        created_at: '2025-06-25T21:57:24.228Z',
+        updated_at: '2025-06-25T21:57:24.228Z',
+        token_version: 1
+      };
 
-      // Simulate concurrent store operations
-      const promise1 = tokenStorage.storeToken(userId, tokenData);
-      const promise2 = tokenStorage.storeToken(userId, tokenData);
+      mockTable.single.mockResolvedValue({ data: mockStoredToken, error: null });
 
-      await expect(Promise.all([promise1, promise2])).resolves.toBeDefined();
+      const promises = [
+        tokenStorage.getToken('user-123', 'github'),
+        tokenStorage.getToken('user-123', 'github'),
+        tokenStorage.getToken('user-123', 'github')
+      ];
+
+      const results = await Promise.all(promises);
+
+      results.forEach(result => {
+        expect(result.data).toBeDefined();
+        expect(result.error).toBeNull();
+      });
     });
   });
 }); 

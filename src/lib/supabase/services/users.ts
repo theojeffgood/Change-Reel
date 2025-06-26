@@ -78,7 +78,9 @@ export class UserService implements IUserService {
         .from('users')
         .insert(userData)
         .select()
-        .single()
+
+      // Handle the case where insert succeeds but returns array
+      const insertedUser = Array.isArray(data) && data.length > 0 ? data[0] : data;
 
       if (error) {
         // Handle unique constraint violations
@@ -88,7 +90,7 @@ export class UserService implements IUserService {
         return { data: null, error: new Error(error.message || 'Failed to create user') }
       }
 
-      return { data, error: null }
+      return { data: insertedUser, error: null }
     } catch (err) {
       return {
         data: null,

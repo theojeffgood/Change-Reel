@@ -12,6 +12,7 @@ import {
 export interface IProjectService {
   getProject(id: string): Promise<DatabaseResult<Project>>
   getProjectBySlug(slug: string): Promise<DatabaseResult<Project>>
+  getProjectByRepository(repositoryName: string): Promise<DatabaseResult<Project>>
   createProject(data: CreateProjectData): Promise<DatabaseResult<Project>>
   updateProject(id: string, data: UpdateProjectData): Promise<DatabaseResult<Project>>
   deleteProject(id: string): Promise<DatabaseResult<boolean>>
@@ -53,6 +54,27 @@ export class ProjectService implements IProjectService {
 
       if (error) {
         return { data: null, error: new Error(error.message || 'Failed to get project by slug') }
+      }
+
+      return { data, error: null }
+    } catch (err) {
+      return {
+        data: null,
+        error: err instanceof Error ? err : new Error('Unknown error occurred'),
+      }
+    }
+  }
+
+  async getProjectByRepository(repositoryName: string): Promise<DatabaseResult<Project>> {
+    try {
+      const { data, error } = await this.supabaseClient
+        .from('projects')
+        .select('*')
+        .eq('repo_name', repositoryName)
+        .single()
+
+      if (error) {
+        return { data: null, error: new Error(error.message || 'Failed to get project by repository') }
       }
 
       return { data, error: null }

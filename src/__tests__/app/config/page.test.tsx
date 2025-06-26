@@ -3,7 +3,8 @@
  */
 
 import React from 'react';
-import { render, screen } from '@testing-library/react';
+import { render, screen, waitFor, act } from '@testing-library/react';
+import '@testing-library/jest-dom';
 import { useSession } from 'next-auth/react';
 import ConfigPage from '@/app/config/page';
 
@@ -28,36 +29,104 @@ describe('ConfigPage', () => {
   beforeEach(() => {
     jest.clearAllMocks();
     
-    // Setup default authenticated session
+    // Setup default authenticated session (not loading)
     mockUseSession.mockReturnValue({
       data: { 
         user: { 
           id: 'test-user-id',
-          name: 'Test User', 
           email: 'test@example.com' 
         },
+        accessToken: 'mock-access-token',
         expires: '2024-12-31T23:59:59.999Z'
       },
       status: 'authenticated',
-      update: jest.fn(),
+      update: jest.fn()
     });
 
-    // Setup default fetch response
-    mockFetch.mockResolvedValue({
-      ok: true,
-      json: () => Promise.resolve({}),
+    // Mock successful API responses by default
+    mockFetch.mockImplementation((url) => {
+      if (url === '/api/auth/github/status') {
+        return Promise.resolve({
+          ok: true,
+          json: () => Promise.resolve({ 
+            connected: false, 
+            user: null 
+          })
+        });
+      }
+      if (url === '/api/config') {
+        return Promise.resolve({
+          ok: true,
+          json: () => Promise.resolve({ 
+            repositories: [],
+            emailRecipients: ['test@example.com']
+          })
+        });
+      }
+      return Promise.resolve({
+        ok: true,
+        json: () => Promise.resolve({})
+      });
     });
   });
 
-  describe('Basic Rendering', () => {
-    it('should render configuration page title', () => {
+  it('renders the configuration page', async () => {
+    await act(async () => {
       render(<ConfigPage />);
-      expect(screen.getByText(/repository configuration/i)).toBeInTheDocument();
     });
 
-    it('should render setup guide', () => {
+    await waitFor(() => {
+      expect(screen.getByText('Repository Configuration')).toBeInTheDocument();
+    });
+  });
+
+  it('displays GitHub connection status', async () => {
+    await act(async () => {
       render(<ConfigPage />);
-      expect(screen.getByText(/setup guide/i)).toBeInTheDocument();
+    });
+
+    await waitFor(() => {
+      expect(screen.getByText('Connect your GitHub account')).toBeInTheDocument();
+    });
+  });
+
+  it('handles loading state correctly', async () => {
+    // Test the loading state specifically
+    mockUseSession.mockReturnValue({
+      data: null,
+      status: 'loading',
+      update: jest.fn()
+    });
+
+    await act(async () => {
+      render(<ConfigPage />);
+    });
+
+    expect(screen.getByText('Loading configuration...')).toBeInTheDocument();
+  });
+
+  it('displays email configuration section', async () => {
+    await act(async () => {
+      render(<ConfigPage />);
+    });
+
+    await waitFor(() => {
+      expect(screen.getByText('Email Recipients')).toBeInTheDocument();
+    });
+  });
+
+  it('handles API errors gracefully', async () => {
+    mockFetch.mockImplementation(() => {
+      return Promise.reject(new Error('API Error'));
+    });
+
+    await act(async () => {
+      render(<ConfigPage />);
+    });
+
+    // Should still render the page structure despite API errors
+    await waitFor(() => {
+      expect(screen.getByText('Repository Configuration')).toBeInTheDocument();
     });
   });
 }); 

@@ -6,6 +6,8 @@ import { ProjectService, createProjectService } from './projects'
 import type { IProjectService } from './projects'
 import { CommitService, createCommitService } from './commits'
 import type { ICommitService } from './commits'
+import { BackupService, createBackupService } from './backup'
+import type { IBackupService } from './backup'
 
 // Re-export types for convenience
 export * from '../../types/supabase'
@@ -17,12 +19,15 @@ export { ProjectService, createProjectService }
 export type { IProjectService }
 export { CommitService, createCommitService }
 export type { ICommitService }
+export { BackupService, createBackupService }
+export type { IBackupService }
 
 // Service container interface
 export interface ISupabaseServices {
   users: IUserService
   projects: IProjectService
   commits: ICommitService
+  backup: IBackupService
 }
 
 // Factory function to create all services with dependency injection
@@ -31,6 +36,7 @@ export function createSupabaseServices(supabaseClient: ISupabaseClient): ISupaba
     users: createUserService(supabaseClient),
     projects: createProjectService(supabaseClient),
     commits: createCommitService(supabaseClient),
+    backup: createBackupService(supabaseClient),
   }
 }
 
@@ -52,6 +58,10 @@ export class SupabaseServiceProvider {
 
   get commits(): ICommitService {
     return this.services.commits
+  }
+
+  get backup(): IBackupService {
+    return this.services.backup
   }
 
   // Get all services (useful for testing)

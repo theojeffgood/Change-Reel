@@ -168,6 +168,10 @@ export class MockSupabaseService implements ISupabaseService {
     return this.isConnectedValue
   }
 
+  async testConnection(): Promise<boolean> {
+    return this.isConnectedValue
+  }
+
   // Test utilities
   setConnected(connected: boolean) {
     this.isConnectedValue = connected
@@ -225,34 +229,115 @@ export const createTestCommit = (overrides: Partial<Commit> = {}): Commit => ({
  * Factory for creating mock Supabase service with test data
  */
 export function createMockSupabaseClient(): any {
-  return {
-    from: jest.fn(() => ({
-      select: jest.fn(() => ({
-        eq: jest.fn(() => ({
-          single: jest.fn(),
-          limit: jest.fn(),
-        })),
-        limit: jest.fn(),
-      })),
-      insert: jest.fn(() => ({
-        select: jest.fn(() => ({
-          single: jest.fn(),
-        })),
-      })),
-      update: jest.fn(() => ({
-        eq: jest.fn(() => ({
-          select: jest.fn(() => ({
-            single: jest.fn(),
-          })),
-        })),
-      })),
-      delete: jest.fn(() => ({
-        eq: jest.fn(),
-      })),
-    })),
-    auth: {},
-    storage: {},
+  // Create a chainable mock that supports all Supabase query builder methods
+  const createChainableMock = (): any => {
+    const chain: any = {}
+    
+    // Query builder methods (return chain for chaining)
+    const chainMethods = [
+      'select', 'eq', 'neq', 'gt', 'gte', 'lt', 'lte', 'like', 'ilike', 
+      'is', 'in', 'contains', 'containedBy', 'order', 'limit', 'offset', 'range'
+    ]
+    
+    chainMethods.forEach((method: string) => {
+      chain[method] = jest.fn(() => chain)
+    })
+    
+    // Terminal methods (return promises that can be mocked)
+    const terminalMethods = ['single', 'maybeSingle']
+    terminalMethods.forEach((method: string) => {
+      chain[method] = jest.fn(() => Promise.resolve({ data: null, error: null }))
+      // Add mockResolvedValue support
+      chain[method].mockResolvedValue = jest.fn((value: any) => {
+        chain[method].mockImplementation(() => Promise.resolve(value))
+        return chain[method]
+      })
+    })
+    
+    // Special handling for methods that can be both chainable and terminal
+    // Make limit and order also promise-like when used as terminal operations
+    const dualMethods = ['limit', 'order']
+    dualMethods.forEach((method: string) => {
+      const originalMethod = chain[method]
+      
+      // Make them thenable for direct promise usage
+      Object.assign(originalMethod, {
+        then: jest.fn((resolve: any) => resolve({ data: [], error: null, count: 0 })),
+        catch: jest.fn(() => originalMethod),
+        finally: jest.fn(() => originalMethod),
+        mockResolvedValue: jest.fn((value: any) => {
+          originalMethod.then = jest.fn((resolve: any) => resolve(value))
+          return originalMethod
+        }),
+      })
+    })
+    
+    // Insert operations
+    chain.insert = jest.fn((data: any) => {
+      const insertChain = createChainableMock()
+      insertChain.select = jest.fn(() => {
+        const selectChain = createChainableMock()
+        selectChain.single = jest.fn(() => Promise.resolve({ data: null, error: null }))
+        selectChain.single.mockResolvedValue = jest.fn((value: any) => {
+          selectChain.single.mockImplementation(() => Promise.resolve(value))
+          return selectChain.single
+        })
+        return selectChain
+      })
+      return insertChain
+    })
+    
+    // Update operations
+    chain.update = jest.fn((data: any) => {
+      const updateChain = createChainableMock()
+      updateChain.eq = jest.fn(() => {
+        const eqChain = createChainableMock()
+        eqChain.select = jest.fn(() => {
+          const selectChain = createChainableMock()
+          selectChain.single = jest.fn(() => Promise.resolve({ data: null, error: null }))
+          selectChain.single.mockResolvedValue = jest.fn((value: any) => {
+            selectChain.single.mockImplementation(() => Promise.resolve(value))
+            return selectChain.single
+          })
+          return selectChain
+        })
+        return eqChain
+      })
+      return updateChain
+    })
+    
+    // Delete operations
+    chain.delete = jest.fn(() => {
+      const deleteChain = createChainableMock()
+      deleteChain.eq = jest.fn(() => Promise.resolve({ error: null }))
+      deleteChain.eq.mockResolvedValue = jest.fn((value: any) => {
+        deleteChain.eq.mockImplementation(() => Promise.resolve(value))
+        return deleteChain.eq
+      })
+      return deleteChain
+    })
+    
+    return chain
   }
+
+  const mockClient = {
+    from: jest.fn(() => createChainableMock()),
+    
+    auth: {
+      getUser: jest.fn(() => Promise.resolve({ data: { user: null }, error: null })),
+      signInWithOAuth: jest.fn(() => Promise.resolve({ data: { url: null, provider: null }, error: null })),
+      signOut: jest.fn(() => Promise.resolve({ error: null })),
+    },
+    
+    storage: {
+      from: jest.fn(() => ({
+        upload: jest.fn(() => Promise.resolve({ data: null, error: null })),
+        download: jest.fn(() => Promise.resolve({ data: null, error: null })),
+      })),
+    },
+  }
+
+  return mockClient
 }
 
 export function createMockSupabaseService(options: {

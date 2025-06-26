@@ -1,267 +1,106 @@
 /**
- * GitHub Webhook Management API Routes
+ * GitHub Webhook Event Processing API
  * 
- * Handles creating, listing, and managing webhooks for GitHub repositories
- * using OAuth authentication.
+ * This endpoint receives webhook events from GitHub and processes them
+ * to extract commit information for storage in our database.
+ * 
+ * POST /api/webhooks/github - Process incoming GitHub webhook events
  */
 
 import { NextRequest, NextResponse } from 'next/server';
-import { getServerSession } from 'next-auth/next';
-import { authConfig } from '@/lib/auth/config';
-import { GitHubWebhookService } from '@/lib/github/webhook-service';
+import { WebhookProcessingService } from '@/lib/github/webhook-processing-service';
+import { createClient as createSupabaseClient } from '@supabase/supabase-js';
 
-/**
- * GET /api/webhooks/github
- * List webhooks for a repository
- */
-export async function GET(request: NextRequest) {
-  try {
-    const session = await getServerSession(authConfig);
-    
-    if (!session?.user?.id) {
-      return NextResponse.json(
-        { error: 'Authentication required' },
-        { status: 401 }
-      );
-    }
-
-    const { searchParams } = new URL(request.url);
-    const owner = searchParams.get('owner');
-    const repo = searchParams.get('repo');
-
-    if (!owner || !repo) {
-      return NextResponse.json(
-        { error: 'Missing required parameters: owner and repo' },
-        { status: 400 }
-      );
-    }
-
-    const result = await GitHubWebhookService.listWebhooks(
-      session.user.id,
-      owner,
-      repo
-    );
-
-    if (!result.success) {
-      return NextResponse.json(
-        { error: result.error },
-        { status: result.statusCode || 500 }
-      );
-    }
-
-    return NextResponse.json({
-      success: true,
-      webhooks: result.data
-    });
-
-  } catch (error) {
-    console.error('Error in GET /api/webhooks/github:', error);
-    return NextResponse.json(
-      { error: 'Internal server error' },
-      { status: 500 }
-    );
-  }
+interface WebhookResponse {
+  success: boolean;
+  message: string;
+  processed?: number;
+  error?: string;
 }
 
-/**
- * POST /api/webhooks/github
- * Create a webhook for a repository
- */
-export async function POST(request: NextRequest) {
+export async function POST(request: NextRequest): Promise<NextResponse<WebhookResponse>> {
   try {
-    const session = await getServerSession(authConfig);
-    
-    if (!session?.user?.id) {
-      return NextResponse.json(
-        { error: 'Authentication required' },
-        { status: 401 }
-      );
-    }
+    // Extract and validate headers
+    const githubEvent = request.headers.get('x-github-event');
+    const githubSignature = request.headers.get('x-hub-signature-256');
+    const githubDelivery = request.headers.get('x-github-delivery');
+    const userAgent = request.headers.get('user-agent');
 
-    const body = await request.json();
-    const { owner, repo, webhookUrl, events, secret } = body;
+    // Check for missing required headers
+    const missingHeaders = [];
+    if (!githubEvent) missingHeaders.push('x-github-event');
+    if (!githubSignature) missingHeaders.push('x-hub-signature-256');
+    if (!githubDelivery) missingHeaders.push('x-github-delivery');
 
-    if (!owner || !repo || !webhookUrl) {
+    if (missingHeaders.length > 0) {
       return NextResponse.json(
-        { error: 'Missing required parameters: owner, repo, and webhookUrl' },
+        { 
+          success: false, 
+          message: 'Missing required headers',
+          error: `missing required headers: ${missingHeaders.join(', ')}`
+        },
         { status: 400 }
       );
     }
 
-    // Validate webhook URL format
+    // Read and validate payload
+    const bodyText = await request.text();
+    if (!bodyText) {
+      return NextResponse.json(
+        { success: false, message: 'Empty request body' },
+        { status: 400 }
+      );
+    }
+
+    let payload: any;
     try {
-      new URL(webhookUrl);
-    } catch {
+      payload = JSON.parse(bodyText);
+    } catch (error) {
       return NextResponse.json(
-        { error: 'Invalid webhook URL format' },
+        { 
+          success: false, 
+          message: 'Invalid JSON payload',
+          error: 'invalid JSON payload format'
+        },
         { status: 400 }
       );
     }
 
-    const result = await GitHubWebhookService.createWebhook(
-      session.user.id,
+    // Create webhook processing service with dependency injection
+    const supabase = createSupabaseClient(
+      process.env.NEXT_PUBLIC_SUPABASE_URL!,
+      process.env.SUPABASE_SERVICE_ROLE_KEY!
+    );
+    const webhookService = WebhookProcessingService.createWithDefaults(supabase);
+
+    // Process the webhook using the service
+    const result = await webhookService.processWebhook({
+      event: githubEvent!,
+      signature: githubSignature!,
+      delivery: githubDelivery!,
+      userAgent: userAgent || undefined,
+      payload,
+      rawBody: bodyText
+    });
+
+    return NextResponse.json(
       {
-        owner,
-        repo,
-        webhookUrl,
-        events,
-        secret
-      }
+        success: result.success,
+        message: result.message,
+        processed: result.processed,
+        error: result.error
+      },
+      { status: result.statusCode || 200 }
     );
-
-    if (!result.success) {
-      return NextResponse.json(
-        { error: result.error, details: result.data },
-        { status: result.statusCode || 500 }
-      );
-    }
-
-    return NextResponse.json({
-      success: true,
-      webhook: result.data
-    }, { status: 201 });
 
   } catch (error) {
-    console.error('Error in POST /api/webhooks/github:', error);
+    console.error('Webhook processing error:', error);
     return NextResponse.json(
-      { error: 'Internal server error' },
-      { status: 500 }
-    );
-  }
-}
-
-/**
- * DELETE /api/webhooks/github
- * Delete a webhook
- */
-export async function DELETE(request: NextRequest) {
-  try {
-    const session = await getServerSession(authConfig);
-    
-    if (!session?.user?.id) {
-      return NextResponse.json(
-        { error: 'Authentication required' },
-        { status: 401 }
-      );
-    }
-
-    const { searchParams } = new URL(request.url);
-    const owner = searchParams.get('owner');
-    const repo = searchParams.get('repo');
-    const webhookId = searchParams.get('webhookId');
-
-    if (!owner || !repo || !webhookId) {
-      return NextResponse.json(
-        { error: 'Missing required parameters: owner, repo, and webhookId' },
-        { status: 400 }
-      );
-    }
-
-    const webhookIdNum = parseInt(webhookId, 10);
-    if (isNaN(webhookIdNum)) {
-      return NextResponse.json(
-        { error: 'Invalid webhook ID' },
-        { status: 400 }
-      );
-    }
-
-    const result = await GitHubWebhookService.deleteWebhook(
-      session.user.id,
-      owner,
-      repo,
-      webhookIdNum
-    );
-
-    if (!result.success) {
-      return NextResponse.json(
-        { error: result.error },
-        { status: result.statusCode || 500 }
-      );
-    }
-
-    return NextResponse.json({
-      success: true,
-      message: 'Webhook deleted successfully'
-    });
-
-  } catch (error) {
-    console.error('Error in DELETE /api/webhooks/github:', error);
-    return NextResponse.json(
-      { error: 'Internal server error' },
-      { status: 500 }
-    );
-  }
-}
-
-/**
- * PATCH /api/webhooks/github
- * Update a webhook
- */
-export async function PATCH(request: NextRequest) {
-  try {
-    const session = await getServerSession(authConfig);
-    
-    if (!session?.user?.id) {
-      return NextResponse.json(
-        { error: 'Authentication required' },
-        { status: 401 }
-      );
-    }
-
-    const body = await request.json();
-    const { owner, repo, webhookId, updates } = body;
-
-    if (!owner || !repo || !webhookId || !updates) {
-      return NextResponse.json(
-        { error: 'Missing required parameters: owner, repo, webhookId, and updates' },
-        { status: 400 }
-      );
-    }
-
-    const webhookIdNum = parseInt(webhookId, 10);
-    if (isNaN(webhookIdNum)) {
-      return NextResponse.json(
-        { error: 'Invalid webhook ID' },
-        { status: 400 }
-      );
-    }
-
-    // Validate webhook URL if provided
-    if (updates.webhookUrl) {
-      try {
-        new URL(updates.webhookUrl);
-      } catch {
-        return NextResponse.json(
-          { error: 'Invalid webhook URL format' },
-          { status: 400 }
-        );
-      }
-    }
-
-    const result = await GitHubWebhookService.updateWebhook(
-      session.user.id,
-      owner,
-      repo,
-      webhookIdNum,
-      updates
-    );
-
-    if (!result.success) {
-      return NextResponse.json(
-        { error: result.error },
-        { status: result.statusCode || 500 }
-      );
-    }
-
-    return NextResponse.json({
-      success: true,
-      webhook: result.data
-    });
-
-  } catch (error) {
-    console.error('Error in PATCH /api/webhooks/github:', error);
-    return NextResponse.json(
-      { error: 'Internal server error' },
+      {
+        success: false,
+        message: 'Internal server error',
+        error: error instanceof Error ? error.message : 'Unknown error'
+      },
       { status: 500 }
     );
   }

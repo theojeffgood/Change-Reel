@@ -83,7 +83,6 @@ CREATE INDEX idx_jobs_expires_at ON jobs(expires_at) WHERE expires_at IS NOT NUL
 CREATE INDEX idx_jobs_status_priority ON jobs(status, priority DESC, scheduled_for ASC);
 CREATE INDEX idx_jobs_processing_queue ON jobs(status, scheduled_for, priority DESC) 
     WHERE status IN ('pending', 'failed');
-CREATE INDEX idx_jobs_retry_after ON jobs(retry_after) WHERE retry_after IS NOT NULL;
 CREATE INDEX idx_jobs_commit_workflow ON jobs(commit_id, type, status);
 
 -- Indexes for job dependencies

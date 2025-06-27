@@ -124,6 +124,7 @@ describe('GitHub API Fixtures', () => {
       const customCommit = createMockCommit({
         sha: 'custom123',
         commit: {
+          ...commitFixture.commit,
           message: 'Custom test commit'
         }
       });

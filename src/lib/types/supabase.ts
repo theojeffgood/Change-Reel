@@ -50,6 +50,7 @@ export interface ISupabaseClient {
   from: (table: string) => any
   auth: any
   storage: any
+  rpc: (fn: string, args?: any, options?: any) => any
 }
 
 // Service interface for business logic

@@ -392,7 +392,7 @@
         "id": 8,
         "title": "Create Simple Job Processing System",
         "description": "Implement a basic job processing system to handle commit ingestion, diff fetching, and summarization sequentially.",
-        "status": "in-progress",
+        "status": "done",
         "dependencies": [
           5,
           6,
@@ -1503,7 +1503,7 @@
     ],
     "metadata": {
       "created": "2025-06-24T18:47:19.240Z",
-      "updated": "2025-06-27T21:03:38.251Z",
+      "updated": "2025-06-27T21:07:02.070Z",
       "description": "Tasks for master context"
     }
   }

@@ -11,6 +11,7 @@ export interface GitHubWebhookHeaders {
   'x-hub-signature-256': string;
   'content-type': string;
   'user-agent': string;
+  [key: string]: string; // Index signature to allow assignment to Record<string, string>
 }
 
 // Sample headers for GitHub webhooks

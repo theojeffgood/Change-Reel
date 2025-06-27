@@ -74,6 +74,11 @@ export class SupabaseService implements ISupabaseService {
     }
   }
 
+  async testConnection(): Promise<boolean> {
+    // Alias for isConnected to match interface requirement
+    return this.isConnected()
+  }
+
   /**
    * Get the raw Supabase client (for internal use)
    */

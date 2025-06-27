@@ -858,7 +858,7 @@
         "id": 14,
         "title": "Implement Manual Repository Configuration",
         "description": "Create a simple interface for configuring the GitHub repository via GitHub OAuth App integration.",
-        "status": "in-progress",
+        "status": "done",
         "dependencies": [],
         "priority": "high",
         "details": "1. Design and implement a basic configuration page\n2. Create form for viewing current repository configuration\n3. Add documentation for GitHub OAuth App setup\n4. Implement automatic webhook setup via OAuth\n5. Implement configuration validation\n6. Add UI for testing the repository connection\n7. Create simple setup guide\n8. Implement configuration export/import functionality\n9. Follow component-based architecture with clear interfaces\n10. Create comprehensive unit tests for UI components\n11. Implement integration tests for configuration workflow\n12. Register GitHub OAuth App with GitHub\n13. Implement OAuth flow in Next.js (/api/auth/github/callback)\n14. Store OAuth tokens securely (encrypted in database or secure storage)\n15. Use OAuth tokens for GitHub API calls (repository access, webhook creation)",
@@ -1503,7 +1503,7 @@
     ],
     "metadata": {
       "created": "2025-06-24T18:47:19.240Z",
-      "updated": "2025-06-27T19:25:25.921Z",
+      "updated": "2025-06-27T19:45:53.988Z",
       "description": "Tasks for master context"
     }
   }

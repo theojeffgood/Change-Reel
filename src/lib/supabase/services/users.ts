@@ -10,6 +10,7 @@ import {
 export interface IUserService {
   getUser(id: string): Promise<DatabaseResult<User>>
   getUserByEmail(email: string): Promise<DatabaseResult<User>>
+  getUserByGithubId(githubId: string): Promise<DatabaseResult<User>>
   createUser(data: CreateUserData): Promise<DatabaseResult<User>>
   updateUser(id: string, data: UpdateUserData): Promise<DatabaseResult<User>>
   deleteUser(id: string): Promise<DatabaseResult<boolean>>
@@ -58,6 +59,31 @@ export class UserService implements IUserService {
         data: null,
         error: err instanceof Error ? err : new Error('Unknown error occurred'),
       }
+    }
+  }
+
+  async getUserByGithubId(githubId: string): Promise<DatabaseResult<User>> {
+    try {
+      const { data, error } = await this.supabaseClient
+        .from('users')
+        .select('*')
+        .eq('github_id', githubId)
+        .single();
+
+      if (error) {
+        if (error.code === 'PGRST116') {
+          // No user found, not necessarily an error
+          return { data: null, error: null };
+        }
+        return { data: null, error: new Error(error.message || 'Failed to get user by github id') };
+      }
+
+      return { data, error: null };
+    } catch (err) {
+      return {
+        data: null,
+        error: err instanceof Error ? err : new Error('Unknown error occurred'),
+      };
     }
   }
 

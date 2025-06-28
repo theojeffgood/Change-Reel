@@ -27,6 +27,7 @@ export interface ICommitService {
   getCommitsByAuthor(projectId: string, author: string, limit?: number): Promise<DatabaseResults<Commit>>
   getCommitsByType(projectId: string, type: string, limit?: number): Promise<DatabaseResults<Commit>>
   getCommitsByDateRange(projectId: string, startDate: string, endDate: string): Promise<DatabaseResults<Commit>>
+  getCommitsByProjectId(projectId: string, page: number, pageSize: number): Promise<DatabaseResult<{ commits: Commit[]; count: number }>>
 }
 
 export class CommitService implements ICommitService {
@@ -427,6 +428,35 @@ export class CommitService implements ICommitService {
         error: err instanceof Error ? err : new Error('Unknown error occurred'),
         count: 0,
       }
+    }
+  }
+
+  async getCommitsByProjectId(
+    projectId: string,
+    page: number = 1,
+    pageSize: number = 10,
+  ): Promise<DatabaseResult<{ commits: Commit[]; count: number }>> {
+    try {
+      const from = (page - 1) * pageSize;
+      const to = from + pageSize - 1;
+
+      const { data, error, count } = await this.supabaseClient
+        .from('commits')
+        .select('*', { count: 'exact' })
+        .eq('project_id', projectId)
+        .not('summary', 'is', null) // Only get processed commits
+        .order('timestamp', { ascending: false })
+        .range(from, to);
+
+      if (error) {
+        return { data: null, error: new Error(error.message) };
+      }
+      return { data: { commits: data || [], count: count || 0 }, error: null };
+    } catch (err) {
+      return {
+        data: null,
+        error: err instanceof Error ? err : new Error('Unknown error occurred'),
+      };
     }
   }
 }

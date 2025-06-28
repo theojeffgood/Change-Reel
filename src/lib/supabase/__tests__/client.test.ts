@@ -13,6 +13,7 @@ jest.mock('@supabase/supabase-js', () => ({
     from: jest.fn(),
     auth: {},
     storage: {},
+    rpc: jest.fn(),
   })),
 }))
 

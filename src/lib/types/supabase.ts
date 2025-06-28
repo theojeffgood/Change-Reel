@@ -173,4 +173,16 @@ export interface ICommitService {
   deleteCommit(id: string): Promise<boolean>
   listCommits(projectId: string, limit?: number): Promise<Commit[]>
   getUnprocessedCommits(projectId: string): Promise<Commit[]>
-} 
+  getCommits(projectId: string, limit?: number): Promise<DatabaseResults<Commit>>
+  getCommitsByType(projectId: string, type: string, limit?: number): Promise<DatabaseResults<Commit>>
+  getCommitsByDateRange(projectId: string, startDate: string, endDate: string): Promise<DatabaseResults<Commit>>
+  getCommitsByProjectId(
+    projectId: string,
+    page: number,
+    pageSize: number,
+  ): Promise<DatabaseResult<{ commits: Commit[]; count: number }>>
+}
+
+export interface IJobService {
+  // ... existing code ...
+}

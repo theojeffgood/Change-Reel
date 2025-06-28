@@ -18,6 +18,7 @@ export interface IProjectService {
   deleteProject(id: string): Promise<DatabaseResult<boolean>>
   listProjects(filter?: ProjectFilter, pagination?: PaginationOptions): Promise<DatabaseResults<Project>>
   getProjectsByUser(userId: string): Promise<DatabaseResults<Project>>
+  getProjectByUserId(userId: string): Promise<DatabaseResult<Project>>
 }
 
 export class ProjectService implements IProjectService {
@@ -294,6 +295,30 @@ export class ProjectService implements IProjectService {
         data: null,
         error: err instanceof Error ? err : new Error('Unknown error occurred'),
         count: 0,
+      }
+    }
+  }
+
+  async getProjectByUserId(userId: string): Promise<DatabaseResult<Project>> {
+    try {
+      const { data, error } = await this.supabaseClient
+        .from('projects')
+        .select('*')
+        .eq('user_id', userId)
+        .single()
+
+      if (error) {
+        if (error.code === 'PGRST116') {
+          return { data: null, error: null }
+        }
+        return { data: null, error: new Error(error.message || 'Failed to get project by user ID') }
+      }
+
+      return { data, error: null }
+    } catch (err) {
+      return {
+        data: null,
+        error: err instanceof Error ? err : new Error('Unknown error occurred'),
       }
     }
   }

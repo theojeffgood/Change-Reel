@@ -1,5 +1,9 @@
 import { createClient, SupabaseClient } from '@supabase/supabase-js'
 import { ISupabaseClient, ISupabaseService, SupabaseConfig } from '../types/supabase'
+import { UserService } from './services/users'
+import { ProjectService } from './services/projects'
+import { CommitService } from './services/commits'
+import { JobQueueService } from './services/jobs'
 
 /**
  * Validates Supabase configuration from environment variables
@@ -47,9 +51,19 @@ export class SupabaseService implements ISupabaseService {
   private client: SupabaseClient
   private config: SupabaseConfig
 
+  public users: UserService
+  public projects: ProjectService
+  public commits: CommitService
+  public jobs: JobQueueService
+
   constructor(config?: SupabaseConfig) {
     this.config = config || validateSupabaseConfig()
     this.client = createSupabaseClient(this.config)
+
+    this.users = new UserService(this.client)
+    this.projects = new ProjectService(this.client)
+    this.commits = new CommitService(this.client)
+    this.jobs = new JobQueueService(this.client)
   }
 
   getClient(): ISupabaseClient {
@@ -57,6 +71,7 @@ export class SupabaseService implements ISupabaseService {
       from: this.client.from.bind(this.client),
       auth: this.client.auth,
       storage: this.client.storage,
+      rpc: this.client.rpc.bind(this.client),
     }
   }
 

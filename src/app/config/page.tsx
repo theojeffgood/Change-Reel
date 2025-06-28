@@ -70,7 +70,12 @@ export default function ConfigurationPage() {
       
       if (response.ok) {
         const repos = await response.json();
-        setRepositories(repos.filter((repo: Repository) => !repo.private || repo.name));
+        if (Array.isArray(repos)) {
+          setRepositories(repos.filter((repo: Repository) => !repo.private || repo.name));
+        } else {
+          console.error('Failed to fetch repositories: response is not an array', repos);
+          setRepositories([]);
+        }
       } else {
         console.error('Failed to fetch repositories');
       }

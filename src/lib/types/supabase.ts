@@ -185,4 +185,4 @@ export interface ICommitService {
 
 export interface IJobService {
   // ... existing code ...
-}
+} 

@@ -36,6 +36,8 @@ export default function ConfigurationPage() {
   const [emailRecipients, setEmailRecipients] = useState<string[]>([]);
   const [newEmail, setNewEmail] = useState('');
   const [showDisconnectConfirm, setShowDisconnectConfirm] = useState(false);
+  const [saveMessage, setSaveMessage] = useState('');
+  const [saveError, setSaveError] = useState('');
 
   // Check GitHub connection status
   useEffect(() => {
@@ -71,7 +73,7 @@ export default function ConfigurationPage() {
       if (response.ok) {
         const repos = await response.json();
         if (Array.isArray(repos)) {
-          setRepositories(repos.filter((repo: Repository) => !repo.private || repo.name));
+        setRepositories(repos.filter((repo: Repository) => !repo.private || repo.name));
         } else {
           console.error('Failed to fetch repositories: response is not an array', repos);
           setRepositories([]);
@@ -135,22 +137,53 @@ export default function ConfigurationPage() {
   };
 
   const handleSaveConfiguration = async () => {
-    if (!selectedRepository || emailRecipients.length === 0) {
-      alert('Please select a repository and add at least one email recipient.');
-      return;
-    }
-
+    if (!selectedRepository || emailRecipients.length === 0) return;
+    
     setLoading(true);
+    setSaveMessage('');
+    setSaveError('');
+
     try {
-      // TODO: Save configuration to database
-      console.log('Saving configuration:', {
-        repository: selectedRepository,
-        emails: emailRecipients,
+      // First save the configuration
+      const configResponse = await fetch('/api/config', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          repositoryFullName: selectedRepository,
+          emailRecipients,
+        }),
       });
-      alert('Configuration saved successfully!');
+
+      const configResult = await configResponse.json();
+      
+      if (!configResponse.ok) {
+        setSaveError(configResult.message || 'Failed to save configuration');
+        return;
+      }
+
+      // Now automatically create the webhook
+      setSaveMessage('Configuration saved! Creating webhook...');
+      
+      const webhookResponse = await fetch('/api/webhooks/setup', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          repositoryFullName: selectedRepository,
+        }),
+      });
+
+      const webhookResult = await webhookResponse.json();
+      
+      if (webhookResponse.ok) {
+        setSaveMessage('Configuration saved and webhook created successfully! 🎉');
+      } else {
+        setSaveMessage('Configuration saved, but webhook creation failed. You may need to create it manually.');
+        console.error('Webhook creation failed:', webhookResult);
+      }
+
     } catch (error) {
+      setSaveError('Failed to save configuration');
       console.error('Error saving configuration:', error);
-      alert('Failed to save configuration. Please try again.');
     } finally {
       setLoading(false);
     }
@@ -581,16 +614,29 @@ export default function ConfigurationPage() {
               </div>
 
               {/* Action Buttons */}
-              <div className="space-y-4">
-                <div className="flex space-x-4">
-                  <button
-                    onClick={handleSaveConfiguration}
-                    disabled={loading || !selectedRepository || emailRecipients.length === 0}
-                    className="flex-1 bg-blue-600 text-white py-2 px-4 rounded-md hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
-                  >
-                    {loading ? 'Saving...' : 'Save Configuration'}
-                  </button>
-                  <button
+                              <div className="space-y-4">
+                  <div className="flex space-x-4">
+                    {/* Save Configuration Button */}
+                    <button
+                      onClick={handleSaveConfiguration}
+                      disabled={!selectedRepository || emailRecipients.length === 0 || loading}
+                      className={`flex-1 px-4 py-2 rounded-md font-medium transition-colors ${
+                        !selectedRepository || emailRecipients.length === 0 || loading
+                          ? 'bg-gray-300 text-gray-500 cursor-not-allowed'
+                          : 'bg-blue-600 text-white hover:bg-blue-700'
+                      }`}
+                    >
+                      {loading ? (
+                        <div className="flex items-center justify-center space-x-2">
+                          <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
+                          <span>Saving...</span>
+                        </div>
+                      ) : (
+                        'Save Configuration'
+                      )}
+                    </button>
+
+                    <button
                     onClick={handleTestConnection}
                     disabled={loading || !selectedRepository}
                     className="flex-1 border border-gray-300 text-gray-700 py-2 px-4 rounded-md hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
@@ -598,6 +644,19 @@ export default function ConfigurationPage() {
                     {loading ? 'Testing...' : 'Test Connection'}
                   </button>
                 </div>
+
+                {/* Success/Error Messages */}
+                {saveMessage && (
+                  <div className="mt-4 p-3 bg-green-50 border border-green-200 rounded-md">
+                    <p className="text-green-800">{saveMessage}</p>
+                  </div>
+                )}
+                
+                {saveError && (
+                  <div className="mt-4 p-3 bg-red-50 border border-red-200 rounded-md">
+                    <p className="text-red-800">{saveError}</p>
+                  </div>
+                )}
             
               </div>
             </div>

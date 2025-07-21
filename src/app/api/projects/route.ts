@@ -1,7 +1,7 @@
 import { NextResponse } from 'next/server';
 import { getServerSession, Session } from 'next-auth';
 import { authConfig } from '@/lib/auth/config';
-import { getSupabaseService } from '@/lib/supabase/client';
+import { getServiceRoleSupabaseService } from '@/lib/supabase/client';
 
 export async function GET() {
   const session = (await getServerSession(authConfig)) as Session | null;
@@ -11,7 +11,7 @@ export async function GET() {
   }
 
   try {
-    const supabaseService = getSupabaseService();
+    const supabaseService = getServiceRoleSupabaseService();
     const { data: user, error: userError } = await supabaseService.users.getUserByGithubId(String(session.user.githubId));
 
     if (userError || !user) {

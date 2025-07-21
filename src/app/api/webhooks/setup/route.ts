@@ -44,7 +44,7 @@ export async function POST(request: NextRequest): Promise<NextResponse<WebhookSe
       );
     }
 
-    // Generate webhook URL (use ngrok URL in development, production URL in production)
+    // Generate webhook URL (use ngrok URL so GitHub can reach the webhook endpoint)
     const baseUrl = process.env.NEXTAUTH_URL || 'http://localhost:3000';
     const webhookUrl = GitHubWebhookService.generateWebhookUrl(baseUrl);
 

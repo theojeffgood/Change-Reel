@@ -649,6 +649,16 @@ export default function ConfigurationPage() {
                 {saveMessage && (
                   <div className="mt-4 p-3 bg-green-50 border border-green-200 rounded-md">
                     <p className="text-green-800">{saveMessage}</p>
+                    {saveMessage.includes('successfully') && (
+                      <div className="mt-2">
+                        <a 
+                          href="/admin" 
+                          className="inline-flex items-center px-3 py-2 text-sm font-medium text-white bg-blue-600 rounded-md hover:bg-blue-700 transition-colors"
+                        >
+                          View Admin Dashboard →
+                        </a>
+                      </div>
+                    )}
                   </div>
                 )}
                 

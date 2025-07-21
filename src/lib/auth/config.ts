@@ -62,6 +62,29 @@ export const authConfig: NextAuthOptions = {
       // Store GitHub access token securely after successful sign-in
       if (account?.provider === 'github' && account.access_token && profile?.id) {
         try {
+          // Import Supabase service
+          const { getSupabaseService } = await import('@/lib/supabase/client');
+          const supabaseService = getSupabaseService();
+
+          // Create or update user record in database
+          const { data: existingUser } = await supabaseService.users.getUserByGithubId(String(profile.id));
+          
+          if (!existingUser) {
+            // Create new user record
+            const { data: newUser, error: createError } = await supabaseService.users.createUser({
+              email: user.email || '',
+              name: user.name || '',
+              github_id: String(profile.id),
+            });
+            
+            if (createError) {
+              console.error('Failed to create user record:', createError);
+            } else {
+              console.log('User record created successfully:', newUser?.email);
+            }
+          }
+
+          // Store OAuth token
           const scopes = account.scope ? account.scope.split(' ') : [];
           await storeOAuthToken(
             String(profile.id), // Use GitHub ID as user identifier
@@ -74,7 +97,7 @@ export const authConfig: NextAuthOptions = {
           );
           console.log('GitHub OAuth token stored successfully for user:', user.email);
         } catch (error) {
-          console.error('Failed to store GitHub OAuth token:', error);
+          console.error('Failed to store GitHub OAuth token or create user:', error);
         }
       }
     },

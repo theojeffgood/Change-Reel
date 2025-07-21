@@ -8,16 +8,23 @@ import { JobQueueService } from './services/jobs'
 /**
  * Validates Supabase configuration from environment variables
  */
-export function validateSupabaseConfig(): SupabaseConfig {
+export function validateSupabaseConfig(useServiceRole = false): SupabaseConfig {
   const url = process.env.NEXT_PUBLIC_SUPABASE_URL
   const anonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY
+  const serviceRoleKey = process.env.SUPABASE_SERVICE_ROLE_KEY
 
   if (!url) {
     throw new Error('Missing NEXT_PUBLIC_SUPABASE_URL environment variable')
   }
 
-  if (!anonKey) {
-    throw new Error('Missing NEXT_PUBLIC_SUPABASE_ANON_KEY environment variable')
+  if (useServiceRole) {
+    if (!serviceRoleKey) {
+      throw new Error('Missing SUPABASE_SERVICE_ROLE_KEY environment variable')
+    }
+  } else {
+    if (!anonKey) {
+      throw new Error('Missing NEXT_PUBLIC_SUPABASE_ANON_KEY environment variable')
+    }
   }
 
   // Basic URL validation
@@ -27,14 +34,17 @@ export function validateSupabaseConfig(): SupabaseConfig {
     throw new Error('NEXT_PUBLIC_SUPABASE_URL is not a valid URL')
   }
 
-  return { url, anonKey }
+  return { 
+    url, 
+    anonKey: useServiceRole ? serviceRoleKey! : anonKey! 
+  }
 }
 
 /**
  * Creates a configured Supabase client instance
  */
-export function createSupabaseClient(config?: SupabaseConfig): SupabaseClient {
-  const { url, anonKey } = config || validateSupabaseConfig()
+export function createSupabaseClient(config?: SupabaseConfig, useServiceRole = false): SupabaseClient {
+  const { url, anonKey } = config || validateSupabaseConfig(useServiceRole)
   
   return createClient(url, anonKey, {
     auth: {
@@ -56,9 +66,9 @@ export class SupabaseService implements ISupabaseService {
   public commits: CommitService
   public jobs: JobQueueService
 
-  constructor(config?: SupabaseConfig) {
-    this.config = config || validateSupabaseConfig()
-    this.client = createSupabaseClient(this.config)
+  constructor(config?: SupabaseConfig, useServiceRole = false) {
+    this.config = config || validateSupabaseConfig(useServiceRole)
+    this.client = createSupabaseClient(this.config, useServiceRole)
 
     this.users = new UserService(this.client)
     this.projects = new ProjectService(this.client)
@@ -102,11 +112,12 @@ export class SupabaseService implements ISupabaseService {
   }
 }
 
-// Default singleton instance
+// Default singleton instances
 let defaultSupabaseService: SupabaseService | null = null
+let defaultServiceRoleSupabaseService: SupabaseService | null = null
 
 /**
- * Get the default Supabase service instance
+ * Get the default Supabase service instance (uses anon key for client-side operations)
  */
 export function getSupabaseService(): SupabaseService {
   if (!defaultSupabaseService) {
@@ -116,8 +127,19 @@ export function getSupabaseService(): SupabaseService {
 }
 
 /**
+ * Get the service role Supabase service instance (uses service role key for server-side operations)
+ */
+export function getServiceRoleSupabaseService(): SupabaseService {
+  if (!defaultServiceRoleSupabaseService) {
+    console.log('Creating service role Supabase service...');
+    defaultServiceRoleSupabaseService = new SupabaseService(undefined, true)
+  }
+  return defaultServiceRoleSupabaseService
+}
+
+/**
  * Create a new Supabase service instance (useful for testing)
  */
-export function createSupabaseService(config?: SupabaseConfig): SupabaseService {
-  return new SupabaseService(config)
+export function createSupabaseService(config?: SupabaseConfig, useServiceRole = false): SupabaseService {
+  return new SupabaseService(config, useServiceRole)
 } 

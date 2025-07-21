@@ -1,7 +1,7 @@
 import { NextResponse } from 'next/server';
 import { getServerSession, Session } from 'next-auth';
 import { authConfig } from '@/lib/auth/config';
-import { getSupabaseService } from '@/lib/supabase/client';
+import { getServiceRoleSupabaseService } from '@/lib/supabase/client';
 
 export async function GET(request: Request) {
   const session = (await getServerSession(authConfig)) as Session | null;
@@ -15,7 +15,7 @@ export async function GET(request: Request) {
   const pageSize = parseInt(searchParams.get('pageSize') || '10', 10);
 
   try {
-    const supabaseService = getSupabaseService();
+    const supabaseService = getServiceRoleSupabaseService();
 
     // First, get the user and their project
     const { data: user, error: userError } = await supabaseService.users.getUserByGithubId(String(session.user.githubId));

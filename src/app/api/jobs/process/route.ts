@@ -107,20 +107,60 @@ export async function POST() {
               data: result.data
             });
           } else {
-            await supabaseService.jobs.updateJob(job.id, { 
-              status: 'failed',
-              error_message: result.error,
-              completed_at: new Date().toISOString()
-            });
-            failed++;
-            console.log(`❌ Job ${job.id} failed: ${result.error}`);
+            // Determine if this is a retryable error
+            const isRetryable = result.error?.includes('rate_limit_exceeded') || 
+                               result.error?.includes('openai_server_error') || 
+                               result.error?.includes('network_error');
             
-            results.push({
-              jobId: job.id,
-              type: job.type,
-              status: 'failed',
-              error: result.error
-            });
+            const currentAttempts = (job.attempts || 0) + 1;
+            const maxRetries = 3;
+            
+            if (isRetryable && currentAttempts < maxRetries) {
+              // Schedule for retry
+              const retryDelay = Math.min(1000 * Math.pow(2, currentAttempts), 30000); // Exponential backoff, max 30s
+              const retryAt = new Date(Date.now() + retryDelay);
+              
+              await supabaseService.jobs.updateJob(job.id, { 
+                status: 'pending', // Reset to pending for retry
+                attempts: currentAttempts,
+                error_message: `Attempt ${currentAttempts}/${maxRetries}: ${result.error}`,
+                retry_after: retryAt.toISOString()
+              });
+              
+              console.log(`🔄 Job ${job.id} scheduled for retry ${currentAttempts}/${maxRetries} in ${retryDelay}ms: ${result.error}`);
+              
+              results.push({
+                jobId: job.id,
+                type: job.type,
+                status: 'retry_scheduled',
+                attempts: currentAttempts,
+                maxRetries: maxRetries,
+                retryAt: retryAt.toISOString(),
+                error: result.error
+              });
+            } else {
+              // Mark as permanently failed
+              await supabaseService.jobs.updateJob(job.id, { 
+                status: 'failed',
+                attempts: currentAttempts,
+                error_message: currentAttempts >= maxRetries ? 
+                  `Max retries (${maxRetries}) exceeded: ${result.error}` : 
+                  `Non-retryable error: ${result.error}`,
+                completed_at: new Date().toISOString()
+              });
+              
+              failed++;
+              console.log(`❌ Job ${job.id} permanently failed after ${currentAttempts} attempts: ${result.error}`);
+              
+              results.push({
+                jobId: job.id,
+                type: job.type,
+                status: 'failed',
+                attempts: currentAttempts,
+                finalError: result.error,
+                retryable: isRetryable
+              });
+            }
           }
         } else {
           // Unsupported job type
@@ -272,17 +312,13 @@ async function processGenerateSummaryJob(job: any, supabaseService: any): Promis
   try {
     const data = job.data;
     
-    let summary = '';
-    let changeType = 'chore';
+    // Use OpenAI to generate summary - no fallbacks
+    const openai = await import('openai');
+    const client = new openai.OpenAI({
+      apiKey: process.env.OPENAI_API_KEY
+    });
 
-    try {
-      // Use OpenAI to generate summary
-      const openai = await import('openai');
-      const client = new openai.OpenAI({
-        apiKey: process.env.OPENAI_API_KEY
-      });
-
-      const prompt = `You are a changelog assistant. Summarize the following commit into a 1-2 sentence plain English description of what changed. Be concise and skip minor edits.
+    const prompt = `You are a changelog assistant. Summarize the following commit into a 1-2 sentence plain English description of what changed. Be concise and skip minor edits.
 
 Commit: ${data.commit_message}
 Author: ${data.author}
@@ -290,54 +326,31 @@ Branch: ${data.branch}
 
 Provide only the summary, no additional text.`;
 
-      const completion = await client.chat.completions.create({
-        model: 'gpt-4o-mini',
-        messages: [{ role: 'user', content: prompt }],
-        max_tokens: 100,
-        temperature: 0.3
-      });
+    const completion = await client.chat.completions.create({
+      model: 'gpt-4o-mini',
+      messages: [{ role: 'user', content: prompt }],
+      max_tokens: 100,
+      temperature: 0.3
+    });
 
-      summary = completion.choices[0]?.message?.content?.trim() || '';
-    } catch (openaiError: any) {
-      // Fallback to simple rule-based summary for quota/API errors
-      console.log('OpenAI API failed, using fallback summary:', openaiError.message);
-      
-      const commitMessage = data.commit_message || '';
-      const author = data.author || 'Unknown';
-      
-      // Generate a simple summary based on commit message
-      if (commitMessage.toLowerCase().includes('fix')) {
-        summary = `Fixed an issue in the codebase (by ${author})`;
-        changeType = 'fix';
-      } else if (commitMessage.toLowerCase().includes('feat') || commitMessage.toLowerCase().includes('add')) {
-        summary = `Added new functionality to the project (by ${author})`;
-        changeType = 'feature';
-      } else if (commitMessage.toLowerCase().includes('refactor') || commitMessage.toLowerCase().includes('improve')) {
-        summary = `Improved code structure and organization (by ${author})`;
-        changeType = 'refactor';
-      } else {
-        summary = `Made changes to ${commitMessage ? commitMessage.split('\n')[0] : 'the codebase'} (by ${author})`;
-        changeType = 'chore';
-      }
-    }
+    const summary = completion.choices[0]?.message?.content?.trim();
     
     if (!summary) {
       return {
         success: false,
-        error: 'No summary generated'
+        error: 'OpenAI returned empty response - no summary generated'
       };
     }
 
-    // Detect change type based on commit message if not already set
-    if (changeType === 'chore') {
-      const commitMessage = data.commit_message?.toLowerCase() || '';
-      if (commitMessage.includes('feat') || commitMessage.includes('add') || commitMessage.includes('new')) {
-        changeType = 'feature';
-      } else if (commitMessage.includes('fix') || commitMessage.includes('bug')) {
-        changeType = 'fix';
-      } else if (commitMessage.includes('refactor') || commitMessage.includes('improve')) {
-        changeType = 'refactor';
-      }
+    // Detect change type based on commit message
+    const commitMessage = data.commit_message?.toLowerCase() || '';
+    let changeType = 'chore';
+    if (commitMessage.includes('feat') || commitMessage.includes('add') || commitMessage.includes('new')) {
+      changeType = 'feature';
+    } else if (commitMessage.includes('fix') || commitMessage.includes('bug')) {
+      changeType = 'fix';
+    } else if (commitMessage.includes('refactor') || commitMessage.includes('improve')) {
+      changeType = 'refactor';
     }
 
     // Update commit with summary
@@ -361,10 +374,33 @@ Provide only the summary, no additional text.`;
         commit_id: data.commit_id
       }
     };
-  } catch (error) {
+  } catch (error: any) {
+    // Categorize OpenAI errors for better handling
+    let errorType = 'unknown_error';
+    let errorMessage = error.message || 'Unknown error in summary generation';
+    
+    if (error.status === 429) {
+      errorType = 'rate_limit_exceeded';
+      errorMessage = `OpenAI rate limit exceeded: ${error.message}`;
+    } else if (error.status === 401) {
+      errorType = 'api_key_invalid';
+      errorMessage = `OpenAI API key invalid: ${error.message}`;
+    } else if (error.status === 403) {
+      errorType = 'permission_denied';
+      errorMessage = `OpenAI permission denied: ${error.message}`;
+    } else if (error.status >= 500) {
+      errorType = 'openai_server_error';
+      errorMessage = `OpenAI server error: ${error.message}`;
+    } else if (error.code === 'ENOTFOUND' || error.code === 'ECONNREFUSED') {
+      errorType = 'network_error';
+      errorMessage = `Network error connecting to OpenAI: ${error.message}`;
+    }
+
+    console.error(`❌ OpenAI summarization failed (${errorType}):`, errorMessage);
+    
     return {
       success: false,
-      error: error instanceof Error ? error.message : 'Unknown error in summary generation'
+      error: `${errorType}: ${errorMessage}`
     };
   }
 } 

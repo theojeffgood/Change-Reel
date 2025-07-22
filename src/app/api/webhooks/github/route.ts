@@ -66,31 +66,53 @@ export async function POST(request: NextRequest): Promise<NextResponse<WebhookRe
       );
     }
 
-    // Create webhook processing service with dependency injection
+    // Create Supabase client and job service for job creation
     const supabase = createSupabaseClient(
       process.env.NEXT_PUBLIC_SUPABASE_URL!,
       process.env.SUPABASE_SERVICE_ROLE_KEY!
     );
-    const webhookService = WebhookProcessingService.createWithDefaults(supabase);
-
-    // Process the webhook using the service
-    const result = await webhookService.processWebhook({
-      event: githubEvent!,
-      signature: githubSignature!,
-      delivery: githubDelivery!,
-      userAgent: userAgent || undefined,
-      payload,
-      rawBody: bodyText
+    
+    // Import and use job service directly
+    const { JobQueueService } = await import('@/lib/supabase/services/jobs');
+    const jobService = new JobQueueService(supabase);
+    
+    // Create a webhook_processing job instead of processing directly
+    const jobResult = await jobService.createJob({
+      type: 'webhook_processing',
+      priority: 90, // High priority for webhook events
+      data: {
+        webhook_event: githubEvent,
+        signature: githubSignature,
+        delivery_id: githubDelivery,
+        user_agent: userAgent,
+        payload: payload,
+        raw_body: bodyText
+      },
+      context: {
+        triggered_by: 'github_webhook',
+        received_at: new Date().toISOString(),
+      },
     });
 
+    if (jobResult.error) {
+      return NextResponse.json(
+        {
+          success: false,
+          message: 'Failed to queue webhook for processing',
+          error: jobResult.error.message
+        },
+        { status: 500 }
+      );
+    }
+
+    // Return success - the job will be processed by the job runner
     return NextResponse.json(
       {
-        success: result.success,
-        message: result.message,
-        processed: result.processed,
-        error: result.error
+        success: true,
+        message: 'Webhook received and queued for processing',
+        jobId: jobResult.data?.id
       },
-      { status: result.statusCode || 200 }
+      { status: 200 }
     );
 
   } catch (error) {

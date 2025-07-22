@@ -1,0 +1,124 @@
+# Production-optimized Dockerfile for Change Reel
+# Enhanced security, minimal size, and performance optimizations
+
+# Stage 1: Dependencies with security scanning
+FROM node:20-alpine AS deps
+LABEL stage=deps
+LABEL maintainer="Change Reel Team"
+LABEL security.scan="enabled"
+
+# Set working directory
+WORKDIR /app
+
+# Install security updates and minimal dependencies
+RUN apk add --no-cache --update \
+    libc6-compat \
+    && apk upgrade \
+    && rm -rf /var/cache/apk/*
+
+# Create non-root user early for security
+RUN addgroup --system --gid 1001 nodejs \
+    && adduser --system --uid 1001 nextjs
+
+# Copy package files with explicit ownership
+COPY --chown=nextjs:nodejs package.json package-lock.json* ./
+
+# Install dependencies with production optimizations
+RUN npm ci --only=production --omit=dev --audit --fund=false \
+    && npm cache clean --force \
+    && rm -rf ~/.npm
+
+# Stage 2: Builder with optimizations
+FROM node:20-alpine AS builder
+LABEL stage=builder
+
+WORKDIR /app
+
+# Install build dependencies
+RUN apk add --no-cache --update libc6-compat \
+    && apk upgrade \
+    && rm -rf /var/cache/apk/*
+
+# Copy node_modules from deps stage
+COPY --from=deps /app/node_modules ./node_modules
+
+# Copy source code with explicit ownership
+COPY --chown=nextjs:nodejs . .
+
+# Set production environment variables
+ENV NODE_ENV=production
+ENV NEXT_TELEMETRY_DISABLED=1
+ENV CI=true
+
+# Build the application with optimizations
+RUN npm run build \
+    && npm prune --production \
+    && npm cache clean --force
+
+# Remove unnecessary files after build
+RUN rm -rf .git* \
+    && rm -rf docs/ \
+    && rm -rf **/*.test.* \
+    && rm -rf **/__tests__ \
+    && rm -rf *.md \
+    && find . -name "*.map" -delete
+
+# Stage 3: Production Runtime (Distroless-style)
+FROM node:20-alpine AS runner
+LABEL maintainer="Change Reel Team"
+LABEL version="1.0.0"
+LABEL description="Change Reel - Production Deployment"
+LABEL security.non-root="true"
+LABEL security.readonly-rootfs="true"
+
+WORKDIR /app
+
+# Production environment
+ENV NODE_ENV=production
+ENV NEXT_TELEMETRY_DISABLED=1
+ENV PORT=3000
+ENV HOSTNAME="0.0.0.0"
+
+# Install security updates and runtime dependencies only
+RUN apk add --no-cache --update \
+    dumb-init \
+    curl \
+    && apk upgrade \
+    && rm -rf /var/cache/apk/* \
+    && rm -rf /tmp/*
+
+# Create non-root user and necessary directories
+RUN addgroup --system --gid 1001 nodejs \
+    && adduser --system --uid 1001 nextjs \
+    && mkdir -p /app/.next \
+    && mkdir -p /tmp \
+    && chown -R nextjs:nodejs /app \
+    && chown -R nextjs:nodejs /tmp
+
+# Copy built application with proper ownership
+COPY --from=builder --chown=nextjs:nodejs /app/public ./public
+COPY --from=builder --chown=nextjs:nodejs /app/.next/standalone ./
+COPY --from=builder --chown=nextjs:nodejs /app/.next/static ./.next/static
+
+# Copy health check script
+COPY --chown=nextjs:nodejs healthcheck.js ./
+
+# Switch to non-root user
+USER nextjs
+
+# Expose port
+EXPOSE 3000
+
+# Health check with improved configuration
+HEALTHCHECK --interval=15s --timeout=5s --start-period=30s --retries=3 \
+    CMD node healthcheck.js || exit 1
+
+# Security: Use read-only root filesystem (mount tmpfs for /tmp if needed)
+# Volume for temporary files
+VOLUME ["/tmp"]
+
+# Use dumb-init for proper signal handling
+ENTRYPOINT ["dumb-init", "--"]
+
+# Start the application
+CMD ["node", "server.js"] 

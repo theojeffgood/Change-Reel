@@ -110,7 +110,7 @@ export class WebhookProcessingService {
   /**
    * Process commits from the parsed webhook payload
    */
-  async processCommits(commits: any[], projectId: string): Promise<{
+  async processCommits(commits: any[], projectId: string, repositoryName: string): Promise<{
     processed: number;
     errors: string[];
   }> {
@@ -124,8 +124,8 @@ export class WebhookProcessingService {
           sha: commitData.sha,
           author: `${commitData.author_name} <${commitData.author_email}>`,
           timestamp: commitData.timestamp,
-          summary: commitData.message,
-          type: 'feature', // Will be enhanced later with AI categorization
+          summary: undefined, // Leave empty for AI to generate
+          type: undefined, // Leave empty for AI to categorize
           is_published: false,
           email_sent: false
         });
@@ -135,6 +135,15 @@ export class WebhookProcessingService {
           processingErrors.push(`Failed to create commit ${commitData.sha}: ${commitResult.error.message}`);
         } else {
           processedCount++;
+          
+          // Create jobs for this commit
+          try {
+            await this.createJobsForCommit(commitResult.data, repositoryName);
+            console.log(`Created AI processing jobs for commit ${commitData.sha}`);
+          } catch (jobError) {
+            console.error(`Failed to create jobs for commit ${commitData.sha}:`, jobError);
+            processingErrors.push(`Failed to create jobs for commit ${commitData.sha}: ${jobError instanceof Error ? jobError.message : 'Unknown job error'}`);
+          }
         }
       } catch (error) {
         console.error(`Error processing commit ${commitData.sha}:`, error);
@@ -143,6 +152,69 @@ export class WebhookProcessingService {
     }
 
     return { processed: processedCount, errors: processingErrors };
+  }
+
+  /**
+   * Create jobs for AI processing of a commit
+   */
+  private async createJobsForCommit(commit: any, repositoryName: string): Promise<void> {
+    const [owner, repo] = repositoryName.split('/');
+    
+    // Create fetch diff job
+    const fetchDiffJob = await this.dependencies.supabaseServices.jobs.createJob({
+      type: 'fetch_diff',
+      priority: 80,
+      data: {
+        commit_sha: commit.sha,
+        repository_owner: owner,
+        repository_name: repo,
+        branch: 'main', // TODO: Extract from webhook payload
+      },
+      commit_id: commit.id,
+      project_id: commit.project_id,
+      context: {
+        triggered_by: 'webhook',
+        webhook_timestamp: new Date().toISOString(),
+      },
+    });
+
+    if (fetchDiffJob.error) {
+      throw new Error(`Failed to create fetch_diff job: ${fetchDiffJob.error.message}`);
+    }
+
+    // Create AI summary job (depends on fetch diff)
+    const summaryJob = await this.dependencies.supabaseServices.jobs.createJob({
+      type: 'generate_summary',
+      priority: 70,
+      data: {
+        commit_id: commit.id,
+        commit_message: '', // Will be filled by the job handler
+        author: commit.author,
+        branch: 'main', // TODO: Extract from webhook payload
+      },
+      commit_id: commit.id,
+      project_id: commit.project_id,
+      context: {
+        triggered_by: 'webhook',
+        webhook_timestamp: new Date().toISOString(),
+      },
+    });
+
+    if (summaryJob.error) {
+      throw new Error(`Failed to create generate_summary job: ${summaryJob.error.message}`);
+    }
+
+    // Create dependency: summary job depends on fetch diff job
+    const dependency = await this.dependencies.supabaseServices.jobs.addJobDependency(
+      summaryJob.data!.id,
+      fetchDiffJob.data!.id
+    );
+
+    if (dependency.error) {
+      throw new Error(`Failed to create job dependency: ${dependency.error.message}`);
+    }
+
+    console.log(`Created job workflow for commit ${commit.sha}: fetch_diff(${fetchDiffJob.data!.id}) -> generate_summary(${summaryJob.data!.id})`);
   }
 
   /**
@@ -225,7 +297,7 @@ export class WebhookProcessingService {
       let processingErrors: string[] = [];
 
       if (parseResult.commits && parseResult.commits.length > 0) {
-        const result = await this.processCommits(parseResult.commits, project.id);
+        const result = await this.processCommits(parseResult.commits, project.id, parseResult.repository.full_name);
         processedCount = result.processed;
         processingErrors = result.errors;
       }

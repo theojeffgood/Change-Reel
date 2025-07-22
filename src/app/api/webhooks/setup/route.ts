@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { getServerSession } from 'next-auth';
 import { authConfig } from '@/lib/auth/config';
 import { GitHubWebhookService } from '@/lib/github/webhook-service';
+import { getServiceRoleSupabaseService } from '@/lib/supabase/client';
 
 interface WebhookSetupRequest {
   repositoryFullName: string;
@@ -44,6 +45,26 @@ export async function POST(request: NextRequest): Promise<NextResponse<WebhookSe
       );
     }
 
+    // Get the webhook secret from the database
+    const supabaseService = getServiceRoleSupabaseService();
+    const { data: user } = await supabaseService.users.getUserByGithubId(String(session.user.githubId));
+    
+    if (!user) {
+      return NextResponse.json(
+        { success: false, message: 'User not found', error: 'user not found in database' },
+        { status: 404 }
+      );
+    }
+
+    const { data: project } = await supabaseService.projects.getProjectByUserId(user.id);
+    
+    if (!project || !project.webhook_secret) {
+      return NextResponse.json(
+        { success: false, message: 'Project configuration not found. Please save your configuration first.', error: 'project or webhook secret not found' },
+        { status: 404 }
+      );
+    }
+
     // Generate webhook URL (use ngrok URL so GitHub can reach the webhook endpoint)
     const baseUrl = process.env.NEXTAUTH_URL || 'http://localhost:3000';
     const webhookUrl = GitHubWebhookService.generateWebhookUrl(baseUrl);
@@ -77,12 +98,14 @@ export async function POST(request: NextRequest): Promise<NextResponse<WebhookSe
       );
     }
 
-    // Setup webhook
+    // Setup webhook with the secret from the database
     const webhookResult = await GitHubWebhookService.setupRepositoryWebhook(
       String(session.user.githubId),
       owner,
       repo,
-      webhookUrl
+      webhookUrl,
+      undefined, // events (use defaults)
+      project.webhook_secret // Pass the database secret
     );
 
     if (!webhookResult.success) {

@@ -362,7 +362,8 @@ export class GitHubWebhookService {
     owner: string,
     repo: string,
     webhookUrl: string,
-    events?: string[]
+    events?: string[],
+    secret?: string
   ): Promise<WebhookServiceResult<GitHubWebhook>> {
     try {
       // First, check if webhook already exists
@@ -413,7 +414,8 @@ export class GitHubWebhookService {
           owner,
           repo,
           webhookUrl,
-          events
+          events,
+          secret
         });
       }
 

@@ -14,8 +14,8 @@ services:
       - NODE_ENV=development
       - PORT=3000
       - HOSTNAME=0.0.0.0
-      # Database (use local postgres or external Supabase)
-      - NEXT_PUBLIC_SUPABASE_URL=${NEXT_PUBLIC_SUPABASE_URL:-http://localhost:54321}
+      # Supabase (external service)
+      - NEXT_PUBLIC_SUPABASE_URL=${NEXT_PUBLIC_SUPABASE_URL}
       - NEXT_PUBLIC_SUPABASE_ANON_KEY=${NEXT_PUBLIC_SUPABASE_ANON_KEY}
       # Authentication
       - NEXTAUTH_URL=${NEXTAUTH_URL:-http://localhost:3000}
@@ -26,15 +26,10 @@ services:
       - OPENAI_API_KEY=${OPENAI_API_KEY}
       - PERPLEXITY_API_KEY=${PERPLEXITY_API_KEY:-}
     volumes:
-      # Mount source for development hot reload (optional)
+      # Mount source for development hot reload
       - .:/app
       - /app/node_modules
       - /app/.next
-    depends_on:
-      - postgres
-      - redis
-    networks:
-      - change-reel-network
     restart: unless-stopped
     healthcheck:
       test: ["CMD", "node", "healthcheck.js"]
@@ -42,73 +37,3 @@ services:
       timeout: 10s
       retries: 3
       start_period: 40s
-
-  # PostgreSQL Database (for local development)
-  postgres:
-    image: postgres:15-alpine
-    container_name: change-reel-postgres
-    environment:
-      - POSTGRES_DB=change_reel_dev
-      - POSTGRES_USER=postgres
-      - POSTGRES_PASSWORD=postgres
-      - POSTGRES_INITDB_ARGS=--encoding=UTF-8 --lc-collate=en_US.UTF-8 --lc-ctype=en_US.UTF-8
-    ports:
-      - "54321:5432"
-    volumes:
-      - postgres_data:/var/lib/postgresql/data
-      - ./src/lib/supabase/migrations:/docker-entrypoint-initdb.d
-    networks:
-      - change-reel-network
-    restart: unless-stopped
-    healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U postgres -d change_reel_dev"]
-      interval: 10s
-      timeout: 5s
-      retries: 5
-
-  # Redis (for caching and job queues)
-  redis:
-    image: redis:7-alpine
-    container_name: change-reel-redis
-    ports:
-      - "6379:6379"
-    volumes:
-      - redis_data:/data
-    networks:
-      - change-reel-network
-    restart: unless-stopped
-    healthcheck:
-      test: ["CMD", "redis-cli", "ping"]
-      interval: 10s
-      timeout: 3s
-      retries: 3
-    command: redis-server --appendonly yes
-
-  # Optional: Supabase Local Development Stack
-  # Uncomment if you want to run a full local Supabase instance
-  # supabase-studio:
-  #   image: supabase/studio:latest
-  #   container_name: change-reel-studio
-  #   ports:
-  #     - "3001:3000"
-  #   environment:
-  #     - SUPABASE_URL=http://kong:8000
-  #     - SUPABASE_ANON_KEY=${SUPABASE_ANON_KEY}
-  #     - SUPABASE_SERVICE_KEY=${SUPABASE_SERVICE_KEY}
-  #   depends_on:
-  #     - kong
-  #   networks:
-  #     - change-reel-network
-
-# Volumes for data persistence
-volumes:
-  postgres_data:
-    name: change-reel-postgres-data
-  redis_data:
-    name: change-reel-redis-data
-
-# Network for service communication
-networks:
-  change-reel-network:
-    name: change-reel-network
-    driver: bridge

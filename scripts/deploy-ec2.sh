@@ -395,9 +395,8 @@ DATE=$(date +%Y%m%d_%H%M%S)
 
 mkdir -p "$BACKUP_DIR"
 
-# Backup Docker volumes
-docker run --rm -v change-reel-redis-data-prod:/data -v "$BACKUP_DIR":/backup \
-    alpine tar czf "/backup/redis_${DATE}.tar.gz" -C /data .
+                    # Note: App uses external Supabase, no local volumes to backup
+                    echo "Application uses external services - no local data to backup"
 
 # Backup application config
 tar czf "$BACKUP_DIR/config_${DATE}.tar.gz" -C /opt/change-reel .env.production

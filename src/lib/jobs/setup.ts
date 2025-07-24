@@ -46,7 +46,8 @@ export function createJobProcessingSystem(dependencies: JobSystemDependencies) {
     fetchDiff: new FetchDiffHandler(
       dependencies.githubDiffService,
       dependencies.commitService,
-      dependencies.tokenStorage
+      dependencies.tokenStorage,
+      dependencies.projectService
     ),
     generateSummary: new GenerateSummaryHandler(
       dependencies.commitService,

@@ -5,9 +5,10 @@ import {
   FetchDiffJobData,
 } from '../../types/jobs'
 
-import { IGitHubDiffService } from '../../github/diff-service'
+import { IDiffService, DiffReference } from '../../github/diff-service'
 import { ICommitService } from '../../supabase/services/commits'
-import { IOAuthTokenStorage } from '../../oauth/tokenStorage'
+import { TokenStorageService } from '../../oauth/tokenStorage'
+import { IProjectService } from '../../supabase/services/projects'
 
 /**
  * Handler for fetching commit diffs from GitHub API
@@ -22,9 +23,10 @@ export class FetchDiffHandler implements JobHandler<FetchDiffJobData> {
   type = 'fetch_diff' as const
 
   constructor(
-    private diffService: IGitHubDiffService,
+    private diffService: IDiffService,
     private commitService: ICommitService,
-    private tokenStorage: IOAuthTokenStorage
+    private tokenStorage: TokenStorageService,
+    private projectService: IProjectService
   ) {}
 
   async handle(job: Job, data: FetchDiffJobData): Promise<JobResult> {
@@ -37,36 +39,58 @@ export class FetchDiffHandler implements JobHandler<FetchDiffJobData> {
         }
       }
 
-      // Get OAuth token for GitHub API access
-      const tokenResult = await this.tokenStorage.getToken('github')
-      if (!tokenResult.success || !tokenResult.token) {
+      // Get project to retrieve user information
+      if (!job.project_id) {
         return {
           success: false,
-          error: 'Failed to retrieve GitHub OAuth token',
-          metadata: { reason: 'oauth_token_missing' },
+          error: 'Project ID is required for OAuth token retrieval',
+          metadata: { reason: 'missing_project_id' },
         }
+      }
+
+      const projectResult = await this.projectService.getProject(job.project_id)
+      if (projectResult.error || !projectResult.data) {
+        return {
+          success: false,
+          error: 'Failed to retrieve project information',
+          metadata: { reason: 'project_not_found', projectId: job.project_id },
+        }
+      }
+
+      const project = projectResult.data
+
+             // Check if project has user_id
+       if (!project.user_id) {
+         return {
+           success: false,
+           error: 'Project does not have an associated user',
+           metadata: { reason: 'missing_user_id', projectId: job.project_id },
+         }
+       }
+
+       // Get OAuth token for GitHub API access
+       const tokenResult = await this.tokenStorage.getToken(project.user_id, 'github')
+       if (tokenResult.error || !tokenResult.data) {
+         return {
+           success: false,
+           error: 'Failed to retrieve GitHub OAuth token',
+           metadata: { reason: 'oauth_token_missing', userId: project.user_id },
+         }
+       }
+
+      // Prepare diff reference for the service
+      const diffReference: DiffReference = {
+        owner: data.repository_owner,
+        repo: data.repository_name,
+        base: 'HEAD~1', // Compare with previous commit
+        head: data.commit_sha,
       }
 
       // Fetch the commit diff from GitHub
-      const diffResult = await this.diffService.getDiff(
-        data.repository_owner,
-        data.repository_name,
-        data.commit_sha,
-        tokenResult.token
-      )
-
-      if (!diffResult.success || !diffResult.diff) {
-        return {
-          success: false,
-          error: 'Failed to fetch commit diff from GitHub',
-          metadata: {
-            reason: 'github_api_error',
-            sha: data.commit_sha,
-            repo: `${data.repository_owner}/${data.repository_name}`,
-            apiError: diffResult.error,
-          },
-        }
-      }
+      const diffResult = await this.diffService.getDiff(diffReference)
+      
+      // The service returns DiffData directly, not a result object
+      const diffData = diffResult
 
       // Update the commit record with diff data
       if (job.commit_id) {
@@ -91,23 +115,26 @@ export class FetchDiffHandler implements JobHandler<FetchDiffJobData> {
       return {
         success: true,
         data: {
-          diff_content: diffResult.diff,
-          diff_stats: diffResult.stats,
+          diff_content: JSON.stringify(diffData),
+          files_changed: diffData.stats.total_files,
+          additions: diffData.stats.additions,
+          deletions: diffData.stats.deletions,
           commit_sha: data.commit_sha,
         },
         metadata: {
           repository: `${data.repository_owner}/${data.repository_name}`,
           commit_sha: data.commit_sha,
-          diff_size: diffResult.diff?.length || 0,
+          files_processed: diffData.files.length,
         },
       }
+
     } catch (error) {
       return {
         success: false,
         error: error instanceof Error ? error.message : 'Unknown error in fetch_diff handler',
         metadata: {
-          jobId: job.id,
-          commitSha: data.commit_sha,
+          reason: 'handler_exception',
+          errorType: error instanceof Error ? error.constructor.name : 'unknown',
         },
       }
     }
@@ -115,18 +142,16 @@ export class FetchDiffHandler implements JobHandler<FetchDiffJobData> {
 
   validate(data: FetchDiffJobData): boolean {
     return !!(
-      data &&
       data.commit_sha &&
       data.repository_owner &&
       data.repository_name &&
-      data.commit_sha.length >= 7 && // Minimum SHA length
-      data.repository_owner.trim().length > 0 &&
-      data.repository_name.trim().length > 0
+      typeof data.commit_sha === 'string' &&
+      typeof data.repository_owner === 'string' &&
+      typeof data.repository_name === 'string'
     )
   }
 
-  getEstimatedDuration(data: FetchDiffJobData): number {
-    // Estimate based on typical GitHub API response times
+  getEstimatedDuration(): number {
     // Most diff fetches complete within 2-5 seconds
     return 5000 // 5 seconds in milliseconds
   }
@@ -134,9 +159,10 @@ export class FetchDiffHandler implements JobHandler<FetchDiffJobData> {
 
 // Factory function for dependency injection
 export function createFetchDiffHandler(
-  diffService: IGitHubDiffService,
+  diffService: IDiffService,
   commitService: ICommitService,
-  tokenStorage: IOAuthTokenStorage
+  tokenStorage: TokenStorageService,
+  projectService: IProjectService
 ): FetchDiffHandler {
-  return new FetchDiffHandler(diffService, commitService, tokenStorage)
-} 
+  return new FetchDiffHandler(diffService, commitService, tokenStorage, projectService)
+}

@@ -13,7 +13,7 @@ export async function register() {
   // Only run on server-side and in production/development
   if (process.env.NEXT_RUNTIME === 'nodejs') {
     try {
-      console.log('🚀 [Instrumentation] Starting Change Reel job processing system...')
+      console.log('🚀 [Instrumentation] Starting Wins Column job processing system...')
       
       await initializeJobSystem()
       

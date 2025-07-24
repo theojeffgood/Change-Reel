@@ -10,7 +10,7 @@ export default function Home() {
             <div className="w-8 h-8 bg-gradient-to-r from-blue-600 to-purple-600 rounded-lg flex items-center justify-center">
               <span className="text-white font-bold">📰</span>
             </div>
-            <span className="text-xl font-bold text-gray-900">Change Reel</span>
+            <span className="text-xl font-bold text-gray-900">Wins Column</span>
           </div>
           <div className="flex items-center space-x-4">
             <Link 
@@ -272,17 +272,17 @@ export default function Home() {
               <div className="w-8 h-8 bg-gradient-to-r from-blue-600 to-purple-600 rounded-lg flex items-center justify-center">
                 <span className="text-white font-bold">📰</span>
               </div>
-              <span className="text-xl font-bold text-white">Change Reel</span>
+              <span className="text-xl font-bold text-white">Wins Column</span>
             </div>
             <div className="flex space-x-6">
               <Link href="/config" className="hover:text-white transition-colors">Get Started</Link>
               <Link href="/admin" className="hover:text-white transition-colors">Dashboard</Link>
-              <a href="mailto:support@changereel.com" className="hover:text-white transition-colors">Support</a>
+              <a href="mailto:support@winscolumn.com" className="hover:text-white transition-colors">Support</a>
             </div>
           </div>
           <div className="border-t border-gray-800 mt-8 pt-8 text-center">
             <p className="text-sm text-gray-400">
-              © 2024 Change Reel. Transform your product updates into professional communication.
+              © 2024 Wins Column. Transform your product updates into professional communication.
             </p>
           </div>
         </div>

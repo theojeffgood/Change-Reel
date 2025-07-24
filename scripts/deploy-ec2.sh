@@ -1,14 +1,14 @@
 #!/bin/bash
 
-# Change Reel - AWS EC2 Deployment Script
-# This script deploys the Change Reel application to AWS EC2 with nginx reverse proxy
+# Wins Column - AWS EC2 Deployment Script
+# This script deploys the Wins Column application to AWS EC2 with nginx reverse proxy
 
 set -e
 
 # Configuration
-APP_NAME="change-reel"
-DOCKER_IMAGE="change-reel:latest"
-CONTAINER_NAME="change-reel-app"
+APP_NAME="wins-column"
+DOCKER_IMAGE="wins-column:latest"
+CONTAINER_NAME="wins-column-app"
 APP_PORT=3001
 NGINX_PORT=80
 DOMAIN="${DOMAIN:-localhost}"
@@ -74,8 +74,8 @@ setup_nginx() {
     fi
     
     # Create nginx configuration
-    sudo tee /etc/nginx/conf.d/change-reel.conf > /dev/null <<EOF
-upstream change_reel_app {
+    sudo tee /etc/nginx/conf.d/wins-column.conf > /dev/null <<EOF
+upstream wins_column_app {
     server localhost:${APP_PORT};
 }
 
@@ -96,7 +96,7 @@ server {
     
     # Health check endpoint
     location /health {
-        proxy_pass http://change_reel_app/api/health;
+        proxy_pass http://wins_column_app/api/health;
         proxy_set_header Host \$host;
         proxy_set_header X-Real-IP \$remote_addr;
         proxy_set_header X-Forwarded-For \$proxy_add_x_forwarded_for;
@@ -105,7 +105,7 @@ server {
     
     # Main application
     location / {
-        proxy_pass http://change_reel_app;
+        proxy_pass http://wins_column_app;
         proxy_http_version 1.1;
         proxy_set_header Upgrade \$http_upgrade;
         proxy_set_header Connection 'upgrade';

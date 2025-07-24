@@ -92,7 +92,7 @@ export class GitHubDiffService implements IDiffService {
           headers: {
             'Accept': 'application/vnd.github.v3.diff',
             'Authorization': `token ${process.env.GITHUB_TOKEN || process.env.GITHUB_API_TOKEN}`,
-            'User-Agent': 'change-reel/1.0.0',
+            'User-Agent': 'wins-column/1.0.0',
           },
         }
       );

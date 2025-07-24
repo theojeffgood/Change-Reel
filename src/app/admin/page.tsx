@@ -18,7 +18,7 @@ export default function AdminPage() {
                   <span className="text-white font-bold text-sm">📰</span>
                 </div>
                 <div>
-                  <h1 className="text-xl font-bold text-gray-900">Change Reel</h1>
+                  <h1 className="text-xl font-bold text-gray-900">Wins Column</h1>
                   <p className="text-xs text-gray-500">Newsletter Dashboard</p>
                 </div>
               </Link>

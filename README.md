@@ -1,207 +1,190 @@
-# Change Reel
+# Wins Column
 
-A SaaS tool that automatically generates and publishes plain-English summaries of Git commit diffs. These summaries are distributed via email or posted to a publicly accessible changelog webpage.
+**Automated Git Commit Changelogs with AI-Powered Summaries**
 
-## Overview
+Wins Column helps engineering teams, product managers, and stakeholders gain visibility into ongoing development without reading raw commit messages or diffs. It integrates with GitHub using secure OAuth, processes commits with AI, and delivers clear, professional updates via email or public changelog.
 
-Change Reel helps engineering teams, product managers, and stakeholders gain visibility into ongoing development without reading raw commit messages or diffs. It integrates with GitHub using secure OAuth authentication to automatically process commits and generate human-readable summaries using AI.
+## 🚀 Features
 
-## Key Features
+- **AI-Powered Summaries**: Transforms technical git diffs into clear, business-friendly language
+- **GitHub Integration**: Secure OAuth connection with real-time webhook processing
+- **Flexible Distribution**: Email stakeholders or publish to a public changelog
+- **Professional Templates**: Beautifully formatted updates that enhance team credibility
+- **Zero Configuration**: Automatic setup with intelligent categorization
+- **Secure & Private**: Your code stays private while enabling seamless automation
 
-- **Secure GitHub OAuth Integration**: Safe and secure repository access without manual token management
-- **AI-Powered Summaries**: Uses OpenAI API to generate natural language summaries of code changes
-- **Repository Selection**: Choose which repositories to monitor through an intuitive configuration interface
-- **Multiple Distribution Methods**: Email notifications via Resend or public changelog pages
-- **Change Type Detection**: Automatically categorizes changes as features, fixes, refactors, or chores
-- **Admin Panel**: Review and manage generated summaries with manual publishing options
-- **Enterprise Security**: Encrypted token storage with comprehensive security auditing
+## 📋 Prerequisites
 
-## Tech Stack
-
-- **Frontend**: Next.js 15 with TypeScript, Tailwind CSS, App Router
-- **Backend**: Next.js API Routes with NextAuth.js for OAuth
-- **Database**: Supabase (PostgreSQL) with encrypted token storage
-- **Authentication**: GitHub OAuth 2.0 with NextAuth.js
-- **AI**: OpenAI GPT-4 Turbo
-- **Email**: Resend
-- **Deployment**: Docker on AWS EC2
-
-## Getting Started
-
-### Prerequisites
-
-- Node.js 18 or later
-- npm or yarn
-- Git
-- A GitHub account for OAuth integration
+Before installing Wins Column, you need to create a GitHub OAuth App:
 
 ### GitHub OAuth App Setup
 
-Before installing Change Reel, you need to create a GitHub OAuth App:
-
-1. **Go to GitHub Settings**:
-   - Navigate to [GitHub Developer Settings](https://github.com/settings/developers)
-   - Click "OAuth Apps" → "New OAuth App"
-
-2. **Configure your OAuth App**:
-   - **Application name**: `Change Reel - Git Commit Changelog`
+1. Go to [GitHub Developer Settings > OAuth Apps](https://github.com/settings/applications/new)
+2. Create a new OAuth app with these settings:
+   - **Application name**: `Wins Column - Git Commit Changelog`
    - **Homepage URL**: `http://localhost:3000` (for development)
    - **Authorization callback URL**: `http://localhost:3000/api/auth/callback/github`
-   - **Application description**: `Automated changelog generation for Git repositories`
+3. Save the **Client ID** and **Client Secret** for later
 
-3. **Required OAuth Scopes**:
-   - `repo` - Access to repository data
-   - `write:repo_hook` - Create webhooks for automatic processing
-   - `user:email` - Access to user email for notifications
+## 🛠️ Installation
 
-4. **Save your credentials**:
-   - Copy the **Client ID** and **Client Secret** for the next step
+### Local Development
 
-### Installation
-
-1. **Clone the repository**:
 ```bash
-git clone https://github.com/theojeffgood/Change-Reel.git
-cd change-reel
-```
+# Clone the repository
+git clone https://github.com/yourusername/wins-column.git
+cd wins-column
 
-2. **Install dependencies**:
-```bash
+# Install dependencies
 npm install
-```
 
-3. **Set up environment variables**:
-```bash
+# Copy environment template
 cp .env.example .env.local
+
+# Configure your environment variables (see below)
 ```
 
-4. **Configure your environment variables in `.env.local`**:
+### Environment Configuration
+
+Create `.env.local` with your actual values:
+
 ```bash
-# Supabase Configuration
-NEXT_PUBLIC_SUPABASE_URL=your_supabase_url
-NEXT_PUBLIC_SUPABASE_ANON_KEY=your_supabase_anon_key
-
-# AI Configuration
-OPENAI_API_KEY=your_openai_api_key
-
-# Email Configuration (Optional)
-RESEND_API_KEY=your_resend_api_key
-
-# GitHub OAuth Configuration (Required)
-GITHUB_CLIENT_ID=your_github_oauth_client_id
-GITHUB_CLIENT_SECRET=your_github_oauth_client_secret
-
-# NextAuth Configuration (Required)
-NEXTAUTH_SECRET=your_nextauth_secret_key_32chars_min
+# NextAuth Configuration
 NEXTAUTH_URL=http://localhost:3000
+NEXTAUTH_SECRET=your-nextauth-secret-here-min-32-chars
 
-# Security Configuration (Required)
-TOKEN_ENCRYPTION_KEY=change-reel-secure-encryption-key-2024-v1-production-grade!!
+# GitHub OAuth (from the OAuth app you created)
+GITHUB_CLIENT_ID=your-github-client-id
+GITHUB_CLIENT_SECRET=your-github-client-secret
+
+# Supabase Configuration
+NEXT_PUBLIC_SUPABASE_URL=https://your-project.supabase.co
+NEXT_PUBLIC_SUPABASE_ANON_KEY=your-supabase-anon-key
+SUPABASE_SERVICE_ROLE_KEY=your-supabase-service-role-key
+
+# OpenAI Configuration
+OPENAI_API_KEY=your-openai-api-key
+
+# Token Encryption (32+ characters required)
+TOKEN_ENCRYPTION_KEY=your-secure-encryption-key-32-chars-min
 ```
 
-> **Security Note**: The `TOKEN_ENCRYPTION_KEY` must be at least 32 characters long. Use a strong, unique key for production deployments.
+### Start Development Server
 
-5. **Run the development server**:
 ```bash
 npm run dev
 ```
 
-6. **Complete OAuth Setup**:
-   - Open [http://localhost:3000/config](http://localhost:3000/config) in your browser
-   - Click "Connect with GitHub" to authenticate
-   - Select the repositories you want to monitor
-   - Configure email recipients for changelog notifications
+Visit `http://localhost:3000` to configure your first repository.
+
+## 🎯 How It Works
+
+1. **Connect Repository**: Link your GitHub repository via secure OAuth
+2. **Configure Webhooks**: Automatic webhook setup for real-time processing  
+3. **AI Processing**: Each commit is analyzed and summarized using OpenAI
+4. **Smart Distribution**: Updates are sent via email or published to changelog
+5. **Professional Results**: Stakeholders receive clear, actionable updates
+
+## 🔧 Production Deployment
+
+### AWS EC2 with Docker
+
+```bash
+# Copy environment template
+cp env.production.template .env.production
+
+# Configure production values in .env.production
+# Deploy to EC2
+./scripts/deploy-ec2.sh
+```
+
+### Docker Compose
+
+```bash
+# Production deployment
+docker-compose -f docker-compose.prod.yml up -d
+```
+
+## 📚 Configuration
+
+### Repository Setup
+
+1. Navigate to `/config`
+2. Sign in with GitHub
+3. Select your repository
+4. Configure email recipients
+5. Test webhook connection
+
+### Email Configuration
+
+Wins Column uses your email service provider to send updates. Configure SMTP settings in your environment file.
+
+## 🧪 Testing
+
+```bash
+# Run all tests
+npm test
+
+# Run tests with coverage
+npm run test:coverage
+
+# Run tests in watch mode
+npm run test:watch
+```
+
+## 📖 API Documentation
+
+### Health Check
+```
+GET /api/health
+```
 
 ### Configuration
-
-After OAuth authentication, use the configuration interface at `/config` to:
-
-- **Repository Selection**: Choose which repositories to monitor for changes
-- **Email Recipients**: Set up who receives changelog notifications  
-- **Webhook Management**: Automatic webhook creation for selected repositories
-- **Security Review**: Monitor OAuth token status and security logs
-
-## Development
-
-### Available Scripts
-
-- `npm run dev` - Start development server with Turbopack
-- `npm run build` - Build the application for production
-- `npm run start` - Start production server
-- `npm run lint` - Run ESLint
-- `npm run format` - Format code with Prettier
-- `npm run format:check` - Check code formatting
-
-### Project Structure
-
 ```
-src/
-├── app/                 # Next.js App Router pages
-│   ├── config/         # OAuth configuration interface
-│   └── api/            # API routes and authentication
-├── components/          # React components
-│   └── providers/      # Authentication providers
-├── lib/                # Utility libraries and configurations
-│   ├── auth/           # OAuth and security services
-│   ├── supabase/       # Database integration
-│   └── validation/     # Input validation services
-├── utils/               # Helper functions
-└── __tests__/           # Test files and fixtures
+POST /api/config
+GET /api/config
 ```
 
-### Security Features
+### Webhook Processing
+```
+POST /api/webhooks/github
+```
 
-- **Encrypted Token Storage**: OAuth tokens are encrypted using AES-256-CBC before database storage
-- **Security Audit Logging**: All token operations are logged for security monitoring
-- **Automatic Token Rotation**: Built-in support for OAuth token refresh and rotation
-- **Request Validation**: Comprehensive input validation for all user inputs
-- **Environment Isolation**: Sensitive configuration isolated in environment variables
+## 🛡️ Security
 
-## Features
+- OAuth tokens are encrypted using AES-256
+- Webhook signatures are verified using HMAC-SHA256
+- All API routes include proper authentication checks
+- Database queries use parameterized statements
+- CORS policies restrict unauthorized access
 
-### Current Implementation
-
-- **GitHub OAuth Integration**: Secure repository access with automatic token management
-- **Repository Configuration**: Select and configure multiple repositories through web interface
-- **Webhook Integration**: Automatic webhook creation for real-time commit processing
-- **Commit Analysis**: AI-powered analysis and summarization of code changes
-- **Email Distribution**: Automated changelog distribution via email
-- **Security Monitoring**: Comprehensive audit logging and token security
-
-### Roadmap
-
-- **Public Changelog Pages**: Web-accessible changelog pages for each repository
-- **Advanced Admin Dashboard**: Enhanced repository and user management
-- **Team Collaboration**: Multi-user support with role-based permissions
-- **Custom Email Templates**: Branded and customizable email notifications
-- **API Access**: REST API for third-party integrations
-
-## Troubleshooting
-
-### OAuth Issues
-
-- **"Callback URL mismatch"**: Ensure your OAuth app callback URL is exactly `http://localhost:3000/api/auth/callback/github`
-- **"Invalid client"**: Verify your `GITHUB_CLIENT_ID` and `GITHUB_CLIENT_SECRET` are correct
-- **"Token storage failed"**: Check that `TOKEN_ENCRYPTION_KEY` is at least 32 characters long
-
-### Database Issues
-
-- **"oauth_tokens table does not exist"**: Apply the database migration in your Supabase dashboard
-- **Connection errors**: Verify your Supabase URL and keys are correct
-
-### General Setup
-
-- **Environment variables**: Ensure all required environment variables are set
-- **Port conflicts**: Change the port if 3000 is already in use: `npm run dev -- -p 3001`
-
-## Contributing
+## 🤝 Contributing
 
 1. Fork the repository
-2. Create a feature branch
-3. Implement your changes with tests
-4. Run `npm run lint` and `npm run format`
-5. Submit a pull request
+2. Create a feature branch: `git checkout -b feature/amazing-feature`
+3. Commit your changes: `git commit -m 'Add amazing feature'`
+4. Push to the branch: `git push origin feature/amazing-feature`
+5. Open a Pull Request
 
-## License
+## 📄 License
 
-[Add your license information here]
+This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
+
+## 🆘 Support
+
+- **Documentation**: Check this README and inline code comments
+- **Issues**: Create an issue on GitHub for bugs or feature requests
+- **Email**: Contact us at support@winscolumn.com
+
+## 🗺️ Roadmap
+
+- [ ] Slack integration
+- [ ] Custom email templates
+- [ ] Advanced analytics dashboard
+- [ ] Multi-repository support
+- [ ] API rate limiting controls
+- [ ] Webhook retry mechanisms
+
+---
+
+**Wins Column** - Transform your development updates into professional communication.

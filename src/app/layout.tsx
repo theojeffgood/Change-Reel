@@ -14,7 +14,7 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: 'Change Reel - Automated Git Commit Changelogs',
+  title: 'Wins Column - Automated Git Commit Changelogs',
   description: 'Automated changelog generation from your Git commits using AI',
 };
 

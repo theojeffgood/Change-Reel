@@ -1,43 +1,40 @@
 version: '3.8'
 
 services:
-  change-reel:
+  wins-column:
     build:
       context: .
       dockerfile: Dockerfile.prod
     ports:
-      - '3001:3001'
+      - "3001:3001"
+    env_file:
+      - .env.production
     environment:
       - NODE_ENV=production
-      - PORT=3001
-    env_file:
-      - .env.production  # Copy docker.env.template to .env.production and fill in production values
     restart: unless-stopped
-    # Resource limits for production
-    deploy:
-      resources:
-        limits:
-          memory: 512M
-          cpus: '0.5'
-        reservations:
-          memory: 256M
-          cpus: '0.1'
-    # Production health check
     healthcheck:
       test: ["CMD", "node", "/app/healthcheck.js"]
-      interval: 15s
-      timeout: 5s
+      interval: 30s
+      timeout: 10s
       retries: 3
-      start_period: 10s
-    # Logging configuration
-    logging:
-      driver: "json-file"
-      options:
-        max-size: "10m"
-        max-file: "3"
-    # Security options
-    security_opt:
-      - no-new-privileges:true
-    read_only: false  # Next.js needs write access for some runtime files
-    tmpfs:
-      - /tmp:noexec,nosuid,size=100m 
+      start_period: 40s
+    networks:
+      - app-network
+
+  nginx:
+    image: nginx:alpine
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - ./nginx.conf:/etc/nginx/nginx.conf
+      - ./ssl:/etc/nginx/ssl
+    depends_on:
+      - wins-column
+    restart: unless-stopped
+    networks:
+      - app-network
+
+networks:
+  app-network:
+    driver: bridge 

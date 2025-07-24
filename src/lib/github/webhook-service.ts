@@ -89,7 +89,7 @@ export class GitHubWebhookService {
             'Authorization': `Bearer ${tokenResult.token}`,
             'Accept': 'application/vnd.github.v3+json',
             'Content-Type': 'application/json',
-            'User-Agent': 'Change-Reel-App/1.0'
+            'User-Agent': 'Wins-Column-App/1.0'
           },
           body: JSON.stringify(webhookConfig)
         }
@@ -147,7 +147,7 @@ export class GitHubWebhookService {
           headers: {
             'Authorization': `Bearer ${tokenResult.token}`,
             'Accept': 'application/vnd.github.v3+json',
-            'User-Agent': 'Change-Reel-App/1.0'
+            'User-Agent': 'Wins-Column-App/1.0'
           }
         }
       );
@@ -205,7 +205,7 @@ export class GitHubWebhookService {
           headers: {
             'Authorization': `Bearer ${tokenResult.token}`,
             'Accept': 'application/vnd.github.v3+json',
-            'User-Agent': 'Change-Reel-App/1.0'
+            'User-Agent': 'Wins-Column-App/1.0'
           }
         }
       );
@@ -282,7 +282,7 @@ export class GitHubWebhookService {
             'Authorization': `Bearer ${tokenResult.token}`,
             'Accept': 'application/vnd.github.v3+json',
             'Content-Type': 'application/json',
-            'User-Agent': 'Change-Reel-App/1.0'
+            'User-Agent': 'Wins-Column-App/1.0'
           },
           body: JSON.stringify(updatePayload)
         }
@@ -500,7 +500,7 @@ export class GitHubWebhookService {
           headers: {
             'Authorization': `Bearer ${tokenResult.token}`,
             'Accept': 'application/vnd.github.v3+json',
-            'User-Agent': 'Change-Reel-App/1.0'
+            'User-Agent': 'Wins-Column-App/1.0'
           }
         }
       );

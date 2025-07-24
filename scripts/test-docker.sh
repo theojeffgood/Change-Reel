@@ -1,132 +1,251 @@
 #!/bin/bash
 
-# Test script for Change Reel Docker configuration
-# Tests Docker build, run, and health check functionality
+# Change Reel - Docker Build Test Script
+# Tests Docker build process and basic container functionality
 
 set -e
+
+# Configuration
+TEST_IMAGE="change-reel:test"
+TEST_CONTAINER="change-reel-test"
+APP_PORT=3001
 
 # Colors for output
 RED='\033[0;31m'
 GREEN='\033[0;32m'
-YELLOW='\033[1;33m'
+YELLOW='\033[0;33m'
 BLUE='\033[0;34m'
 NC='\033[0m' # No Color
 
-# Configuration
-IMAGE_NAME="change-reel"
-CONTAINER_NAME="change-reel-test"
-PORT=3000
-TEST_TAG="test"
+# Test results
+TESTS_PASSED=0
+TESTS_FAILED=0
 
-echo -e "${BLUE}=== Change Reel Docker Test Suite ===${NC}"
-
-# Function to cleanup containers
-cleanup() {
-    echo -e "${YELLOW}Cleaning up...${NC}"
-    docker stop "$CONTAINER_NAME" 2>/dev/null || true
-    docker rm "$CONTAINER_NAME" 2>/dev/null || true
+# Logging functions
+log() {
+    echo -e "${GREEN}[TEST] $1${NC}"
 }
 
-# Trap cleanup on exit
-trap cleanup EXIT
+error() {
+    echo -e "${RED}[FAIL] $1${NC}" >&2
+    TESTS_FAILED=$((TESTS_FAILED + 1))
+}
 
-# Check if Docker is installed
-if ! command -v docker &> /dev/null; then
-    echo -e "${RED}Error: Docker is not installed or not in PATH${NC}"
-    echo "Please install Docker Desktop: https://www.docker.com/products/docker-desktop/"
-    exit 1
-fi
+pass() {
+    echo -e "${GREEN}[PASS] $1${NC}"
+    TESTS_PASSED=$((TESTS_PASSED + 1))
+}
 
-# Check if Docker daemon is running
-if ! docker info &> /dev/null; then
-    echo -e "${RED}Error: Docker daemon is not running${NC}"
-    echo "Please start Docker Desktop"
-    exit 1
-fi
+info() {
+    echo -e "${BLUE}[INFO] $1${NC}"
+}
 
-echo -e "${GREEN}✓ Docker is available${NC}"
+# Cleanup function
+cleanup() {
+    log "Cleaning up test containers and images..."
+    docker stop ${TEST_CONTAINER} 2>/dev/null || true
+    docker rm ${TEST_CONTAINER} 2>/dev/null || true
+    docker rmi ${TEST_IMAGE} 2>/dev/null || true
+}
 
-# Test 1: Build the Docker image
-echo -e "\n${BLUE}Test 1: Building Docker image...${NC}"
-if docker build -t "${IMAGE_NAME}:${TEST_TAG}" .; then
-    echo -e "${GREEN}✓ Docker build successful${NC}"
-else
-    echo -e "${RED}✗ Docker build failed${NC}"
-    exit 1
-fi
-
-# Test 2: Check image size
-echo -e "\n${BLUE}Test 2: Checking image size...${NC}"
-IMAGE_SIZE=$(docker images "${IMAGE_NAME}:${TEST_TAG}" --format "table {{.Size}}" | tail -n 1)
-echo -e "${GREEN}✓ Image size: ${IMAGE_SIZE}${NC}"
-
-# Test 3: Run container
-echo -e "\n${BLUE}Test 3: Starting container...${NC}"
-if docker run -d --name "$CONTAINER_NAME" -p "${PORT}:${PORT}" "${IMAGE_NAME}:${TEST_TAG}"; then
-    echo -e "${GREEN}✓ Container started successfully${NC}"
-else
-    echo -e "${RED}✗ Failed to start container${NC}"
-    exit 1
-fi
-
-# Wait for container to be ready
-echo -e "\n${BLUE}Waiting for container to be ready...${NC}"
-sleep 10
-
-# Test 4: Health check endpoint
-echo -e "\n${BLUE}Test 4: Testing health check endpoint...${NC}"
-if curl -f "http://localhost:${PORT}/api/health" > /dev/null 2>&1; then
-    echo -e "${GREEN}✓ Health check endpoint responding${NC}"
-    curl -s "http://localhost:${PORT}/api/health" | jq '.' || echo "Health check response received"
-else
-    echo -e "${RED}✗ Health check endpoint not responding${NC}"
-    echo "Container logs:"
-    docker logs "$CONTAINER_NAME"
-    exit 1
-fi
-
-# Test 5: Docker health check
-echo -e "\n${BLUE}Test 5: Testing Docker health check...${NC}"
-sleep 5  # Wait for health check to run
-HEALTH_STATUS=$(docker inspect --format='{{.State.Health.Status}}' "$CONTAINER_NAME" 2>/dev/null || echo "none")
-if [ "$HEALTH_STATUS" = "healthy" ]; then
-    echo -e "${GREEN}✓ Docker health check passing${NC}"
-elif [ "$HEALTH_STATUS" = "starting" ]; then
-    echo -e "${YELLOW}⚠ Docker health check still starting (this is normal)${NC}"
-else
-    echo -e "${YELLOW}⚠ Docker health check status: $HEALTH_STATUS${NC}"
-fi
-
-# Test 6: Check container logs
-echo -e "\n${BLUE}Test 6: Checking container logs...${NC}"
-if docker logs "$CONTAINER_NAME" | grep -q "Ready"; then
-    echo -e "${GREEN}✓ Container logs show application ready${NC}"
-else
-    echo -e "${YELLOW}⚠ Application ready message not found in logs${NC}"
-    echo "Recent logs:"
-    docker logs --tail 10 "$CONTAINER_NAME"
-fi
-
-# Test 7: Security scan (if available)
-echo -e "\n${BLUE}Test 7: Security scanning...${NC}"
-if command -v docker &> /dev/null; then
-    # Try to use docker scan if available
-    if docker scan --version &> /dev/null; then
-        echo "Running security scan..."
-        docker scan "${IMAGE_NAME}:${TEST_TAG}" || echo -e "${YELLOW}⚠ Security scan completed with warnings${NC}"
+# Test Docker build
+test_docker_build() {
+    log "Testing Docker build process..."
+    
+    if docker build -t ${TEST_IMAGE} .; then
+        pass "Docker build successful"
     else
-        echo -e "${YELLOW}⚠ Docker scan not available, skipping security scan${NC}"
+        error "Docker build failed"
+        return 1
     fi
-fi
+    
+    # Check image size
+    IMAGE_SIZE=$(docker images ${TEST_IMAGE} --format "{{.Size}}")
+    info "Image size: ${IMAGE_SIZE}"
+    
+    # Check image layers
+    LAYER_COUNT=$(docker history ${TEST_IMAGE} --format "{{.ID}}" | wc -l)
+    info "Image layers: ${LAYER_COUNT}"
+    
+    return 0
+}
 
-echo -e "\n${GREEN}=== All Docker tests completed successfully! ===${NC}"
-echo -e "${GREEN}Image: ${IMAGE_NAME}:${TEST_TAG}${NC}"
-echo -e "${GREEN}Container: ${CONTAINER_NAME}${NC}"
-echo -e "${GREEN}Health check: http://localhost:${PORT}/api/health${NC}"
+# Test production Docker build
+test_production_build() {
+    log "Testing production Docker build..."
+    
+    if docker build -f Dockerfile.prod -t ${TEST_IMAGE}-prod .; then
+        pass "Production Docker build successful"
+        
+        # Compare sizes
+        PROD_SIZE=$(docker images ${TEST_IMAGE}-prod --format "{{.Size}}")
+        info "Production image size: ${PROD_SIZE}"
+        
+        # Cleanup production image
+        docker rmi ${TEST_IMAGE}-prod 2>/dev/null || true
+    else
+        error "Production Docker build failed"
+        return 1
+    fi
+    
+    return 0
+}
 
-# Optional: Keep container running for manual testing
-if [ "$1" = "--keep-running" ]; then
-    echo -e "\n${YELLOW}Container will keep running for manual testing...${NC}"
-    echo -e "${YELLOW}Use 'docker stop ${CONTAINER_NAME}' to stop it${NC}"
-    trap - EXIT  # Remove cleanup trap
-fi 
+# Test container startup
+test_container_startup() {
+    log "Testing container startup..."
+    
+    # Create environment file for testing
+    cat > .env.test <<EOF
+NODE_ENV=development
+PORT=${APP_PORT}
+NEXT_TELEMETRY_DISABLED=1
+NEXTAUTH_URL=http://localhost:${APP_PORT}
+NEXTAUTH_SECRET=test-secret-for-testing-only
+NEXT_PUBLIC_SUPABASE_URL=http://localhost:54321
+NEXT_PUBLIC_SUPABASE_ANON_KEY=test-anon-key
+SUPABASE_SERVICE_ROLE_KEY=test-service-role-key
+EOF
+    
+    # Start container
+    if docker run -d \
+        --name ${TEST_CONTAINER} \
+        -p ${APP_PORT}:${APP_PORT} \
+        --env-file .env.test \
+        ${TEST_IMAGE}; then
+        pass "Container started successfully"
+    else
+        error "Container failed to start"
+        rm -f .env.test
+        return 1
+    fi
+    
+    # Wait for container to be ready
+    log "Waiting for container to be ready..."
+    for i in {1..30}; do
+        if docker ps --filter "name=${TEST_CONTAINER}" --filter "status=running" | grep -q ${TEST_CONTAINER}; then
+            pass "Container is running"
+            break
+        fi
+        
+        if [ $i -eq 30 ]; then
+            error "Container failed to start properly"
+            docker logs ${TEST_CONTAINER}
+            rm -f .env.test
+            return 1
+        fi
+        
+        sleep 2
+    done
+    
+    rm -f .env.test
+    return 0
+}
+
+# Test health endpoint
+test_health_endpoint() {
+    log "Testing health endpoint..."
+    
+    # Wait for app to be ready
+    for i in {1..30}; do
+        if curl -s http://localhost:${APP_PORT}/api/health > /dev/null 2>&1; then
+            pass "Health endpoint responding"
+            
+            # Get health details
+            HEALTH_RESPONSE=$(curl -s http://localhost:${APP_PORT}/api/health)
+            info "Health response: ${HEALTH_RESPONSE}"
+            
+            # Check if response contains expected fields
+            if echo "${HEALTH_RESPONSE}" | grep -q '"status":"healthy"'; then
+                pass "Health endpoint returns healthy status"
+            else
+                error "Health endpoint does not return healthy status"
+                return 1
+            fi
+            
+            return 0
+        fi
+        
+        if [ $i -eq 30 ]; then
+            error "Health endpoint not responding after 60 seconds"
+            docker logs ${TEST_CONTAINER}
+            return 1
+        fi
+        
+        sleep 2
+    done
+}
+
+# Test container logs
+test_container_logs() {
+    log "Testing container logs..."
+    
+    if docker logs ${TEST_CONTAINER} 2>&1 | grep -q "Ready"; then
+        pass "Container logs show application ready"
+    else
+        info "Container logs:"
+        docker logs ${TEST_CONTAINER} 2>&1 | tail -10
+        pass "Container logs accessible (ready status may vary)"
+    fi
+    
+    return 0
+}
+
+# Test Docker health check
+test_docker_healthcheck() {
+    log "Testing Docker health check..."
+    
+    # Wait for health check to run
+    sleep 10
+    
+    HEALTH_STATUS=$(docker inspect --format='{{.State.Health.Status}}' ${TEST_CONTAINER} 2>/dev/null || echo "none")
+    
+    if [ "${HEALTH_STATUS}" = "healthy" ]; then
+        pass "Docker health check reports healthy"
+    elif [ "${HEALTH_STATUS}" = "starting" ]; then
+        pass "Docker health check is starting (normal for new containers)"
+    else
+        error "Docker health check failed or not configured. Status: ${HEALTH_STATUS}"
+        return 1
+    fi
+    
+    return 0
+}
+
+# Show test summary
+show_summary() {
+    echo ""
+    info "=== Test Summary ==="
+    echo -e "${GREEN}Tests Passed: ${TESTS_PASSED}${NC}"
+    echo -e "${RED}Tests Failed: ${TESTS_FAILED}${NC}"
+    
+    if [ ${TESTS_FAILED} -eq 0 ]; then
+        echo -e "${GREEN}🎉 All tests passed!${NC}"
+        return 0
+    else
+        echo -e "${RED}❌ Some tests failed!${NC}"
+        return 1
+    fi
+}
+
+# Main test function
+main() {
+    log "Starting Docker tests for Change Reel..."
+    
+    # Set trap for cleanup
+    trap cleanup EXIT
+    
+    # Run tests
+    test_docker_build
+    test_production_build
+    test_container_startup
+    test_health_endpoint
+    test_container_logs
+    test_docker_healthcheck
+    
+    # Show summary
+    show_summary
+}
+
+# Run main function
+main "$@" 

@@ -1,124 +1,113 @@
-# Production-optimized Dockerfile for Change Reel
-# Enhanced security, minimal size, and performance optimizations
+# Use the official Node.js image as base - latest LTS
+FROM node:20-alpine AS base
 
-# Stage 1: Dependencies with security scanning
-FROM node:20-alpine AS deps
-LABEL stage=deps
-LABEL maintainer="Change Reel Team"
-LABEL security.scan="enabled"
-
-# Set working directory
+# Install dependencies only when needed
+FROM base AS deps
+# Install only production dependencies and security updates
+RUN apk add --no-cache libc6-compat dumb-init
+RUN apk upgrade --no-cache
 WORKDIR /app
 
-# Install security updates and minimal dependencies
-RUN apk add --no-cache --update \
-    libc6-compat \
-    && apk upgrade \
-    && rm -rf /var/cache/apk/*
+# Copy dependency files
+COPY package.json package-lock.json* ./
 
-# Create non-root user early for security
-RUN addgroup --system --gid 1001 nodejs \
-    && adduser --system --uid 1001 nextjs
+# Install dependencies - production only
+RUN npm ci --only=production --omit=dev && npm cache clean --force
 
-# Copy package files with explicit ownership
-COPY --chown=nextjs:nodejs package.json package-lock.json* ./
-
-# Install dependencies with production optimizations
-RUN npm ci --only=production --omit=dev --audit --fund=false \
-    && npm cache clean --force \
-    && rm -rf ~/.npm
-
-# Stage 2: Builder with optimizations
-FROM node:20-alpine AS builder
-LABEL stage=builder
-
+# Rebuild the source code only when needed
+FROM base AS builder
 WORKDIR /app
-
-# Install build dependencies
-RUN apk add --no-cache --update libc6-compat \
-    && apk upgrade \
-    && rm -rf /var/cache/apk/*
-
-# Copy node_modules from deps stage
 COPY --from=deps /app/node_modules ./node_modules
+COPY . .
 
-# Copy source code with explicit ownership
-COPY --chown=nextjs:nodejs . .
+# Disable telemetry during build
+ENV NEXT_TELEMETRY_DISABLED 1
 
-# Set production environment variables
-ENV NODE_ENV=production
-ENV NEXT_TELEMETRY_DISABLED=1
-ENV CI=true
+# Build the application
+RUN npm run build && npm prune --production
 
-# Build the application with optimizations
-RUN npm run build \
-    && npm prune --production \
-    && npm cache clean --force
-
-# Remove unnecessary files after build
-RUN rm -rf .git* \
-    && rm -rf docs/ \
-    && rm -rf **/*.test.* \
-    && rm -rf **/__tests__ \
-    && rm -rf *.md \
-    && find . -name "*.map" -delete
-
-# Stage 3: Production Runtime (Distroless-style)
-FROM node:20-alpine AS runner
-LABEL maintainer="Change Reel Team"
-LABEL version="1.0.0"
-LABEL description="Change Reel - Production Deployment"
-LABEL security.non-root="true"
-LABEL security.readonly-rootfs="true"
-
+# Production image - minimal and secure
+FROM base AS runner
 WORKDIR /app
 
-# Production environment
-ENV NODE_ENV=production
-ENV NEXT_TELEMETRY_DISABLED=1
-ENV PORT=3000
-ENV HOSTNAME="0.0.0.0"
+# Production environment variables
+ENV NODE_ENV production
+ENV NEXT_TELEMETRY_DISABLED 1
+ENV PORT 3001
+ENV HOSTNAME "0.0.0.0"
 
-# Install security updates and runtime dependencies only
-RUN apk add --no-cache --update \
-    dumb-init \
-    curl \
-    && apk upgrade \
-    && rm -rf /var/cache/apk/* \
-    && rm -rf /tmp/*
+# Install only essential packages and security updates
+RUN apk add --no-cache dumb-init && \
+    apk upgrade --no-cache && \
+    rm -rf /var/cache/apk/*
 
-# Create non-root user and necessary directories
-RUN addgroup --system --gid 1001 nodejs \
-    && adduser --system --uid 1001 nextjs \
-    && mkdir -p /app/.next \
-    && mkdir -p /tmp \
-    && chown -R nextjs:nodejs /app \
-    && chown -R nextjs:nodejs /tmp
+# Create non-root user with specific IDs for security
+RUN addgroup --system --gid 1001 nodejs && \
+    adduser --system --uid 1001 nextjs
 
-# Copy built application with proper ownership
-COPY --from=builder --chown=nextjs:nodejs /app/public ./public
+# Copy public assets
+COPY --from=builder /app/public ./public
+
+# Create and set permissions for .next directory
+RUN mkdir .next && chown nextjs:nodejs .next
+
+# Copy built application with correct ownership
 COPY --from=builder --chown=nextjs:nodejs /app/.next/standalone ./
 COPY --from=builder --chown=nextjs:nodejs /app/.next/static ./.next/static
 
-# Copy health check script
-COPY --chown=nextjs:nodejs healthcheck.js ./
+# Add optimized health check script
+COPY --chown=nextjs:nodejs <<EOF /app/healthcheck.js
+const http = require('http');
+
+const options = {
+  host: 'localhost',
+  port: 3001,
+  path: '/api/health',
+  timeout: 1500,
+  headers: { 'User-Agent': 'HealthCheck/1.0' }
+};
+
+const request = http.request(options, (res) => {
+  if (res.statusCode === 200) {
+    console.log('✓ Health check passed');
+    process.exit(0);
+  } else {
+    console.log('✗ Health check failed - Status:', res.statusCode);
+    process.exit(1);
+  }
+});
+
+request.on('error', (err) => {
+  console.log('✗ Health check error:', err.message);
+  process.exit(1);
+});
+
+request.on('timeout', () => {
+  console.log('✗ Health check timeout');
+  request.destroy();
+  process.exit(1);
+});
+
+request.setTimeout(1500);
+request.end();
+EOF
 
 # Switch to non-root user
 USER nextjs
 
 # Expose port
-EXPOSE 3000
+EXPOSE 3001
 
-# Health check with improved configuration
-HEALTHCHECK --interval=15s --timeout=5s --start-period=30s --retries=3 \
-    CMD node healthcheck.js || exit 1
+# Health check configuration - optimized for production
+HEALTHCHECK --interval=15s --timeout=5s --start-period=10s --retries=3 \
+  CMD node /app/healthcheck.js
 
-# Security: Use read-only root filesystem (mount tmpfs for /tmp if needed)
-# Volume for temporary files
-VOLUME ["/tmp"]
+# Security labels
+LABEL maintainer="Change Reel Team" \
+      version="1.0" \
+      description="Change Reel Next.js Application - Production" \
+      security.non-root="true" \
+      security.user="nextjs:1001"
 
-# Use dumb-init for proper signal handling
-ENTRYPOINT ["dumb-init", "--"]
-
-# Start the application
-CMD ["node", "server.js"] 
+# Start application with proper signal handling
+CMD ["dumb-init", "node", "server.js"] 

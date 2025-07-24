@@ -1,78 +1,91 @@
-# Multi-stage Dockerfile for Change Reel Next.js Application
-# Uses alpine images for minimal size and security
+# Use the official Node.js image as base
+FROM node:20-alpine AS base
 
-# Stage 1: Dependencies
-FROM node:20-alpine AS deps
-LABEL stage=deps
-
-# Set working directory
+# Install dependencies only when needed
+FROM base AS deps
+# Check https://github.com/nodejs/docker-node/tree/b4117f9333da4138b03a546ec926ef50a31506c3#nodealpine to understand why libc6-compat might be needed.
+RUN apk add --no-cache libc6-compat dumb-init
 WORKDIR /app
 
-# Install system dependencies for native modules
-RUN apk add --no-cache libc6-compat
-
-# Copy package files
+# Install dependencies based on the preferred package manager
 COPY package.json package-lock.json* ./
+RUN npm ci --only=production
 
-# Install dependencies
-RUN npm ci --only=production --omit=dev
-
-# Stage 2: Builder
-FROM node:20-alpine AS builder
-LABEL stage=builder
-
+# Rebuild the source code only when needed
+FROM base AS builder
 WORKDIR /app
-
-# Copy node_modules from deps stage
 COPY --from=deps /app/node_modules ./node_modules
-
-# Copy source code
 COPY . .
 
-# Build the application
+# Next.js collects completely anonymous telemetry data about general usage.
+# Learn more here: https://nextjs.org/telemetry
+ENV NEXT_TELEMETRY_DISABLED 1
+
 RUN npm run build
 
-# Stage 3: Runner (Production)
-FROM node:20-alpine AS runner
-LABEL maintainer="Change Reel Team"
-LABEL version="1.0.0"
-LABEL description="Change Reel - Automated Git Changelog Generation"
-
+# Production image, copy all the files and run next
+FROM base AS runner
 WORKDIR /app
 
-# Set NODE_ENV
-ENV NODE_ENV=production
-
-# Create non-root user for security
-RUN addgroup --system --gid 1001 nodejs
-RUN adduser --system --uid 1001 nextjs
+ENV NODE_ENV production
+ENV NEXT_TELEMETRY_DISABLED 1
+ENV PORT 3001
+ENV HOSTNAME "0.0.0.0"
 
 # Install dumb-init for proper signal handling
 RUN apk add --no-cache dumb-init
 
-# Copy built application from builder stage
+RUN addgroup --system --gid 1001 nodejs
+RUN adduser --system --uid 1001 nextjs
+
 COPY --from=builder /app/public ./public
 
-# Copy standalone output
+# Set the correct permission for prerender cache
+RUN mkdir .next
+RUN chown nextjs:nodejs .next
+
+# Automatically leverage output traces to reduce image size
+# https://nextjs.org/docs/advanced-features/output-file-tracing
 COPY --from=builder --chown=nextjs:nodejs /app/.next/standalone ./
 COPY --from=builder --chown=nextjs:nodejs /app/.next/static ./.next/static
 
-# Switch to non-root user
+# Add health check script
+COPY --chown=nextjs:nodejs <<EOF /app/healthcheck.js
+const http = require('http');
+
+const options = {
+  host: 'localhost',
+  port: 3001,
+  path: '/api/health',
+  timeout: 2000,
+};
+
+const request = http.request(options, (res) => {
+  console.log('Health check status:', res.statusCode);
+  process.exit(res.statusCode === 200 ? 0 : 1);
+});
+
+request.on('error', (err) => {
+  console.log('Health check failed:', err.message);
+  process.exit(1);
+});
+
+request.on('timeout', () => {
+  console.log('Health check timeout');
+  request.destroy();
+  process.exit(1);
+});
+
+request.end();
+EOF
+
 USER nextjs
 
-# Expose port
-EXPOSE 3000
+EXPOSE 3001
 
-# Set environment variable for port
-ENV PORT=3000
-ENV HOSTNAME="0.0.0.0"
+HEALTHCHECK --interval=30s --timeout=10s --start-period=5s --retries=3 \
+  CMD node /app/healthcheck.js
 
-# Health check
-HEALTHCHECK --interval=30s --timeout=3s --start-period=5s --retries=3 \
-  CMD node healthcheck.js || exit 1
-
-# Use dumb-init to handle signals properly
-ENTRYPOINT ["dumb-init", "--"]
-
-# Start the application
-CMD ["node", "server.js"] 
+# server.js is created by next build from the standalone output
+# https://nextjs.org/docs/pages/api-reference/next-config-js/output
+CMD ["dumb-init", "node", "server.js"] 

@@ -5,7 +5,7 @@ import { getServiceRoleSupabaseService } from '@/lib/supabase/client';
 
 interface ConfigRequest {
   repositoryFullName: string;
-  emailRecipients: string[];
+  emailRecipients?: string[]; // Made optional
 }
 
 interface ConfigResponse {
@@ -38,11 +38,11 @@ export async function POST(request: NextRequest): Promise<NextResponse<ConfigRes
 
     // Parse request body
     const body: ConfigRequest = await request.json();
-    const { repositoryFullName, emailRecipients } = body;
+    const { repositoryFullName, emailRecipients = [] } = body; // Default to empty array
 
-    if (!repositoryFullName || !emailRecipients || emailRecipients.length === 0) {
+    if (!repositoryFullName) {
       return NextResponse.json(
-        { success: false, message: 'Missing required fields', error: 'Repository and email recipients are required' },
+        { success: false, message: 'Missing required fields', error: 'Repository is required' },
         { status: 400 }
       );
     }
@@ -103,7 +103,8 @@ export async function POST(request: NextRequest): Promise<NextResponse<ConfigRes
     console.log('Repository parsed successfully:', { owner, repoName });
 
     // Generate webhook secret
-    const webhookSecret = require('crypto').randomBytes(32).toString('hex');
+    const crypto = await import('crypto');
+    const webhookSecret = crypto.randomBytes(32).toString('hex');
     console.log('Generated webhook secret length:', webhookSecret.length);
 
     // Create or update project
@@ -221,4 +222,67 @@ export async function POST(request: NextRequest): Promise<NextResponse<ConfigRes
       { status: 500 }
     );
   }
-} 
+}
+
+export async function GET(): Promise<NextResponse> {
+  try {
+    // Check authentication
+    const session = await getServerSession(authConfig);
+    if (!session?.user?.githubId) {
+      return NextResponse.json(
+        { success: false, message: 'Unauthorized', error: 'No authenticated session' },
+        { status: 401 }
+      );
+    }
+
+    // Get Supabase service
+    const supabaseService = getServiceRoleSupabaseService();
+    
+    // Get user
+    const userResult = await supabaseService.users.getUserByGithubId(String(session.user.githubId));
+    const user = userResult.data;
+    
+    if (!user) {
+      return NextResponse.json({
+        success: true,
+        configuration: null,
+        message: 'No configuration found'
+      });
+    }
+
+    // Get user's project
+    const projectResult = await supabaseService.projects.getProjectByUserId(user.id);
+    const project = projectResult.data;
+    
+    if (!project) {
+      return NextResponse.json({
+        success: true,
+        configuration: null,
+        message: 'No configuration found'
+      });
+    }
+
+    // Return configuration (without sensitive data)
+    return NextResponse.json({
+      success: true,
+      configuration: {
+        repositoryFullName: project.repo_name || project.name,
+        emailRecipients: project.email_distribution_list || [],
+        provider: project.provider,
+        createdAt: project.created_at,
+        updatedAt: project.updated_at,
+      }
+    });
+
+  } catch (error) {
+    console.error('Config GET error:', error);
+    return NextResponse.json(
+      { 
+        success: false, 
+        message: 'Internal server error', 
+        error: error instanceof Error ? error.message : 'Unknown error' 
+      },
+      { status: 500 }
+    );
+  }
+}

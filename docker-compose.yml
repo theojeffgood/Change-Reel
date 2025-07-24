@@ -1,39 +1,26 @@
 version: '3.8'
 
 services:
-  # Change Reel Application
-  app:
+  change-reel:
     build:
       context: .
       dockerfile: Dockerfile
-      target: runner
-    container_name: change-reel-app
     ports:
-      - "3000:3000"
+      - '3001:3001'
     environment:
       - NODE_ENV=development
-      - PORT=3000
-      - HOSTNAME=0.0.0.0
-      # Supabase (external service)
-      - NEXT_PUBLIC_SUPABASE_URL=${NEXT_PUBLIC_SUPABASE_URL}
-      - NEXT_PUBLIC_SUPABASE_ANON_KEY=${NEXT_PUBLIC_SUPABASE_ANON_KEY}
-      # Authentication
-      - NEXTAUTH_URL=${NEXTAUTH_URL:-http://localhost:3000}
-      - NEXTAUTH_SECRET=${NEXTAUTH_SECRET}
-      - GITHUB_CLIENT_ID=${GITHUB_CLIENT_ID}
-      - GITHUB_CLIENT_SECRET=${GITHUB_CLIENT_SECRET}
-      # External APIs
-      - OPENAI_API_KEY=${OPENAI_API_KEY}
-      - PERPLEXITY_API_KEY=${PERPLEXITY_API_KEY:-}
+      - PORT=3001
+    env_file:
+      - .env.local  # Copy docker.env.template to .env.local and fill in your values
+    restart: unless-stopped
+    # Mount for development - comment out for production
     volumes:
-      # Mount source for development hot reload
       - .:/app
       - /app/node_modules
       - /app/.next
-    restart: unless-stopped
     healthcheck:
-      test: ["CMD", "node", "healthcheck.js"]
+      test: ["CMD", "node", "/app/healthcheck.js"]
       interval: 30s
       timeout: 10s
       retries: 3
-      start_period: 40s
+      start_period: 5s

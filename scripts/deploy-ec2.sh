@@ -73,6 +73,11 @@ setup_nginx() {
         sudo yum install -y nginx
     fi
     
+    # Add rate limiting to main nginx config if not already present
+    if ! grep -q "limit_req_zone" /etc/nginx/nginx.conf; then
+        sudo sed -i '/http {/a \    # Rate limiting configuration\n    limit_req_zone $binary_remote_addr zone=api:10m rate=10r/s;' /etc/nginx/nginx.conf
+    fi
+    
     # Create nginx configuration
     sudo tee /etc/nginx/conf.d/wins-column.conf > /dev/null <<EOF
 upstream wins_column_app {
@@ -90,10 +95,6 @@ server {
     add_header Referrer-Policy "no-referrer-when-downgrade" always;
     add_header Content-Security-Policy "default-src 'self' http: https: data: blob: 'unsafe-inline'" always;
     
-    # Rate limiting
-    limit_req_zone \$binary_remote_addr zone=api:10m rate=10r/s;
-    limit_req zone=api burst=20 nodelay;
-    
     # Health check endpoint
     location /health {
         proxy_pass http://wins_column_app/api/health;
@@ -103,7 +104,26 @@ server {
         proxy_set_header X-Forwarded-Proto \$scheme;
     }
     
-    # Main application
+    # API routes with rate limiting
+    location /api/ {
+        limit_req zone=api burst=20 nodelay;
+        proxy_pass http://wins_column_app;
+        proxy_http_version 1.1;
+        proxy_set_header Upgrade \$http_upgrade;
+        proxy_set_header Connection 'upgrade';
+        proxy_set_header Host \$host;
+        proxy_set_header X-Real-IP \$remote_addr;
+        proxy_set_header X-Forwarded-For \$proxy_add_x_forwarded_for;
+        proxy_set_header X-Forwarded-Proto \$scheme;
+        proxy_cache_bypass \$http_upgrade;
+        
+        # Timeout settings
+        proxy_connect_timeout 60s;
+        proxy_send_timeout 60s;
+        proxy_read_timeout 60s;
+    }
+    
+    # Main application (non-API routes)
     location / {
         proxy_pass http://wins_column_app;
         proxy_http_version 1.1;

@@ -165,4 +165,4 @@ export function createFetchDiffHandler(
   projectService: IProjectService
 ): FetchDiffHandler {
   return new FetchDiffHandler(diffService, commitService, tokenStorage, projectService)
-}
+} 

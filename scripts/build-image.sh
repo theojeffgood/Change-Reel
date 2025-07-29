@@ -41,8 +41,10 @@ BUILD_ARGS=""
 while IFS= read -r line; do
   [[ -z "$line" || "$line" == \#* ]] && continue  # skip blanks/comments
   key="${line%%=*}"
-  value="${!key}"  # indirect expansion to get the exported value
-  BUILD_ARGS+=" --build-arg ${key}=${value}"
+  value="${line#*=}"
+  # Escape value for safe shell usage (handles !, spaces, etc.)
+  escaped_value=$(printf '%q' "$value")
+  BUILD_ARGS+=" --build-arg ${key}=${escaped_value}"
 done < .env
 
 # shellcheck disable=SC2086  # we want word splitting in $BUILD_ARGS

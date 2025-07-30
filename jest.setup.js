@@ -13,8 +13,8 @@ if (!global.crypto) {
 // Mock environment variables for tests
 process.env.NEXT_PUBLIC_SUPABASE_URL = 'https://test.supabase.co';
 process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY = 'test-anon-key';
-process.env.GITHUB_CLIENT_ID = 'test-github-client-id'
-process.env.GITHUB_CLIENT_SECRET = 'test-github-client-secret'
+process.env.OAUTH_CLIENT_ID = 'test-oauth-client-id'
+process.env.OAUTH_CLIENT_SECRET = 'test-oauth-client-secret'
 process.env.NEXTAUTH_SECRET = 'test-nextauth-secret'
 process.env.NEXTAUTH_URL = 'http://localhost:3000'
 process.env.TOKEN_ENCRYPTION_KEY = 'test-encryption-key-32-characters!'

@@ -402,21 +402,21 @@ export const mockNextAuthProviders = {
 // Mock environment variables for testing
 export const mockEnvironmentVariables = {
   valid: {
-    GITHUB_CLIENT_ID: 'github_client_id_12345',
-    GITHUB_CLIENT_SECRET: 'github_client_secret_67890',
+    OAUTH_CLIENT_ID: 'oauth_client_id_12345',
+    OAUTH_CLIENT_SECRET: 'oauth_client_secret_67890',
     NEXTAUTH_SECRET: 'nextauth_secret_abcdef123456',
     NEXTAUTH_URL: 'http://localhost:3000',
     TOKEN_ENCRYPTION_KEY: 'change-reel-secure-encryption-key-2024-v1-production-grade!!',
   },
   missing: {
-    // GITHUB_CLIENT_ID is missing
-    GITHUB_CLIENT_SECRET: 'github_client_secret_67890',
+    // OAUTH_CLIENT_ID is missing
+    OAUTH_CLIENT_SECRET: 'oauth_client_secret_67890',
     NEXTAUTH_SECRET: 'nextauth_secret_abcdef123456',
     NEXTAUTH_URL: 'http://localhost:3000',
   },
   invalid: {
-    GITHUB_CLIENT_ID: 'invalid_id',
-    GITHUB_CLIENT_SECRET: 'short', // Too short
+    OAUTH_CLIENT_ID: 'invalid_id',
+    OAUTH_CLIENT_SECRET: 'short', // Too short
     NEXTAUTH_SECRET: '', // Empty
     NEXTAUTH_URL: 'invalid-url',
     TOKEN_ENCRYPTION_KEY: 'short', // Too short for encryption

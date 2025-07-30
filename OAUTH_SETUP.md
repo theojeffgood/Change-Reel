@@ -34,8 +34,8 @@ NEXT_PUBLIC_SUPABASE_ANON_KEY=your_supabase_anon_key
 SUPABASE_SERVICE_ROLE_KEY=your_service_role_key
 
 # GitHub OAuth (Use DEV version for local development)
-GITHUB_CLIENT_ID=your_development_github_client_id
-GITHUB_CLIENT_SECRET=your_development_github_client_secret
+OAUTH_CLIENT_ID=your_development_oauth_client_id
+OAUTH_CLIENT_SECRET=your_development_oauth_client_secret
 
 # NextAuth
 NEXTAUTH_SECRET=your_nextauth_secret
@@ -81,8 +81,8 @@ For production, create a separate OAuth app:
 
 Update your production environment variables:
 ```bash
-GITHUB_CLIENT_ID=your_production_github_client_id
-GITHUB_CLIENT_SECRET=your_production_github_client_secret
+OAUTH_CLIENT_ID=your_production_oauth_client_id
+OAUTH_CLIENT_SECRET=your_production_oauth_client_secret
 NEXTAUTH_URL=https://your-production-domain.com
 ```
 

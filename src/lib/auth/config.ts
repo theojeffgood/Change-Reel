@@ -2,12 +2,12 @@ import { NextAuthOptions } from 'next-auth';
 import GitHubProvider from 'next-auth/providers/github';
 import { storeOAuthToken } from '@/lib/auth/token-storage';
 
-if (!process.env.GITHUB_CLIENT_ID) {
-  throw new Error('Missing GITHUB_CLIENT_ID environment variable');
+if (!process.env.OAUTH_CLIENT_ID) {
+  throw new Error('Missing OAUTH_CLIENT_ID environment variable');
 }
 
-if (!process.env.GITHUB_CLIENT_SECRET) {
-  throw new Error('Missing GITHUB_CLIENT_SECRET environment variable');
+if (!process.env.OAUTH_CLIENT_SECRET) {
+  throw new Error('Missing OAUTH_CLIENT_SECRET environment variable');
 }
 
 if (!process.env.NEXTAUTH_SECRET) {
@@ -17,8 +17,8 @@ if (!process.env.NEXTAUTH_SECRET) {
 export const authConfig: NextAuthOptions = {
   providers: [
     GitHubProvider({
-      clientId: process.env.GITHUB_CLIENT_ID,
-      clientSecret: process.env.GITHUB_CLIENT_SECRET,
+      clientId: process.env.OAUTH_CLIENT_ID,
+      clientSecret: process.env.OAUTH_CLIENT_SECRET,
       authorization: {
         params: {
           scope: 'repo write:repo_hook user:email',

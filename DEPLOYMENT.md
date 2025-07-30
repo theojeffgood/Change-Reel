@@ -82,8 +82,8 @@ Use the management script for common operations:
 - `NEXT_PUBLIC_SUPABASE_URL`: Your Supabase project URL
 - `NEXT_PUBLIC_SUPABASE_ANON_KEY`: Supabase anonymous key
 - `SUPABASE_SERVICE_ROLE_KEY`: Supabase service role key
-- `GITHUB_CLIENT_ID`: GitHub OAuth app client ID
-- `GITHUB_CLIENT_SECRET`: GitHub OAuth app client secret
+- `OAUTH_CLIENT_ID`: GitHub OAuth app client ID
+- `OAUTH_CLIENT_SECRET`: GitHub OAuth app client secret
 - `OPENAI_API_KEY`: OpenAI API key
 - `WEBHOOK_SECRET`: GitHub webhook secret
 

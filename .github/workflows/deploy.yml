@@ -15,8 +15,9 @@ jobs:
     - name: Set up Docker
       uses: docker/setup-buildx-action@v3
 
-    - name: Build Docker image
-      run: docker buildx build \
+        - name: Build Docker image
+      run: |
+        docker buildx build \
           --platform=linux/amd64 \
           --build-arg TOKEN_ENCRYPTION_KEY=${{ secrets.TOKEN_ENCRYPTION_KEY }} \
           --build-arg OPENAI_API_KEY=${{ secrets.OPENAI_API_KEY }} \

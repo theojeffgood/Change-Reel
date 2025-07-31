@@ -28,9 +28,7 @@ jobs:
           --build-arg OAUTH_CLIENT_SECRET=${{ secrets.OAUTH_CLIENT_SECRET }} \
           --build-arg NEXTAUTH_SECRET=${{ secrets.NEXTAUTH_SECRET }} \
           --build-arg NEXTAUTH_URL=${{ secrets.NEXTAUTH_URL }} \
-          --output type=docker \
-          -t wins-column:latest \
-          .
+          --output type=docker -t wins-column:latest .
 
     - name: Upload Docker image to EC2 via SSH
       uses: appleboy/scp-action@v0.1.4

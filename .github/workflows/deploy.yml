@@ -47,14 +47,13 @@ jobs:
     - name: Validate Docker build command
       run: |
         echo "Validating Docker build command syntax..."
-        docker buildx build --help > /dev/null 2>&1 || (echo "❌ Docker buildx not available" && exit 1)
-        echo "✅ Docker buildx is available"
+        docker build --help > /dev/null 2>&1 || (echo "❌ Docker build not available" && exit 1)
+        echo "✅ Docker build is available"
         
         # Test command structure without building
         echo "Testing command structure..."
         set -e
-        echo "docker buildx build \\"
-        echo "  --platform=linux/amd64 \\"
+        echo "docker build \\"
         echo "  --build-arg TOKEN_ENCRYPTION_KEY=\$TOKEN_ENCRYPTION_KEY \\"
         echo "  --build-arg OPENAI_API_KEY=\$OPENAI_API_KEY \\"
         echo "  --build-arg NEXT_PUBLIC_SUPABASE_URL=\$NEXT_PUBLIC_SUPABASE_URL \\"
@@ -64,14 +63,12 @@ jobs:
         echo "  --build-arg OAUTH_CLIENT_SECRET=\$OAUTH_CLIENT_SECRET \\"
         echo "  --build-arg NEXTAUTH_SECRET=\$NEXTAUTH_SECRET \\"
         echo "  --build-arg NEXTAUTH_URL=\$NEXTAUTH_URL \\"
-        echo "  -t wins-column:latest \\"
-        echo "  --load ."
+        echo "  -t wins-column:latest ."
         echo "✅ Command structure is valid"
 
     - name: Build Docker image
       run: |
-        docker buildx build \
-          --platform=linux/amd64 \
+        docker build \
           --build-arg TOKEN_ENCRYPTION_KEY=${{ secrets.TOKEN_ENCRYPTION_KEY }} \
           --build-arg OPENAI_API_KEY=${{ secrets.OPENAI_API_KEY }} \
           --build-arg NEXT_PUBLIC_SUPABASE_URL=${{ secrets.NEXT_PUBLIC_SUPABASE_URL }} \
@@ -81,19 +78,25 @@ jobs:
           --build-arg OAUTH_CLIENT_SECRET=${{ secrets.OAUTH_CLIENT_SECRET }} \
           --build-arg NEXTAUTH_SECRET=${{ secrets.NEXTAUTH_SECRET }} \
           --build-arg NEXTAUTH_URL=${{ secrets.NEXTAUTH_URL }} \
-          -t wins-column:latest \
-          --load .
+          -t wins-column:latest .
 
-    - name: Upload Docker image to EC2 via SSH
+    - name: Save Docker image as tar
+      run: |
+        echo "Saving Docker image as tar file..."
+        docker save wins-column:latest | gzip > wins-column.tar.gz
+        ls -la wins-column.tar.gz
+        echo "✅ Docker image saved as wins-column.tar.gz"
+
+    - name: Upload Docker image and compose files to EC2
       uses: appleboy/scp-action@v0.1.4
       with:
         host: ${{ secrets.EC2_HOST }}
         username: ${{ secrets.EC2_USER }}
         key: ${{ secrets.EC2_SSH_KEY }}
-        source: "docker-compose.yml"
+        source: "wins-column.tar.gz,docker-compose.yml"
         target: "~/apps/wins-column"
 
-    - name: SSH and restart Docker container
+    - name: Load Docker image and restart container on EC2
       uses: appleboy/ssh-action@v1.0.0
       with:
         host: ${{ secrets.EC2_HOST }}
@@ -101,6 +104,15 @@ jobs:
         key: ${{ secrets.EC2_SSH_KEY }}
         script: |
           cd ~/apps/wins-column
-          docker compose down
-          docker compose up -d --build
+          
+          echo "Loading Docker image from tar file..."
+          gunzip -c wins-column.tar.gz | docker load
+          
+          echo "Stopping existing containers..."
+          docker compose down || true
+          
+          echo "Starting containers with new image..."
+          docker compose up -d
+          
+          echo "✅ Deployment completed successfully"
 

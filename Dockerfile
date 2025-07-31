@@ -9,8 +9,8 @@ WORKDIR /app
 
 # Install dependencies based on the preferred package manager
 COPY package.json package-lock.json* ./
-# Install ALL dependencies so Next.js build has dev dependencies
-RUN npm ci
+# Install ALL dependencies including devDependencies for build
+RUN npm ci --include=dev
 
 # Rebuild the source code only when needed
 # ------------ Build Stage ------------
@@ -45,6 +45,9 @@ COPY . .
 # Next.js collects completely anonymous telemetry data about general usage.
 # Learn more here: https://nextjs.org/telemetry
 ENV NEXT_TELEMETRY_DISABLED=1
+
+# Verify dependencies are installed
+RUN npm ls @tailwindcss/postcss
 
 RUN npm run build
 # Remove development dependencies to slim the final image size

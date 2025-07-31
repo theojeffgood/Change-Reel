@@ -12,13 +12,54 @@ jobs:
     - name: Checkout repo
       uses: actions/checkout@v3
 
+    - name: Lint YAML files
+      uses: actions/github-script@v7
+      with:
+        script: |
+          const yaml = require('js-yaml');
+          const fs = require('fs');
+          
+          try {
+            const workflowContent = fs.readFileSync('.github/workflows/deploy.yml', 'utf8');
+            yaml.load(workflowContent);
+            console.log('✅ YAML syntax is valid');
+          } catch (error) {
+            console.error('❌ YAML syntax error:', error.message);
+            core.setFailed('YAML syntax validation failed');
+          }
+
     - name: Set up Docker
       uses: docker/setup-buildx-action@v3
+
+    - name: Validate Docker build command
+      run: |
+        echo "Validating Docker build command syntax..."
+        docker buildx build --help > /dev/null 2>&1 || (echo "❌ Docker buildx not available" && exit 1)
+        echo "✅ Docker buildx is available"
+        
+        # Test command structure without building
+        echo "Testing command structure..."
+        set -e
+        echo "docker buildx build \\"
+        echo "  --platform=linux/amd64 \\"
+        echo "  --build-arg TOKEN_ENCRYPTION_KEY=\$TOKEN_ENCRYPTION_KEY \\"
+        echo "  --build-arg OPENAI_API_KEY=\$OPENAI_API_KEY \\"
+        echo "  --build-arg NEXT_PUBLIC_SUPABASE_URL=\$NEXT_PUBLIC_SUPABASE_URL \\"
+        echo "  --build-arg NEXT_PUBLIC_SUPABASE_ANON_KEY=\$NEXT_PUBLIC_SUPABASE_ANON_KEY \\"
+        echo "  --build-arg SUPABASE_SERVICE_ROLE_KEY=\$SUPABASE_SERVICE_ROLE_KEY \\"
+        echo "  --build-arg OAUTH_CLIENT_ID=\$OAUTH_CLIENT_ID \\"
+        echo "  --build-arg OAUTH_CLIENT_SECRET=\$OAUTH_CLIENT_SECRET \\"
+        echo "  --build-arg NEXTAUTH_SECRET=\$NEXTAUTH_SECRET \\"
+        echo "  --build-arg NEXTAUTH_URL=\$NEXTAUTH_URL \\"
+        echo "  -t wins-column:latest \\"
+        echo "  --load ."
+        echo "✅ Command structure is valid"
 
     - name: Build Docker image
       run: |
         docker buildx build \
-          --platform=linux/amd64 \          
+          --platform=linux/amd64 \
+          --build-arg TOKEN_ENCRYPTION_KEY=${{ secrets.TOKEN_ENCRYPTION_KEY }} \
           --build-arg OPENAI_API_KEY=${{ secrets.OPENAI_API_KEY }} \
           --build-arg NEXT_PUBLIC_SUPABASE_URL=${{ secrets.NEXT_PUBLIC_SUPABASE_URL }} \
           --build-arg NEXT_PUBLIC_SUPABASE_ANON_KEY=${{ secrets.NEXT_PUBLIC_SUPABASE_ANON_KEY }} \

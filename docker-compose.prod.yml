@@ -2,13 +2,9 @@ version: '3.8'
 
 services:
   wins-column:
-    build:
-      context: .
-      dockerfile: Dockerfile.prod
+    image: wins-column:latest
     ports:
       - "3001:3001"
-    env_file:
-      - .env.production
     environment:
       - NODE_ENV=production
     restart: unless-stopped
@@ -18,20 +14,6 @@ services:
       timeout: 10s
       retries: 3
       start_period: 40s
-    networks:
-      - app-network
-
-  nginx:
-    image: nginx:alpine
-    ports:
-      - "80:80"
-      - "443:443"
-    volumes:
-      - ./nginx.conf:/etc/nginx/nginx.conf
-      - ./ssl:/etc/nginx/ssl
-    depends_on:
-      - wins-column
-    restart: unless-stopped
     networks:
       - app-network
 

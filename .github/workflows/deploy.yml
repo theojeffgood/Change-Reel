@@ -31,33 +31,30 @@ jobs:
           --output type=docker \
           -t wins-column:latest .
 
-      - name: Save Docker image as archive
-        run: |
-          docker save wins-column:latest | gzip > wins-column.tar.gz
+    - name: Save Docker image to tar.gz
+      run: |
+        docker save wins-column:latest | gzip > wins-column.tar.gz
 
-      - name: Upload image artifact
-        uses: actions/upload-artifact@v4
-        with:
-          name: wins-column-image
-          path: wins-column.tar.gz
+    - name: Upload Docker image and docker-compose.yml to EC2 via SCP
+      uses: appleboy/scp-action@v0.1.4
+      with:
+        host: ${{ secrets.EC2_HOST }}
+        username: ${{ secrets.EC2_USER }}
+        key: ${{ secrets.EC2_SSH_KEY }}
+        source: |
+          wins-column.tar.gz
+          docker-compose.yml
+        target: "~/apps/wins-column"
 
-    # - name: Upload Docker image to EC2 via SSH
-    #   uses: appleboy/scp-action@v0.1.4
-    #   with:
-    #     host: ${{ secrets.EC2_HOST }}
-    #     username: ${{ secrets.EC2_USER }}
-    #     key: ${{ secrets.EC2_SSH_KEY }}
-    #     source: "docker-compose.yml"
-    #     target: "~/apps/wins-column"
-
-    # - name: SSH and restart Docker container
-    #   uses: appleboy/ssh-action@v1.0.0
-    #   with:
-    #     host: ${{ secrets.EC2_HOST }}
-    #     username: ${{ secrets.EC2_USER }}
-    #     key: ${{ secrets.EC2_SSH_KEY }}
-    #     script: |
-    #       cd ~/apps/wins-column
-    #       docker compose down
-    #       docker compose up -d --build
-
+    - name: SSH and deploy Docker container
+      uses: appleboy/ssh-action@v1.0.0
+      with:
+        host: ${{ secrets.EC2_HOST }}
+        username: ${{ secrets.EC2_USER }}
+        key: ${{ secrets.EC2_SSH_KEY }}
+        script: |
+          cd ~/apps/wins-column
+          gunzip -f wins-column.tar.gz
+          docker load < wins-column.tar
+          docker compose down
+          docker compose up -d

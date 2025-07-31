@@ -1,12 +1,12 @@
 **Product Requirements Document (PRD)**
 
-**Product Name**: GitChangeLog **Prepared By**: [Theo Goodman] **Last Updated**: [June 24, 2025]
+**Product Name**: Change Reel **Prepared By**: [Theo Goodman] **Last Updated**: [June 24, 2025]
 
 ---
 
 ## **1. Overview**
 
-**Goal**: GitChangeLog is a SaaS tool that automatically generates and publishes plain-English summaries of Git commit diffs. These summaries are then distributed either via email or posted to a publicly accessible changelog webpage.
+**Goal**: Change Reel is a SaaS tool that automatically generates and publishes plain-English summaries of Git commit diffs. These summaries are then distributed either via email or posted to a publicly accessible changelog webpage.
 
 **Target Audience**: Engineering teams, product managers, and stakeholders who want visibility into ongoing development without reading raw commit messages or diffs.
 

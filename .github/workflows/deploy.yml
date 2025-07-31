@@ -17,7 +17,7 @@ jobs:
 
     - name: Build Docker image
       run: |
-        docker buildx build \
+        docker build \
           --platform=linux/amd64 \
           --build-arg OPENAI_API_KEY=${{ secrets.OPENAI_API_KEY }} \
           --build-arg NEXT_PUBLIC_SUPABASE_URL=${{ secrets.NEXT_PUBLIC_SUPABASE_URL }} \
@@ -29,7 +29,6 @@ jobs:
           --build-arg NEXTAUTH_URL=${{ secrets.NEXTAUTH_URL }} \
           --build-arg TOKEN_ENCRYPTION_KEY=${{ secrets.TOKEN_ENCRYPTION_KEY }} \
           -t wins-column:latest \
-          --load 
           .
 
     - name: Upload Docker image to EC2 via SSH

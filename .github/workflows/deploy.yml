@@ -28,7 +28,7 @@ jobs:
           --build-arg NEXTAUTH_SECRET=${{ secrets.NEXTAUTH_SECRET }} \
           --build-arg NEXTAUTH_URL=${{ secrets.NEXTAUTH_URL }} \
           -t wins-column:latest \
-          --load 
+          --load \
           .
 
     - name: Upload Docker image to EC2 via SSH

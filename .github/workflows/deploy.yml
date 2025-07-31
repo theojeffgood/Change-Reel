@@ -120,10 +120,10 @@ jobs:
           gunzip -c wins-column.tar.gz | docker load
           
           echo "Stopping existing containers..."
-          docker compose down || true
+          docker-compose down || true
           
           echo "Starting containers with new image..."
-          docker compose up -d
+          docker-compose up -d
           
           echo "✅ Deployment completed successfully"
 

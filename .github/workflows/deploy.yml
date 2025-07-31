@@ -28,8 +28,8 @@ jobs:
           --build-arg OAUTH_CLIENT_SECRET=${{ secrets.OAUTH_CLIENT_SECRET }} \
           --build-arg NEXTAUTH_SECRET=${{ secrets.NEXTAUTH_SECRET }} \
           --build-arg NEXTAUTH_URL=${{ secrets.NEXTAUTH_URL }} \
-          --load \
-      -t wins-column:latest .
+          --output type=docker \
+          -t wins-column:latest .
 
     - name: Upload Docker image to EC2 via SSH
       uses: appleboy/scp-action@v0.1.4
@@ -37,10 +37,11 @@ jobs:
         host: ${{ secrets.EC2_HOST }}
         username: ${{ secrets.EC2_USER }}
         key: ${{ secrets.EC2_SSH_KEY }}
-        source: "docker-compose.yml"
+        source: "."
         target: "~/apps/wins-column"
+        strip_components: 0
 
-    - name: SSH and restart Docker container
+    - name: Build and deploy on EC2
       uses: appleboy/ssh-action@v1.0.0
       with:
         host: ${{ secrets.EC2_HOST }}

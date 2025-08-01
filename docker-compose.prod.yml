@@ -9,6 +9,7 @@ services:
       - .env
     environment:
       - NODE_ENV=production
+      - NEXT_RUNTIME=nodejs
     restart: unless-stopped
     healthcheck:
       test: ["CMD", "node", "/app/healthcheck.js"]

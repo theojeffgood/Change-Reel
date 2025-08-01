@@ -80,6 +80,10 @@ RUN chown nextjs:nodejs .next
 COPY --from=builder --chown=nextjs:nodejs /app/.next/standalone ./
 COPY --from=builder --chown=nextjs:nodejs /app/.next/static ./.next/static
 
+# Copy the custom startup script
+COPY --chown=nextjs:nodejs startup.js /app/startup.js
+RUN chmod +x /app/startup.js
+
 # Add health check script
 COPY --chown=nextjs:nodejs <<EOF /app/healthcheck.js
 const http = require('http');
@@ -119,4 +123,4 @@ HEALTHCHECK --interval=30s --timeout=10s --start-period=5s --retries=3 \
 
 # server.js is created by next build from the standalone output
 # https://nextjs.org/docs/pages/api-reference/next-config-js/output
-CMD ["dumb-init", "node", "server.js"] 
+CMD ["dumb-init", "node", "/app/startup.js"] 

@@ -66,6 +66,10 @@ COPY --from=builder --chown=nextjs:nodejs /app/.next/static ./.next/static
 # Copy production-only node_modules
 COPY --from=prod-deps --chown=nextjs:nodejs /app/node_modules ./node_modules
 
+# Copy the custom startup script
+COPY --chown=nextjs:nodejs startup.js /app/startup.js
+RUN chmod +x /app/startup.js
+
 # Add optimized health check script
 COPY --chown=nextjs:nodejs <<EOF /app/healthcheck.js
 const http = require('http');
@@ -121,4 +125,4 @@ LABEL maintainer="Wins Column Team" \
       security.user="nextjs:1001"
 
 # Start application with proper signal handling
-CMD ["dumb-init", "node", "server.js"] 
+CMD ["dumb-init", "node", "/app/startup.js"] 

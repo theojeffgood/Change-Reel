@@ -8,6 +8,12 @@
 import { NextResponse } from 'next/server'
 import { getJobSystem, isJobSystemRunning } from '@/lib/startup/job-system-startup'
 
+// Ensure all job system modules are included in standalone output
+import '@/lib/startup/job-system-startup'
+import '@/lib/jobs/setup'
+import '@/lib/jobs/index'
+import '@/lib/jobs/processor'
+
 export async function GET() {
   try {
     const jobSystem = getJobSystem()

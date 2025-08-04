@@ -15,7 +15,8 @@ async function initializeJobSystem() {
   
   try {
     // Import and initialize the job system
-    const { initializeJobSystem } = require('./src/lib/startup/job-system-startup');
+    // In standalone output, TypeScript files are compiled to .js files
+    const { initializeJobSystem } = require('./src/lib/startup/job-system-startup.js');
     await initializeJobSystem();
     
     console.log('✅ [Startup] Job processing system initialized successfully');

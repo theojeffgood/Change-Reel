@@ -1,85 +1,115 @@
+#!/usr/bin/env node
+
 /**
- * Job System Startup API
+ * Custom Startup Script for Wins Column
  * 
- * Minimal endpoint that initializes the job processing system on first call.
- * Called by the startup script to ensure job system starts when app starts.
+ * This script initializes the job processing system before starting the Next.js server.
+ * This is necessary because instrumentation hooks don't work with Next.js standalone output.
  */
 
-import { NextResponse } from 'next/server'
-import { getJobSystem, isJobSystemRunning, initializeJobSystem } from '@/lib/startup/job-system-startup'
+const { spawn } = require('child_process');
+const path = require('path');
+const fs = require('fs');
 
-let startupAttempted = false
-
-export async function POST() {
+function listDirectory(dir, depth = 0) {
   try {
-    console.log('🚀 [Startup API] Job system startup requested')
+    const items = fs.readdirSync(dir);
+    const indent = '  '.repeat(depth);
+    console.log(`${indent}${dir}/`);
     
-    // Check if already running
-    const jobSystem = getJobSystem()
-    const isRunning = isJobSystemRunning()
+    items.forEach(item => {
+      const fullPath = path.join(dir, item);
+      const stats = fs.statSync(fullPath);
+      if (stats.isDirectory() && depth < 3) {
+        listDirectory(fullPath, depth + 1);
+      } else {
+        console.log(`${indent}  ${item}${stats.isDirectory() ? '/' : ''}`);
+      }
+    });
+  } catch (err) {
+    console.log(`${indent}${dir}/ - Error: ${err.message}`);
+  }
+}
+
+async function initializeJobSystem() {
+  console.log('🚀 [Startup] Initializing job processing system...');
+  
+  try {
+    // Import and initialize the job system from compiled JavaScript
+    const { initializeJobSystem } = require('./dist/src/lib/startup/job-system-startup');
+    await initializeJobSystem();
     
-    if (jobSystem && isRunning) {
-      console.log('✅ [Startup API] Job system already running')
-      return NextResponse.json({
-        success: true,
-        message: 'Job processing system already running',
-        running: true,
-        timestamp: new Date().toISOString()
-      })
+    console.log('✅ [Startup] Job processing system initialized successfully');
+    return true;
+  } catch (error) {
+    console.error('❌ [Startup] Failed to initialize job processing system:', error);
+    console.error('⚠️  [Startup] Continuing without job processing. Check configuration and restart.');
+    return false;
+  }
+}
+
+async function startServer() {
+  console.log('🚀 [Startup] Starting Next.js server...');
+  
+  // Start the Next.js server
+  const server = spawn('node', ['server.js'], {
+    stdio: 'inherit',
+    env: {
+      ...process.env,
+      NODE_ENV: process.env.NODE_ENV || 'production',
+      NEXT_RUNTIME: 'nodejs'
+    }
+  });
+
+  // Handle server process events
+  server.on('error', (error) => {
+    console.error('❌ [Startup] Failed to start server:', error);
+    process.exit(1);
+  });
+
+  server.on('exit', (code) => {
+    console.log(`[Startup] Server exited with code ${code}`);
+    process.exit(code);
+  });
+
+  // Handle process signals
+  process.on('SIGTERM', () => {
+    console.log('🛑 [Startup] Received SIGTERM, shutting down gracefully...');
+    server.kill('SIGTERM');
+  });
+
+  process.on('SIGINT', () => {
+    console.log('🛑 [Startup] Received SIGINT, shutting down gracefully...');
+    server.kill('SIGINT');
+  });
+}
+
+async function main() {
+  console.log('🚀 [Startup] Starting Wins Column application...');
+  console.log('🔍 [Startup] Environment:', process.env.NODE_ENV);
+  console.log('🔍 [Startup] NEXT_RUNTIME:', process.env.NEXT_RUNTIME);
+  
+  try {
+    // Initialize job processing system
+    const jobSystemInitialized = await initializeJobSystem();
+    
+    if (jobSystemInitialized) {
+      console.log('✅ [Startup] Job processing system ready');
+    } else {
+      console.log('⚠️  [Startup] Job processing system not available');
     }
     
-    // Prevent multiple simultaneous startup attempts
-    if (startupAttempted) {
-      console.log('⚠️  [Startup API] Startup already in progress')
-      return NextResponse.json({
-        success: false,
-        message: 'Job system startup already in progress',
-        running: false,
-        timestamp: new Date().toISOString()
-      }, { status: 409 })
-    }
-    
-    startupAttempted = true
-    
-    try {
-      console.log('🚀 [Startup API] Initializing job processing system...')
-      await initializeJobSystem()
-      
-      const newJobSystem = getJobSystem()
-      const newIsRunning = isJobSystemRunning()
-      
-      console.log('✅ [Startup API] Job processing system started successfully')
-      
-      return NextResponse.json({
-        success: true,
-        message: 'Job processing system started successfully',
-        running: newIsRunning,
-        timestamp: new Date().toISOString()
-      })
-      
-    } catch (error) {
-      console.error('❌ [Startup API] Failed to start job system:', error)
-      startupAttempted = false // Reset on failure
-      
-      return NextResponse.json({
-        success: false,
-        message: 'Failed to start job processing system',
-        error: error instanceof Error ? error.message : 'Unknown error',
-        running: false,
-        timestamp: new Date().toISOString()
-      }, { status: 500 })
-    }
+    // Start the Next.js server
+    await startServer();
     
   } catch (error) {
-    console.error('❌ [Startup API] Startup endpoint error:', error)
-    startupAttempted = false
-    
-    return NextResponse.json({
-      success: false,
-      message: 'Startup endpoint error',
-      error: error instanceof Error ? error.message : 'Unknown error',
-      running: false,
-      timestamp: new Date().toISOString()
-    }, { status: 500 })
+    console.error('❌ [Startup] Failed to start application:', error);
+    process.exit(1);
   }
-} 
+}
+
+// Run the startup sequence
+main().catch((error) => {
+  console.error('❌ [Startup] Unhandled error:', error);
+  process.exit(1);
+}); 

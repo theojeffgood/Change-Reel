@@ -50,6 +50,10 @@ ENV NEXT_TELEMETRY_DISABLED=1
 RUN npm ls @tailwindcss/postcss
 
 RUN npm run build
+
+# Compile TypeScript files for standalone usage
+RUN npx tsc --outDir dist --target ES2017 --module commonjs --moduleResolution node --esModuleInterop --allowJs --skipLibCheck --resolveJsonModule src/lib/startup/job-system-startup.ts src/lib/jobs/setup.ts src/lib/jobs/index.ts src/lib/jobs/processor.ts src/lib/supabase/client.ts
+
 # Remove development dependencies to slim the final image size
 RUN npm prune --omit=dev
 
@@ -79,6 +83,9 @@ RUN chown nextjs:nodejs .next
 # https://nextjs.org/docs/advanced-features/output-file-tracing
 COPY --from=builder --chown=nextjs:nodejs /app/.next/standalone ./
 COPY --from=builder --chown=nextjs:nodejs /app/.next/static ./.next/static
+
+# Copy the compiled job system files
+COPY --from=builder --chown=nextjs:nodejs /app/dist ./dist
 
 # Copy the custom startup script
 COPY --chown=nextjs:nodejs startup.js /app/startup.js

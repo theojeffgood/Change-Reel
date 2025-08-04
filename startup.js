@@ -3,99 +3,53 @@
 /**
  * Custom Startup Script for Wins Column
  * 
- * This script starts the Next.js server and then triggers job system initialization
- * via HTTP request to the status API endpoint.
+ * This script initializes the job processing system before starting the Next.js server.
+ * This is necessary because instrumentation hooks don't work with Next.js standalone output.
  */
 
 const { spawn } = require('child_process');
-const http = require('http');
+const path = require('path');
+const fs = require('fs');
 
-async function waitForServer(port = 3001, maxAttempts = 30) {
-  console.log('🔍 [Startup] Waiting for Next.js server to be ready...');
-  
-  for (let attempt = 1; attempt <= maxAttempts; attempt++) {
-    try {
-      await new Promise((resolve, reject) => {
-        const req = http.request({
-          hostname: 'localhost',
-          port: port,
-          path: '/api/health',
-          method: 'GET',
-          timeout: 1000
-        }, (res) => {
-          if (res.statusCode === 200) {
-            resolve(true);
-          } else {
-            reject(new Error(`Server responded with status ${res.statusCode}`));
-          }
-        });
-        
-        req.on('error', reject);
-        req.on('timeout', () => {
-          req.destroy();
-          reject(new Error('Request timeout'));
-        });
-        
-        req.end();
-      });
-      
-      console.log('✅ [Startup] Next.js server is ready');
-      return true;
-    } catch (error) {
-      if (attempt === maxAttempts) {
-        console.error('❌ [Startup] Server failed to become ready:', error.message);
-        return false;
+function listDirectory(dir, depth = 0) {
+  try {
+    const items = fs.readdirSync(dir);
+    const indent = '  '.repeat(depth);
+    console.log(`${indent}${dir}/`);
+    
+    items.forEach(item => {
+      const fullPath = path.join(dir, item);
+      const stats = fs.statSync(fullPath);
+      if (stats.isDirectory() && depth < 3) {
+        listDirectory(fullPath, depth + 1);
+      } else {
+        console.log(`${indent}  ${item}${stats.isDirectory() ? '/' : ''}`);
       }
-      // Wait 1 second before next attempt
-      await new Promise(resolve => setTimeout(resolve, 1000));
-    }
+    });
+  } catch (err) {
+    console.log(`${indent}${dir}/ - Error: ${err.message}`);
   }
-  return false;
 }
 
-async function initializeJobSystemViaAPI() {
-  console.log('🚀 [Startup] Initializing job processing system via API...');
+async function initializeJobSystem() {
+  console.log('🚀 [Startup] Initializing job processing system...');
   
   try {
-    const response = await new Promise((resolve, reject) => {
-      const req = http.request({
-        hostname: 'localhost',
-        port: 3001,
-        path: '/api/jobs/status',
-        method: 'GET',
-        timeout: 10000
-      }, (res) => {
-        let data = '';
-        res.on('data', chunk => data += chunk);
-        res.on('end', () => {
-          try {
-            const result = JSON.parse(data);
-            resolve({ statusCode: res.statusCode, data: result });
-          } catch (err) {
-            reject(new Error(`Failed to parse response: ${err.message}`));
-          }
-        });
-      });
-      
-      req.on('error', reject);
-      req.on('timeout', () => {
-        req.destroy();
-        reject(new Error('Request timeout'));
-      });
-      
-      req.end();
-    });
+    // Debug: Show the complete file structure
+    console.log('🔍 [Startup] Current directory:', process.cwd());
+    console.log('🔍 [Startup] Directory structure:');
+    listDirectory('.', 0);
     
-    if (response.data.running) {
-      console.log('✅ [Startup] Job processing system started successfully');
-      console.log(`📊 [Startup] Active jobs: ${response.data.active_job_count}`);
-      return true;
-    } else {
-      console.log('⚠️  [Startup] Job processing system not running:', response.data.message);
-      return false;
-    }
+    // Import and initialize the job system
+    // In standalone output, TypeScript files are compiled to .js files
+    const { initializeJobSystem } = require('./src/lib/startup/job-system-startup.js');
+    await initializeJobSystem();
+    
+    console.log('✅ [Startup] Job processing system initialized successfully');
+    return true;
   } catch (error) {
-    console.error('❌ [Startup] Failed to initialize job system via API:', error.message);
+    console.error('❌ [Startup] Failed to initialize job processing system:', error);
+    console.error('⚠️  [Startup] Continuing without job processing. Check configuration and restart.');
     return false;
   }
 }
@@ -134,8 +88,6 @@ async function startServer() {
     console.log('🛑 [Startup] Received SIGINT, shutting down gracefully...');
     server.kill('SIGINT');
   });
-  
-  return server;
 }
 
 async function main() {
@@ -144,25 +96,17 @@ async function main() {
   console.log('🔍 [Startup] NEXT_RUNTIME:', process.env.NEXT_RUNTIME);
   
   try {
-    // Start the Next.js server
-    const server = await startServer();
-    
-    // Wait for server to be ready
-    const serverReady = await waitForServer();
-    
-    if (!serverReady) {
-      console.error('❌ [Startup] Server failed to start properly');
-      process.exit(1);
-    }
-    
-    // Initialize job processing system via API
-    const jobSystemInitialized = await initializeJobSystemViaAPI();
+    // Initialize job processing system
+    const jobSystemInitialized = await initializeJobSystem();
     
     if (jobSystemInitialized) {
-      console.log('✅ [Startup] Complete - Application ready with job processing');
+      console.log('✅ [Startup] Job processing system ready');
     } else {
-      console.log('⚠️  [Startup] Application ready but job processing unavailable');
+      console.log('⚠️  [Startup] Job processing system not available');
     }
+    
+    // Start the Next.js server
+    await startServer();
     
   } catch (error) {
     console.error('❌ [Startup] Failed to start application:', error);

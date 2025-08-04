@@ -6,7 +6,7 @@
  */
 
 import { NextResponse } from 'next/server'
-import { getJobSystem, isJobSystemRunning } from '@/lib/startup/job-system-startup'
+import { getJobSystem, isJobSystemRunning, initializeJobSystem } from '@/lib/startup/job-system-startup'
 
 // Ensure all job system modules are included in standalone output
 import '@/lib/startup/job-system-startup'
@@ -16,8 +16,22 @@ import '@/lib/jobs/processor'
 
 export async function GET() {
   try {
-    const jobSystem = getJobSystem()
-    const isRunning = isJobSystemRunning()
+    let jobSystem = getJobSystem()
+    let isRunning = isJobSystemRunning()
+
+    // If job system is not running, try to start it
+    if (!jobSystem || !isRunning) {
+      console.log('🚀 [API] Job system not running, initializing...')
+      try {
+        await initializeJobSystem()
+        jobSystem = getJobSystem()
+        isRunning = isJobSystemRunning()
+        console.log('✅ [API] Job system initialized successfully')
+      } catch (error) {
+        console.error('❌ [API] Failed to initialize job system:', error)
+        // Return error response
+      }
+    }
 
     if (!jobSystem) {
       return NextResponse.json({

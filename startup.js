@@ -9,11 +9,37 @@
 
 const { spawn } = require('child_process');
 const path = require('path');
+const fs = require('fs');
+
+function listDirectory(dir, depth = 0) {
+  try {
+    const items = fs.readdirSync(dir);
+    const indent = '  '.repeat(depth);
+    console.log(`${indent}${dir}/`);
+    
+    items.forEach(item => {
+      const fullPath = path.join(dir, item);
+      const stats = fs.statSync(fullPath);
+      if (stats.isDirectory() && depth < 3) {
+        listDirectory(fullPath, depth + 1);
+      } else {
+        console.log(`${indent}  ${item}${stats.isDirectory() ? '/' : ''}`);
+      }
+    });
+  } catch (err) {
+    console.log(`${indent}${dir}/ - Error: ${err.message}`);
+  }
+}
 
 async function initializeJobSystem() {
   console.log('🚀 [Startup] Initializing job processing system...');
   
   try {
+    // Debug: Show the complete file structure
+    console.log('🔍 [Startup] Current directory:', process.cwd());
+    console.log('🔍 [Startup] Directory structure:');
+    listDirectory('.', 0);
+    
     // Import and initialize the job system
     // In standalone output, TypeScript files are compiled to .js files
     const { initializeJobSystem } = require('./src/lib/startup/job-system-startup.js');

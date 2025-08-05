@@ -7,7 +7,7 @@
  * See: https://nextjs.org/docs/app/building-your-application/optimizing/instrumentation
  */
 
-import { initializeJobSystem } from './src/lib/startup/job-system-startup'
+import { initializeJobSystem } from './lib/startup/job-system-startup'
 
 export async function register() {
   // Only run on server-side and in production/development

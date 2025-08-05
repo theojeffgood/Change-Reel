@@ -86,6 +86,10 @@ COPY --from=builder --chown=nextjs:nodejs /app/.next/static ./.next/static
 # Copy the source files and tsconfig for job system startup
 COPY --from=builder --chown=nextjs:nodejs /app/src ./src
 COPY --from=builder --chown=nextjs:nodejs /app/tsconfig.json ./tsconfig.json
+COPY --from=builder --chown=nextjs:nodejs /app/package.json ./package.json
+
+# Ensure TypeScript and ts-node are available
+RUN npm install typescript ts-node
 
 # Copy the custom startup script
 COPY --chown=nextjs:nodejs startup.js /app/startup.js

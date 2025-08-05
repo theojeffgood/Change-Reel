@@ -26,14 +26,12 @@ ENV NEXT_TELEMETRY_DISABLED 1
 # Build the application (needs devDependencies like @tailwindcss/postcss)
 RUN npm run build
 
-# No need to compile TypeScript - we'll use ts-node/register at runtime
-
 # Production dependencies only
 FROM base AS prod-deps
 WORKDIR /app
 COPY package.json package-lock.json* ./
-# Install production dependencies plus TypeScript for job system startup
-RUN npm ci --only=production && npm install typescript ts-node && npm cache clean --force
+# Install only production dependencies for runtime
+RUN npm ci --only=production --omit=dev && npm cache clean --force
 
 # Production image - minimal and secure
 FROM base AS runner
@@ -65,20 +63,8 @@ RUN mkdir .next && chown nextjs:nodejs .next
 COPY --from=builder --chown=nextjs:nodejs /app/.next/standalone ./
 COPY --from=builder --chown=nextjs:nodejs /app/.next/static ./.next/static
 
-# Copy the source files and tsconfig for job system startup
-COPY --from=builder --chown=nextjs:nodejs /app/src ./src
-COPY --from=builder --chown=nextjs:nodejs /app/tsconfig.json ./tsconfig.json
-COPY --from=builder --chown=nextjs:nodejs /app/package.json ./package.json
-
 # Copy production-only node_modules
 COPY --from=prod-deps --chown=nextjs:nodejs /app/node_modules ./node_modules
-
-# Install TypeScript and ts-node in the final stage for job system startup
-RUN npm install typescript ts-node
-
-# Copy the custom startup script
-COPY --chown=nextjs:nodejs startup.js /app/startup.js
-RUN chmod +x /app/startup.js
 
 # Add optimized health check script
 COPY --chown=nextjs:nodejs <<EOF /app/healthcheck.js
@@ -134,5 +120,5 @@ LABEL maintainer="Wins Column Team" \
       security.non-root="true" \
       security.user="nextjs:1001"
 
-# Start application with proper signal handling
-CMD ["dumb-init", "node", "/app/startup.js"] 
+# server.js is created by next build from the standalone output
+CMD ["dumb-init", "node", "server.js"] 

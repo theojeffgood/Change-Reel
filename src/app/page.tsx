@@ -1,6 +1,22 @@
+'use client';
+
 import Link from 'next/link';
+import { useEffect } from 'react';
 
 export default function Home() {
+  // Start job processor on client mount
+  useEffect(() => {
+    const startJobProcessor = async () => {
+      try {
+        await fetch('/api/jobs/status');
+      } catch (error) {
+        // Ignore errors - job processor will start when accessible
+      }
+    };
+    
+    const timer = setTimeout(startJobProcessor, 1000);
+    return () => clearTimeout(timer);
+  }, []);
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-50 to-blue-50">
       {/* Navigation */}

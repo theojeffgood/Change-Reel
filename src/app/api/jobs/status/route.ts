@@ -7,8 +7,6 @@
 
 import { NextResponse } from 'next/server'
 import { createSupabaseService } from '@/lib/supabase/client'
-import { createOpenAIClient } from '@/lib/openai/client'
-import { createSummarizationService } from '@/lib/openai/summarization-service'
 
 // Background job processing state
 let processingInterval: NodeJS.Timeout | null = null
@@ -20,6 +18,34 @@ const jobStats = {
   startedAt: null as Date | null
 }
 
+// Reset stuck jobs function
+async function resetStuckJobs() {
+  try {
+    const supabase = createSupabaseService()
+    
+    // Reset jobs that have been "running" for more than 5 minutes back to "pending"
+    const fiveMinutesAgo = new Date(Date.now() - 5 * 60 * 1000).toISOString()
+    
+    const { error } = await supabase.getClient()
+      .from('jobs')
+      .update({ 
+        status: 'pending',
+        started_at: null,
+        error_message: 'Reset from stuck running state'
+      })
+      .eq('status', 'running')
+      .lt('started_at', fiveMinutesAgo)
+    
+    if (error) {
+      console.error('❌ [JobProcessor] Failed to reset stuck jobs:', error)
+    } else {
+      console.log('🔄 [JobProcessor] Reset stuck jobs older than 5 minutes')
+    }
+  } catch (error) {
+    console.error('❌ [JobProcessor] Error resetting stuck jobs:', error)
+  }
+}
+
 // Background job processor
 async function processJobs() {
   if (isProcessingActive) return // Prevent overlapping executions
@@ -27,6 +53,9 @@ async function processJobs() {
   isProcessingActive = true
   try {
     const supabase = createSupabaseService()
+    
+    // Reset stuck jobs on every processing cycle
+    await resetStuckJobs()
     
             // Get pending jobs
         const { data: jobs, error } = await supabase.getClient()
@@ -115,25 +144,33 @@ async function processJob(job: any, supabase: any) {
   console.log(`✅ [JobProcessor] Completed ${job.type} job ${job.id}`)
 }
 
-// Simplified job processors (placeholder implementations)
+// Simplified job processors (placeholder implementations that complete successfully)
 async function processFetchDiffJob(job: any, supabase: any) {
-  // TODO: Implement fetch diff logic
-  console.log('Processing fetch diff job:', job.data)
+  console.log('✅ [JobProcessor] Processing fetch diff job:', job.id)
+  // TODO: Implement actual fetch diff logic
+  // For now, just simulate successful completion
+  await new Promise(resolve => setTimeout(resolve, 100))
 }
 
 async function processGenerateSummaryJob(job: any, supabase: any) {
-  // TODO: Implement summary generation with OpenAI
-  console.log('Processing summary generation job:', job.data)
+  console.log('✅ [JobProcessor] Processing summary generation job:', job.id)
+  // TODO: Implement actual summary generation with OpenAI
+  // For now, just simulate successful completion
+  await new Promise(resolve => setTimeout(resolve, 100))
 }
 
 async function processSendEmailJob(job: any, supabase: any) {
-  // TODO: Implement email sending logic
-  console.log('Processing send email job:', job.data)
+  console.log('✅ [JobProcessor] Processing send email job:', job.id)
+  // TODO: Implement actual email sending logic
+  // For now, just simulate successful completion
+  await new Promise(resolve => setTimeout(resolve, 100))
 }
 
 async function processWebhookJob(job: any, supabase: any) {
-  // TODO: Implement webhook processing logic
-  console.log('Processing webhook job:', job.data)
+  console.log('✅ [JobProcessor] Processing webhook job:', job.id)
+  // TODO: Implement actual webhook processing logic
+  // For now, just simulate successful completion
+  await new Promise(resolve => setTimeout(resolve, 100))
 }
 
 export async function GET() {

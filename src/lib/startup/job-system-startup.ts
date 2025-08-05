@@ -134,6 +134,10 @@ class JobSystemStartup {
     return this.jobSystem?.processor.isRunning() || false
   }
 
+  get initialized(): boolean {
+    return this.isInitialized
+  }
+
   private validateEnvironment(): void {
     const required = [
       'NEXT_PUBLIC_SUPABASE_URL',
@@ -248,27 +252,47 @@ class JobSystemStartup {
   }
 }
 
-// Global instance
-let globalJobSystemStartup: JobSystemStartup | null = null
+// Global instance using globalThis for cross-context sharing
+declare global {
+  var __WINS_COLUMN_JOB_SYSTEM__: JobSystemStartup | undefined
+}
+
+function getGlobalJobSystemStartup(): JobSystemStartup | null {
+  return globalThis.__WINS_COLUMN_JOB_SYSTEM__ || null
+}
+
+function setGlobalJobSystemStartup(startup: JobSystemStartup | null): void {
+  if (startup) {
+    globalThis.__WINS_COLUMN_JOB_SYSTEM__ = startup
+  } else {
+    delete globalThis.__WINS_COLUMN_JOB_SYSTEM__
+  }
+}
 
 export function getJobSystemStartup(): JobSystemStartup {
-  if (!globalJobSystemStartup) {
-    globalJobSystemStartup = new JobSystemStartup()
+  let startup = getGlobalJobSystemStartup()
+  if (!startup) {
+    startup = new JobSystemStartup()
+    setGlobalJobSystemStartup(startup)
   }
-  return globalJobSystemStartup
+  return startup
 }
 
 export async function initializeJobSystem(): Promise<JobSystemStartup> {
   const startup = getJobSystemStartup()
-  await startup.initialize()
-  await startup.start()
+  if (!startup.initialized) {
+    await startup.initialize()
+    await startup.start()
+  }
   return startup
 }
 
 export function getJobSystem(): JobProcessingSystem | null {
-  return globalJobSystemStartup?.getJobSystem() || null
+  const startup = getGlobalJobSystemStartup()
+  return startup?.getJobSystem() || null
 }
 
 export function isJobSystemRunning(): boolean {
-  return globalJobSystemStartup?.isRunning() || false
+  const startup = getGlobalJobSystemStartup()
+  return startup?.isRunning() || false
 } 

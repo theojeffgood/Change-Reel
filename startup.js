@@ -35,8 +35,19 @@ async function initializeJobSystem() {
   console.log('🚀 [Startup] Initializing job processing system...');
   
   try {
-    // Register ts-node to handle TypeScript files
-    require('ts-node/register');
+    // Register ts-node with proper configuration for path aliases
+    require('ts-node').register({
+      project: './tsconfig.json',
+      transpileOnly: true,
+      compilerOptions: {
+        module: 'commonjs',
+        target: 'ES2017',
+        baseUrl: '.',
+        paths: {
+          '@/*': ['./src/*']
+        }
+      }
+    });
     
     // Import and initialize the job system
     const { initializeJobSystem } = require('./src/lib/startup/job-system-startup');

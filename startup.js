@@ -35,8 +35,11 @@ async function initializeJobSystem() {
   console.log('🚀 [Startup] Initializing job processing system...');
   
   try {
-    // Import and initialize the job system from compiled JavaScript
-    const { initializeJobSystem } = require('./dist/src/lib/startup/job-system-startup');
+    // Register ts-node to handle TypeScript files
+    require('ts-node/register');
+    
+    // Import and initialize the job system
+    const { initializeJobSystem } = require('./src/lib/startup/job-system-startup');
     await initializeJobSystem();
     
     console.log('✅ [Startup] Job processing system initialized successfully');

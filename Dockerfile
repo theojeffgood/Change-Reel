@@ -51,11 +51,10 @@ RUN npm ls @tailwindcss/postcss
 
 RUN npm run build
 
-# Compile TypeScript files for standalone usage
-RUN npx tsc --outDir dist --target ES2017 --module commonjs --moduleResolution node --esModuleInterop --allowJs --skipLibCheck --resolveJsonModule src/lib/startup/job-system-startup.ts src/lib/jobs/setup.ts src/lib/jobs/index.ts src/lib/jobs/processor.ts src/lib/supabase/client.ts
+# No need to compile TypeScript - we'll use ts-node/register at runtime
 
-# Remove development dependencies to slim the final image size
-RUN npm prune --omit=dev
+# Keep TypeScript and ts-node for job system startup
+RUN npm install typescript ts-node
 
 # Production image, copy all the files and run next
 FROM base AS runner
@@ -84,8 +83,9 @@ RUN chown nextjs:nodejs .next
 COPY --from=builder --chown=nextjs:nodejs /app/.next/standalone ./
 COPY --from=builder --chown=nextjs:nodejs /app/.next/static ./.next/static
 
-# Copy the compiled job system files
-COPY --from=builder --chown=nextjs:nodejs /app/dist ./dist
+# Copy the source files and tsconfig for job system startup
+COPY --from=builder --chown=nextjs:nodejs /app/src ./src
+COPY --from=builder --chown=nextjs:nodejs /app/tsconfig.json ./tsconfig.json
 
 # Copy the custom startup script
 COPY --chown=nextjs:nodejs startup.js /app/startup.js

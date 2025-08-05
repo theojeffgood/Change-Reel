@@ -40,7 +40,6 @@ WORKDIR /app
 # Production environment variables
 ENV NODE_ENV production
 ENV NEXT_TELEMETRY_DISABLED 1
-ENV NEXT_RUNTIME nodejs
 ENV PORT 3001
 ENV HOSTNAME "0.0.0.0"
 
@@ -120,5 +119,5 @@ LABEL maintainer="Wins Column Team" \
       security.non-root="true" \
       security.user="nextjs:1001"
 
-# server.js is created by next build from the standalone output
+# Start application with proper signal handling
 CMD ["dumb-init", "node", "server.js"] 

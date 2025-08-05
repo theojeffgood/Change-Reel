@@ -59,7 +59,6 @@ WORKDIR /app
 
 ENV NODE_ENV=production
 ENV NEXT_TELEMETRY_DISABLED=1
-ENV NEXT_RUNTIME=nodejs
 ENV PORT=3001
 ENV HOSTNAME=0.0.0.0
 
@@ -79,8 +78,6 @@ RUN chown nextjs:nodejs .next
 # https://nextjs.org/docs/advanced-features/output-file-tracing
 COPY --from=builder --chown=nextjs:nodejs /app/.next/standalone ./
 COPY --from=builder --chown=nextjs:nodejs /app/.next/static ./.next/static
-
-
 
 # Add health check script
 COPY --chown=nextjs:nodejs <<EOF /app/healthcheck.js

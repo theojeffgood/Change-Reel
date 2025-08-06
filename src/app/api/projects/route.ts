@@ -19,21 +19,33 @@ export async function GET() {
       return NextResponse.json({ error: errorMessage }, { status: 404 });
     }
 
-    const { data: project, error: projectError } = await supabaseService.projects.getProjectByUserId(user.id);
+    // Get all projects for the user (now supports multiple repositories)
+    const { data: projects, error: projectsError } = await supabaseService.projects.getProjectsByUser(user.id);
 
-    if (projectError) {
-      console.error('Error fetching project:', projectError);
-      return NextResponse.json({ error: 'Failed to fetch project' }, { status: 500 });
+    if (projectsError) {
+      console.error('Error fetching projects:', projectsError);
+      return NextResponse.json({ error: 'Failed to fetch projects' }, { status: 500 });
     }
     
-    if (!project) {
-      return NextResponse.json({ project: null }, { status: 200 });
+    if (!projects || projects.length === 0) {
+      return NextResponse.json({ project: null, projects: [] }, { status: 200 });
     }
 
-    // Don't expose sensitive details. The 'webhook_secret' is sensitive.
-    const { webhook_secret, ...safeProject } = project;
+    // For backward compatibility, return the first project as the "current" project
+    // TODO: Add repository selection UI to choose which project to view
+    const currentProject = projects[0];
 
-    return NextResponse.json({ project: safeProject });
+    // Don't expose sensitive details. The 'webhook_secret' is sensitive.
+    const { webhook_secret, ...safeCurrentProject } = currentProject;
+    const safeProjects = projects.map(project => {
+      const { webhook_secret, ...safeProject } = project;
+      return safeProject;
+    });
+
+    return NextResponse.json({ 
+      project: safeCurrentProject,
+      projects: safeProjects // Include all projects for future repository selector
+    });
   } catch (error) {
     console.error('Error fetching project config:', error);
     const errorMessage = error instanceof Error ? error.message : 'An unknown error occurred';

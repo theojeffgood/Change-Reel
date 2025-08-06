@@ -118,9 +118,9 @@ export async function POST(request: NextRequest): Promise<NextResponse<ConfigRes
     };
     console.log('Project data prepared:', { ...projectData, webhook_secret: '[REDACTED]' });
 
-    // Check if project already exists
-    console.log('Checking for existing project for user:', user.id);
-    const existingProjectResult = await supabaseService.projects.getProjectByUserId(user.id);
+    // Check if project already exists for this user and repository
+    console.log('Checking for existing project for user:', user.id, 'and repository:', repositoryFullName);
+    const existingProjectResult = await supabaseService.projects.getProjectByUserAndRepository(user.id, repositoryFullName);
     console.log('Existing project lookup result:', { data: !!existingProjectResult.data, error: existingProjectResult.error?.message });
     const existingProject = existingProjectResult.data;
     
@@ -250,17 +250,21 @@ export async function GET(): Promise<NextResponse> {
       });
     }
 
-    // Get user's project
-    const projectResult = await supabaseService.projects.getProjectByUserId(user.id);
-    const project = projectResult.data;
+    // Get user's projects (now supports multiple repositories per user)
+    const projectsResult = await supabaseService.projects.getProjectsByUser(user.id);
+    const projects = projectsResult.data;
     
-    if (!project) {
+    if (!projects || projects.length === 0) {
       return NextResponse.json({
         success: true,
         configuration: null,
         message: 'No configuration found'
       });
     }
+
+    // For backward compatibility, return the first project
+    // TODO: In future, add query parameter to specify which repository
+    const project = projects[0];
 
     // Return configuration (without sensitive data)
     return NextResponse.json({

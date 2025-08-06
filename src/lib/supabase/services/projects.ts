@@ -19,6 +19,7 @@ export interface IProjectService {
   listProjects(filter?: ProjectFilter, pagination?: PaginationOptions): Promise<DatabaseResults<Project>>
   getProjectsByUser(userId: string): Promise<DatabaseResults<Project>>
   getProjectByUserId(userId: string): Promise<DatabaseResult<Project>>
+  getProjectByUserAndRepository(userId: string, repositoryName: string): Promise<DatabaseResult<Project>>
 }
 
 export class ProjectService implements IProjectService {
@@ -312,6 +313,31 @@ export class ProjectService implements IProjectService {
           return { data: null, error: null }
         }
         return { data: null, error: new Error(error.message || 'Failed to get project by user ID') }
+      }
+
+      return { data, error: null }
+    } catch (err) {
+      return {
+        data: null,
+        error: err instanceof Error ? err : new Error('Unknown error occurred'),
+      }
+    }
+  }
+
+  async getProjectByUserAndRepository(userId: string, repositoryName: string): Promise<DatabaseResult<Project>> {
+    try {
+      const { data, error } = await this.supabaseClient
+        .from('projects')
+        .select('*')
+        .eq('user_id', userId)
+        .eq('repo_name', repositoryName)
+        .single()
+
+      if (error) {
+        if (error.code === 'PGRST116') {
+          return { data: null, error: null }
+        }
+        return { data: null, error: new Error(error.message || 'Failed to get project by user and repository') }
       }
 
       return { data, error: null }

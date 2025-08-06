@@ -8,7 +8,7 @@ import {
 
 import { IJobService } from '../../supabase/services/jobs'
 import { ICommitService } from '../../supabase/services/commits'
-import { IProjectService } from '../../types/supabase'
+import { IProjectService } from '../../supabase/services/projects'
 import { GitHubWebhookService } from '../../github/webhook-service'
 
 /**
@@ -63,15 +63,28 @@ export class WebhookProcessingHandler implements JobHandler<WebhookProcessingJob
         }
       }
 
-      // For MVP, assume we have a single project (since user can configure only one)
-      // In production, this would lookup by repository name
+      // Lookup project by repository name
       const repository = data.payload.repository?.full_name || 'unknown/repo'
       const commits = data.payload.commits || []
       
-             // Mock project for MVP
-       const project = { id: 'default-project', name: 'Default Project' }
-       const createdCommits: string[] = []
-       const createdJobs: string[] = []
+      // Get the actual project from the database
+      const projectResult = await this.projectService.getProjectByRepository(repository)
+      
+      if (projectResult.error || !projectResult.data) {
+        return {
+          success: false,
+          error: `No project found for repository: ${repository}. Please configure the project first.`,
+          metadata: {
+            reason: 'project_not_found',
+            repository,
+            projectError: projectResult.error?.message,
+          },
+        }
+      }
+
+      const project = projectResult.data
+      const createdCommits: string[] = []
+      const createdJobs: string[] = []
 
        // Process each commit in the push
        for (const commitData of commits) {

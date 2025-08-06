@@ -56,7 +56,8 @@ export async function POST(request: NextRequest): Promise<NextResponse<WebhookSe
       );
     }
 
-    const { data: project } = await supabaseService.projects.getProjectByUserId(user.id);
+    // Get the specific project for this repository
+    const { data: project } = await supabaseService.projects.getProjectByUserAndRepository(user.id, body.repositoryFullName);
     
     if (!project || !project.webhook_secret) {
       return NextResponse.json(

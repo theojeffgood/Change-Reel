@@ -5,10 +5,11 @@ import {
   FetchDiffJobData,
 } from '../../types/jobs'
 
-import { IDiffService, DiffReference } from '../../github/diff-service'
+import { IDiffService, DiffReference, createDiffService } from '../../github/diff-service'
 import { ICommitService } from '../../supabase/services/commits'
-import { TokenStorageService } from '../../oauth/tokenStorage'
 import { IProjectService } from '../../supabase/services/projects'
+import { createGitHubClient } from '@/lib/github/api-client'
+import { getOAuthToken } from '@/lib/auth/token-storage'
 
 /**
  * Handler for fetching commit diffs from GitHub API
@@ -23,10 +24,10 @@ export class FetchDiffHandler implements JobHandler<FetchDiffJobData> {
   type = 'fetch_diff' as const
 
   constructor(
-    private diffService: IDiffService,
+    private diffService: IDiffService | null,
     private commitService: ICommitService,
-    private tokenStorage: TokenStorageService,
-    private projectService: IProjectService
+    private projectService: IProjectService,
+    private userService: any
   ) {}
 
   async handle(job: Job, data: FetchDiffJobData): Promise<JobResult> {
@@ -68,9 +69,17 @@ export class FetchDiffHandler implements JobHandler<FetchDiffJobData> {
          }
        }
 
-       // Get OAuth token for GitHub API access
-       const tokenResult = await this.tokenStorage.getToken(project.user_id, 'github')
-       if (tokenResult.error || !tokenResult.data) {
+       // Retrieve user-scoped GitHub OAuth token (bridge internal UUID -> GitHub ID)
+       let tokenLookup = await getOAuthToken(project.user_id, 'github')
+       if (!tokenLookup.token) {
+         // Try mapping internal user UUID to github_id
+         const userResult = await this.userService.getUser(project.user_id)
+         const githubId = userResult?.data?.github_id ? String(userResult.data.github_id) : undefined
+         if (githubId) {
+           tokenLookup = await getOAuthToken(githubId, 'github')
+         }
+       }
+       if (!tokenLookup.token) {
          return {
            success: false,
            error: 'Failed to retrieve GitHub OAuth token',
@@ -78,44 +87,47 @@ export class FetchDiffHandler implements JobHandler<FetchDiffJobData> {
          }
        }
 
-      // Prepare diff reference for the service
+      // Validate repo/ref inputs and prepare diff reference
       const diffReference: DiffReference = {
         owner: data.repository_owner,
         repo: data.repository_name,
-        base: 'HEAD~1', // Compare with previous commit
+        base: data.base_sha || job.context?.base_sha || 'HEAD~1',
         head: data.commit_sha,
       }
 
-      // Fetch the commit diff from GitHub
-      const diffResult = await this.diffService.getDiff(diffReference)
-      
-      // The service returns DiffData directly, not a result object
-      const diffData = diffResult
-
-      // Update the commit record with diff data
-      if (job.commit_id) {
-        const updateResult = await this.commitService.updateCommit(job.commit_id, {
-          // Store diff in context since it's not a direct commit field
-          // The summarization handler will read this
-        })
-
-        if (updateResult.error) {
-          return {
-            success: false,
-            error: 'Failed to update commit record with diff data',
-            metadata: {
-              reason: 'database_update_failed',
-              commitId: job.commit_id,
-              dbError: updateResult.error.message,
-            },
-          }
+      if (!diffReference.owner || diffReference.owner === 'unknown' || !diffReference.repo || diffReference.repo === 'unknown') {
+        return {
+          success: false,
+          error: 'Invalid repository information for diff fetching',
+          metadata: { reason: 'invalid_repo', owner: diffReference.owner, repo: diffReference.repo },
         }
       }
+      if (!diffReference.head) {
+        return {
+          success: false,
+          error: 'Missing commit SHA for diff fetching',
+          metadata: { reason: 'missing_commit_sha' },
+        }
+      }
+
+      // Use injected diff service if present; otherwise create per-user service
+      let diffService = this.diffService
+      if (!diffService) {
+        const apiClient = createGitHubClient({ auth: tokenLookup.token })
+        diffService = createDiffService(apiClient)
+      }
+
+      // Fetch the commit diff from GitHub
+      const diffData = await diffService.getDiff(diffReference)
+      const diffRaw = await diffService.getDiffRaw(diffReference)
+
+      // Do not update commit with an empty payload; return diff in result instead
 
       return {
         success: true,
         data: {
-          diff_content: JSON.stringify(diffData),
+          // Provide raw unified diff for summarization
+          diff_content: diffRaw,
           files_changed: diffData.stats.total_files,
           additions: diffData.stats.additions,
           deletions: diffData.stats.deletions,
@@ -161,8 +173,8 @@ export class FetchDiffHandler implements JobHandler<FetchDiffJobData> {
 export function createFetchDiffHandler(
   diffService: IDiffService,
   commitService: ICommitService,
-  tokenStorage: TokenStorageService,
-  projectService: IProjectService
+  projectService: IProjectService,
+  userService: any
 ): FetchDiffHandler {
-  return new FetchDiffHandler(diffService, commitService, tokenStorage, projectService)
+  return new FetchDiffHandler(diffService, commitService, projectService, userService)
 } 

@@ -6,7 +6,7 @@
  * and ensures graceful shutdown.
  */
 
-import { createSupabaseService } from '@/lib/supabase/client'
+import { getServiceRoleSupabaseService } from '@/lib/supabase/client'
 import { createJobProcessingSystem, PRODUCTION_CONFIG, DEVELOPMENT_CONFIG } from '@/lib/jobs/setup'
 import type { JobProcessingSystem } from '@/lib/jobs/setup'
 
@@ -42,11 +42,11 @@ class JobSystemStartup {
       // Validate environment variables
       this.validateEnvironment()
 
-      // Create Supabase client
-      const supabaseClient = createSupabaseService()
+      // Create Supabase service with service role key (server-side only)
+      const supabaseService = getServiceRoleSupabaseService()
       
       // Create all dependencies (with proper error handling for missing services)
-      const dependencies = await this.createDependencies(supabaseClient)
+      const dependencies = await this.createDependencies(supabaseService)
 
       // Create job processing system
       this.jobSystem = createJobProcessingSystem(dependencies)
@@ -166,6 +166,7 @@ class JobSystemStartup {
       // Use the supabase service directly (it already has all services)
       dependencies.commitService = supabaseService.commits
       dependencies.projectService = supabaseService.projects
+      dependencies.userService = supabaseService.users
       startupLogger.debug('✅ Database services connected')
     } catch (error) {
       startupLogger.warn('Failed to connect database services', error)
@@ -182,23 +183,12 @@ class JobSystemStartup {
       startupLogger.warn('Failed to create OpenAI service', error)
     }
 
-    // Use null/stub for complex services during startup - handlers will create as needed
+    // Use null/stub for complex services during startup - handlers will create as needed (per-user OAuth)
     dependencies.githubDiffService = null
     dependencies.githubApiClient = null
-    startupLogger.debug('✅ GitHub services set to null (will be created by handlers as needed)')
+    startupLogger.debug('✅ GitHub services set to null (handlers will create per-user using OAuth)')
 
-    try {
-      // Create token storage with environment variables
-      const { TokenStorageService } = await import('@/lib/oauth/tokenStorage')
-      dependencies.tokenStorage = new TokenStorageService(
-        process.env.NEXT_PUBLIC_SUPABASE_URL!,
-        process.env.SUPABASE_SERVICE_ROLE_KEY!,
-        process.env.NEXTAUTH_SECRET!
-      )
-      startupLogger.debug('✅ Token storage created')
-    } catch (error) {
-      startupLogger.warn('Failed to create token storage', error)
-    }
+    // Token storage unified via lib/auth/token-storage.ts; no separate DI needed
 
     try {
       // Create webhook service with Supabase client

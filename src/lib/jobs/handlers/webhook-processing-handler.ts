@@ -119,7 +119,7 @@ export class WebhookProcessingHandler implements JobHandler<WebhookProcessingJob
         createdCommits.push(commit.id)
 
                  // Create fetch_diff job
-         const fetchDiffJobData: CreateJobData = {
+        const fetchDiffJobData: CreateJobData = {
            type: 'fetch_diff',
            priority: 70, // High priority for fresh commits
            data: {
@@ -127,6 +127,7 @@ export class WebhookProcessingHandler implements JobHandler<WebhookProcessingJob
              repository_owner: data.payload.repository?.owner?.login || 'unknown',
              repository_name: data.payload.repository?.name || 'unknown',
              branch: data.payload.ref?.replace('refs/heads/', '') || 'main',
+            base_sha: data.payload.before || undefined,
            },
            commit_id: commit.id,
            project_id: project.id,

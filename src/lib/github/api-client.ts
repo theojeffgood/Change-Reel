@@ -29,6 +29,8 @@ export interface IGitHubApiClient {
   getCommitDiff(owner: string, repo: string, base: string, head: string): Promise<GitHubCommitDiff>;
   getRepository(owner: string, repo: string): Promise<any>;
   getRateLimit(): Promise<any>;
+  // Return raw unified diff text for compare
+  getCommitDiffRaw(owner: string, repo: string, base: string, head: string): Promise<string>;
 }
 
 // Production implementation
@@ -115,6 +117,24 @@ export class GitHubApiClient implements IGitHubApiClient {
       return response.data;
     } catch (error) {
       throw this.handleApiError(error, 'getRateLimit');
+    }
+  }
+
+  async getCommitDiffRaw(owner: string, repo: string, base: string, head: string): Promise<string> {
+    try {
+      const response = await this.octokit.request('GET /repos/{owner}/{repo}/compare/{base}...{head}', {
+        owner,
+        repo,
+        base,
+        head,
+        headers: {
+          accept: 'application/vnd.github.v3.diff',
+        },
+      });
+      // Octokit returns text when accept asks for diff
+      return response.data as unknown as string;
+    } catch (error) {
+      throw this.handleApiError(error, 'getCommitDiffRaw');
     }
   }
 

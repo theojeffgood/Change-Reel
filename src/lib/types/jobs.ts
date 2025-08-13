@@ -111,6 +111,7 @@ export interface FetchDiffJobData {
   repository_owner: string;
   repository_name: string;
   branch?: string;
+  base_sha?: string; // optional base commit for comparison
   github_token?: string; // Will be retrieved from OAuth storage
 }
 
@@ -207,6 +208,8 @@ export interface IJobQueueService {
   // Cleanup and maintenance
   cleanupCompletedJobs(daysOld?: number): Promise<number>;
   cleanupExpiredJobs(): Promise<number>;
+  // Maintenance helpers
+  getStaleRunningJobs(timeoutMs: number): Promise<DatabaseJobResults>;
 }
 
 // Job processor interface

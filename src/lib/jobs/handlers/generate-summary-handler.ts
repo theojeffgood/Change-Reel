@@ -6,6 +6,7 @@ import {
 } from '../../types/jobs'
 
 import { ISummarizationService } from '../../openai/summarization-service'
+import { IJobQueueService } from '../../types/jobs'
 import { ICommitService } from '../../supabase/services/commits'
 
 /**
@@ -22,7 +23,8 @@ export class GenerateSummaryHandler implements JobHandler<GenerateSummaryJobData
 
   constructor(
     private summarizationService: ISummarizationService,
-    private commitService: ICommitService
+    private commitService: ICommitService,
+    private jobQueueService: IJobQueueService
   ) {}
 
   async handle(job: Job, data: GenerateSummaryJobData): Promise<JobResult> {
@@ -50,10 +52,20 @@ export class GenerateSummaryHandler implements JobHandler<GenerateSummaryJobData
 
       const commit = commitResult.data
 
-      // Use diff content from job data if provided, otherwise try to get from previous job result
+      // Use diff content from job data if provided; otherwise from previous job result
       let diffContent = data.diff_content
-      if (!diffContent && job.context?.previous_job_result?.data?.diff_content) {
-        diffContent = job.context.previous_job_result.data.diff_content
+      if (!diffContent && job.context?.result?.diff_content) {
+        diffContent = job.context.result.diff_content
+      }
+      // If still missing, load dependency job and read its context.result.diff_content
+      if (!diffContent) {
+        const deps = await this.jobQueueService.getJobDependencies(job.id)
+        const depId = deps.data && deps.data[0]?.depends_on_job_id
+        if (depId) {
+          const dep = await this.jobQueueService.getJob(depId)
+          const fromDep = (dep.data as any)?.context?.result?.diff_content
+          if (fromDep) diffContent = fromDep
+        }
       }
 
       if (!diffContent) {
@@ -171,7 +183,8 @@ export class GenerateSummaryHandler implements JobHandler<GenerateSummaryJobData
 // Factory function for dependency injection
 export function createGenerateSummaryHandler(
   summarizationService: ISummarizationService,
-  commitService: ICommitService
+  commitService: ICommitService,
+  jobQueueService: IJobQueueService
 ): GenerateSummaryHandler {
-  return new GenerateSummaryHandler(summarizationService, commitService)
-} 
+  return new GenerateSummaryHandler(summarizationService, commitService, jobQueueService)
+}

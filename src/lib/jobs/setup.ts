@@ -26,6 +26,7 @@ export interface JobSystemDependencies {
   tokenStorage?: any // Will be injected when available
   projectService?: any // Will be injected when available
   webhookService?: any // Will be injected when available
+  userService?: any // Will be injected when available
 }
 
 /**
@@ -46,12 +47,13 @@ export function createJobProcessingSystem(dependencies: JobSystemDependencies) {
     fetchDiff: new FetchDiffHandler(
       dependencies.githubDiffService,
       dependencies.commitService,
-      dependencies.tokenStorage,
-      dependencies.projectService
+      dependencies.projectService,
+      dependencies.userService
     ),
     generateSummary: new GenerateSummaryHandler(
+      dependencies.openaiService,
       dependencies.commitService,
-      dependencies.openaiService
+      jobQueueService
     ),
     sendEmail: new SendEmailHandler(
       dependencies.commitService,

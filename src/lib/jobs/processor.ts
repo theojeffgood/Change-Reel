@@ -190,8 +190,15 @@ export class JobProcessor implements IJobProcessor {
         return
       }
 
-      // Process each job concurrently
-      const processingPromises = result.data.map(job => this.processJob(job))
+      // Process each job concurrently: fetch full row first to get attempts/max_attempts/status
+      const processingPromises = result.data.map(async (partialJob: any) => {
+        const full = await this.jobQueueService.getJob(partialJob.id)
+        if (full.data) {
+          await this.processJob(full.data)
+        } else {
+          this.logger.warn('Skipped processing job that could not be loaded', { id: partialJob.id, error: full.error?.message })
+        }
+      })
       await Promise.allSettled(processingPromises)
 
     } catch (error) {
@@ -318,6 +325,16 @@ export class JobProcessor implements IJobProcessor {
       const expiredJobs = await this.jobQueueService.cleanupExpiredJobs()
       if (expiredJobs > 0) {
         this.logger.info(`Cleaned up ${expiredJobs} expired jobs`)
+      }
+
+      // Requeue or fail stale running jobs (safety net for stuck states)
+      const stale = await this.jobQueueService.getStaleRunningJobs(this.config.job_timeout_ms!)
+      if (stale.data && stale.data.length > 0) {
+        for (const j of stale.data) {
+          // Treat as failure due to timeout; mark failed or schedule retry
+          await this.handleJobFailure(j as any, 'Job timed out (maintenance)')
+        }
+        this.logger.warn(`Reconciled ${stale.data.length} stale running jobs`)
       }
 
     } catch (error) {

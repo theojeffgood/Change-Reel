@@ -85,23 +85,13 @@ export class GitHubDiffService implements IDiffService {
 
   async getDiffRaw(reference: DiffReference): Promise<string> {
     try {
-      // Use a different media type to get raw diff format
-      const response = await fetch(
-        `https://api.github.com/repos/${reference.owner}/${reference.repo}/compare/${reference.base}...${reference.head}`,
-        {
-          headers: {
-            'Accept': 'application/vnd.github.v3.diff',
-            'Authorization': `token ${process.env.GITHUB_TOKEN || process.env.GITHUB_API_TOKEN}`,
-            'User-Agent': 'wins-column/1.0.0',
-          },
-        }
+      // Use authenticated Octokit client to request raw diff with correct user token
+      return await this.apiClient.getCommitDiffRaw(
+        reference.owner,
+        reference.repo,
+        reference.base,
+        reference.head
       );
-
-      if (!response.ok) {
-        throw new Error(`HTTP ${response.status}: ${response.statusText}`);
-      }
-
-      return await response.text();
     } catch (error) {
       const errorMessage = error instanceof Error ? error.message : String(error);
       throw new Error(`Failed to fetch raw diff for ${reference.base}..${reference.head}: ${errorMessage}`);

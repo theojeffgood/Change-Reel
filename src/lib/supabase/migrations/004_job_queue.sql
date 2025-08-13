@@ -132,11 +132,14 @@ CREATE OR REPLACE FUNCTION get_ready_jobs(limit_count INTEGER DEFAULT 10)
 RETURNS TABLE (
     id UUID,
     type job_type,
+    status job_status,
     priority INTEGER,
     data JSONB,
     context JSONB,
     commit_id UUID,
     project_id UUID,
+    attempts INTEGER,
+    max_attempts INTEGER,
     scheduled_for TIMESTAMP WITH TIME ZONE
 ) AS $$
 BEGIN
@@ -144,11 +147,14 @@ BEGIN
     SELECT 
         j.id,
         j.type,
+        j.status,
         j.priority,
         j.data,
         j.context,
         j.commit_id,
         j.project_id,
+        j.attempts,
+        j.max_attempts,
         j.scheduled_for
     FROM jobs j
     WHERE j.status = 'pending'

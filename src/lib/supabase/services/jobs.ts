@@ -482,6 +482,12 @@ export class JobQueueService implements IJobService {
       status: 'running',
       started_at: new Date().toISOString(),
     }
+    // Retry transient failures up to 3 times
+    for (let attempt = 0; attempt < 3; attempt++) {
+      const res = await this.updateJob(jobId, updates)
+      if (!res.error) return res
+      await new Promise(r => setTimeout(r, 200 * (attempt + 1)))
+    }
     return this.updateJob(jobId, updates)
   }
 
@@ -495,6 +501,11 @@ export class JobQueueService implements IJobService {
       updates.context = { result }
     }
 
+    for (let attempt = 0; attempt < 3; attempt++) {
+      const res = await this.updateJob(jobId, updates)
+      if (!res.error) return res
+      await new Promise(r => setTimeout(r, 200 * (attempt + 1)))
+    }
     return this.updateJob(jobId, updates)
   }
 
@@ -523,6 +534,11 @@ export class JobQueueService implements IJobService {
         updates.retry_after = retryAfter.toISOString()
       }
 
+      for (let attempt = 0; attempt < 3; attempt++) {
+        const res = await this.updateJob(jobId, updates)
+        if (!res.error) return res
+        await new Promise(r => setTimeout(r, 200 * (attempt + 1)))
+      }
       return this.updateJob(jobId, updates)
     } catch (err) {
       return {
@@ -536,6 +552,11 @@ export class JobQueueService implements IJobService {
     const updates: UpdateJobData = {
       status: 'pending',
       retry_after: retryAfter.toISOString(),
+    }
+    for (let attempt = 0; attempt < 3; attempt++) {
+      const res = await this.updateJob(jobId, updates)
+      if (!res.error) return res
+      await new Promise(r => setTimeout(r, 200 * (attempt + 1)))
     }
     return this.updateJob(jobId, updates)
   }
@@ -575,6 +596,30 @@ export class JobQueueService implements IJobService {
     } catch (err) {
       console.error('Failed to cleanup expired jobs:', err)
       return 0
+    }
+  }
+
+  // Identify running jobs that exceeded the timeout window
+  async getStaleRunningJobs(timeoutMs: number): Promise<DatabaseJobResults> {
+    try {
+      const cutoffIso = new Date(Date.now() - timeoutMs).toISOString()
+      const { data, error, count } = await this.supabaseClient
+        .from('jobs')
+        .select('*', { count: 'exact' })
+        .eq('status', 'running')
+        .lte('started_at', cutoffIso)
+
+      if (error) {
+        return { data: null, error: new Error(error.message || 'Failed to query stale running jobs'), count: 0 }
+      }
+
+      return { data: data || [], error: null, count: count || 0 }
+    } catch (err) {
+      return {
+        data: null,
+        error: err instanceof Error ? err : new Error('Unknown error occurred'),
+        count: 0,
+      }
     }
   }
 }

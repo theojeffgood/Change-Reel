@@ -73,7 +73,7 @@ export default function Home() {
             </div>
             <div className="inline-flex items-center px-4 py-2 text-gray-600 text-sm font-medium">
               <span className="mr-2">🤖</span>
-              Powered by GPT-4
+              Powered by GPT-5
             </div>
           </div>
         </div>

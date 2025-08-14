@@ -1,0 +1,11 @@
+# Ignore test files from build linting
+src/__tests__/**
+**/__tests__/**
+**/*.test.ts
+**/*.test.tsx
+**/*.test.js
+**/*.test.jsx
+**/*.spec.ts
+**/*.spec.tsx
+**/*.spec.js
+**/*.spec.jsx

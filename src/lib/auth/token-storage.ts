@@ -93,8 +93,7 @@ async function getSubtle(): Promise<SubtleCrypto> {
   // Node.js fallback (only executed in Node runtime, not Edge)
   // Use dynamic import to avoid bundling in Edge
   const nodeCrypto = await import('crypto');
-  // @ts-ignore
-  return (nodeCrypto.webcrypto as any).subtle as SubtleCrypto;
+  return ((nodeCrypto as unknown as { webcrypto?: { subtle: SubtleCrypto } }).webcrypto!.subtle);
 }
 
 async function deriveAesKey(passphrase: string, salt: string): Promise<CryptoKey> {
@@ -128,8 +127,10 @@ async function encryptToken(token: string): Promise<{ encrypted: string; iv: str
   const subtle = await getSubtle();
   const key = await deriveAesKey(ENCRYPTION_KEY, TOKEN_SALT);
   const iv = new Uint8Array(16);
-  // @ts-ignore
-  (globalThis.crypto || (await import('crypto')).webcrypto).getRandomValues(iv);
+  const webcrypto = (globalThis as any).crypto?.getRandomValues
+    ? (globalThis as any).crypto
+    : (await import('crypto') as unknown as { webcrypto: Crypto }).webcrypto;
+  webcrypto.getRandomValues(iv);
   const plaintext = encoder.encode(token);
   const padded = pkcs7Pad(plaintext);
   const ciphertext = await subtle.encrypt({ name: ALGORITHM, iv }, key, padded);

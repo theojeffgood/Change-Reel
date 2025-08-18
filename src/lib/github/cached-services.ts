@@ -80,6 +80,7 @@ export class CachedGitHubApiClient implements IGitHubApiClient {
 
   async getCommitDiffRaw(owner: string, repo: string, base: string, head: string): Promise<string> {
     const key = CacheKeyUtils.diffRawKey({ owner, repo, base, head });
+
     const cached = this.cache.get<string>(key);
     if (cached) {
       return cached;
@@ -87,6 +88,7 @@ export class CachedGitHubApiClient implements IGitHubApiClient {
 
     const result = await this.client.getCommitDiffRaw(owner, repo, base, head);
     this.cache.set(key, result, CacheConfigs.MEDIUM_LIVED.defaultTtl);
+
     return result;
   }
 }

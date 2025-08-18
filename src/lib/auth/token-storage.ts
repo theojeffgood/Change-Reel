@@ -1,8 +1,10 @@
+import 'server-only'
+import crypto from 'crypto';
 import { createSupabaseClient } from '@/lib/supabase/client';
 
 // Security: Use environment variable for encryption key, with strict validation
 const ENCRYPTION_KEY_RAW = process.env.TOKEN_ENCRYPTION_KEY;
-const ALGORITHM = 'AES-CBC';
+const ALGORITHM = 'aes-256-cbc';
 const KEY_DERIVATION_ITERATIONS = 100000; // PBKDF2 iterations for security
 
 // Validate encryption key on module load
@@ -50,109 +52,35 @@ interface SecurityAuditLog {
   timestamp: string;
 }
 
-// Utilities
-const encoder = new TextEncoder();
-const decoder = new TextDecoder();
-
-function bytesToHex(bytes: Uint8Array): string {
-  return Array.from(bytes).map(b => b.toString(16).padStart(2, '0')).join('');
-}
-
-function hexToBytes(hex: string): Uint8Array {
-  const len = hex.length;
-  const out = new Uint8Array(len / 2);
-  for (let i = 0; i < len; i += 2) {
-    out[i / 2] = parseInt(hex.slice(i, i + 2), 16);
-  }
-  return out;
-}
-
-function pkcs7Pad(data: Uint8Array): Uint8Array {
-  const blockSize = 16;
-  let padLen = blockSize - (data.length % blockSize);
-  if (padLen === 0) padLen = blockSize;
-  const out = new Uint8Array(data.length + padLen);
-  out.set(data, 0);
-  out.fill(padLen, data.length);
-  return out;
-}
-
-function pkcs7Unpad(data: Uint8Array): Uint8Array {
-  if (data.length === 0) return data;
-  const padLen = data[data.length - 1];
-  if (padLen < 1 || padLen > 16 || padLen > data.length) {
-    throw new Error('Invalid padding');
-  }
-  return data.subarray(0, data.length - padLen);
-}
-
-async function getSubtle(): Promise<SubtleCrypto> {
-  if (typeof globalThis !== 'undefined' && (globalThis as any).crypto?.subtle) {
-    return (globalThis as any).crypto.subtle as SubtleCrypto;
-  }
-  // Node.js fallback (only executed in Node runtime, not Edge)
-  // Use dynamic import to avoid bundling in Edge
-  const nodeCrypto = await import('crypto');
-  return ((nodeCrypto as unknown as { webcrypto?: { subtle: SubtleCrypto } }).webcrypto!.subtle);
-}
-
-async function deriveAesKey(passphrase: string, salt: string): Promise<CryptoKey> {
-  const subtle = await getSubtle();
-  const baseKey = await subtle.importKey(
-    'raw',
-    encoder.encode(passphrase),
-    'PBKDF2',
-    false,
-    ['deriveKey']
-  );
-  const aesKey = await subtle.deriveKey(
-    {
-      name: 'PBKDF2',
-      salt: encoder.encode(salt),
-      iterations: KEY_DERIVATION_ITERATIONS,
-      hash: 'SHA-256',
-    },
-    baseKey,
-    { name: ALGORITHM, length: 256 },
-    false,
-    ['encrypt', 'decrypt']
-  );
-  return aesKey;
-}
-
 /**
- * Encryption using Web Crypto PBKDF2 + AES-CBC (compatible with Edge runtime)
+ * Enhanced encryption using PBKDF2 for key derivation
  */
-async function encryptToken(token: string): Promise<{ encrypted: string; iv: string; authTag: string }> {
-  const subtle = await getSubtle();
-  const key = await deriveAesKey(ENCRYPTION_KEY, TOKEN_SALT);
-  const iv = new Uint8Array(16);
-  const webcrypto = (globalThis as any).crypto?.getRandomValues
-    ? (globalThis as any).crypto
-    : (await import('crypto') as unknown as { webcrypto: Crypto }).webcrypto;
-  webcrypto.getRandomValues(iv);
-  const plaintext = encoder.encode(token);
-  const padded = pkcs7Pad(plaintext);
-  const ciphertext = await subtle.encrypt({ name: ALGORITHM, iv }, key, padded);
-  const encryptedBytes = new Uint8Array(ciphertext);
+function encryptToken(token: string): { encrypted: string; iv: string; authTag: string } {
+  const iv = crypto.randomBytes(16);
+  const key = crypto.pbkdf2Sync(ENCRYPTION_KEY, TOKEN_SALT, KEY_DERIVATION_ITERATIONS, 32, 'sha256');
+  const cipher = crypto.createCipheriv(ALGORITHM, key, iv);
+  
+  let encrypted = cipher.update(token, 'utf8', 'hex');
+  encrypted += cipher.final('hex');
+  
   return {
-    encrypted: bytesToHex(encryptedBytes),
-    iv: bytesToHex(iv),
+    encrypted,
+    iv: iv.toString('hex'),
     authTag: '', // CBC mode doesn't use auth tags, kept for interface compatibility
   };
 }
 
 /**
- * Decryption using Web Crypto PBKDF2 + AES-CBC (compatible with Edge runtime)
+ * Enhanced decryption using PBKDF2 for key derivation
  */
-async function decryptToken(encryptedHex: string, ivHex: string, authTag: string): Promise<string> {
-  const subtle = await getSubtle();
-  const key = await deriveAesKey(ENCRYPTION_KEY, TOKEN_SALT);
-  const iv = hexToBytes(ivHex);
-  const encryptedBytes = hexToBytes(encryptedHex);
-  const decryptedBuf = await subtle.decrypt({ name: ALGORITHM, iv }, key, encryptedBytes);
-  const unpadded = pkcs7Unpad(new Uint8Array(decryptedBuf));
-  return decoder.decode(unpadded);
+function decryptToken(encrypted: string, iv: string, authTag: string): string {
+  const key = crypto.pbkdf2Sync(ENCRYPTION_KEY, TOKEN_SALT, KEY_DERIVATION_ITERATIONS, 32, 'sha256');
+  const decipher = crypto.createDecipheriv(ALGORITHM, key, Buffer.from(iv, 'hex'));
+  
+  let decrypted = decipher.update(encrypted, 'hex', 'utf8');
+  decrypted += decipher.final('utf8');
+  
+  return decrypted;
 }
 
 /**
@@ -161,11 +89,11 @@ async function decryptToken(encryptedHex: string, ivHex: string, authTag: string
 async function logSecurityEvent(auditLog: SecurityAuditLog): Promise<void> {
   try {
     const supabase = createSupabaseClient();
-    // Hash sensitive data for audit logs using Web Crypto
-    const subtle = await getSubtle();
-    const data = encoder.encode(auditLog.user_id + AUDIT_SALT);
-    const digest = await subtle.digest('SHA-256', data);
-    const hashedUserId = bytesToHex(new Uint8Array(digest));
+    
+    // Hash sensitive data for audit logs
+    const hashedUserId = crypto.createHash('sha256')
+      .update(auditLog.user_id + AUDIT_SALT)
+      .digest('hex');
     
     await supabase
       .from('security_audit_logs')
@@ -208,7 +136,7 @@ export async function storeOAuthToken(
     
     const supabase = createSupabaseClient();
     
-    const { encrypted, iv, authTag } = await encryptToken(tokenData.accessToken);
+    const { encrypted, iv, authTag } = encryptToken(tokenData.accessToken);
     
     // Get current token version for rotation
     const { data: existingToken } = await supabase
@@ -376,7 +304,7 @@ export async function getOAuthToken(
       }
     }
     
-    const decryptedToken = await decryptToken(
+    const decryptedToken = decryptToken(
       data.encrypted_token,
       data.iv,
       data.auth_tag
@@ -707,10 +635,10 @@ export async function rotateTokenEncryption(): Promise<{ rotated: number; errors
     for (const token of tokens || []) {
       try {
         // Decrypt with old encryption
-        const decryptedToken = await decryptToken(token.encrypted_token, token.iv, token.auth_tag);
+        const decryptedToken = decryptToken(token.encrypted_token, token.iv, token.auth_tag);
         
         // Re-encrypt with new encryption (uses current key)
-        const { encrypted, iv, authTag } = await encryptToken(decryptedToken);
+        const { encrypted, iv, authTag } = encryptToken(decryptedToken);
         
         // Update in database
         await supabase

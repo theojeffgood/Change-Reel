@@ -95,7 +95,7 @@ export default function Home() {
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-12 items-center">
               {/* Left Side - Code Example */}
               <div className="relative">
-                <div className="bg-white rounded-xl py-6 font-mono text-sm border border-gray-200">
+                <div className="bg-white rounded-xl py-6 font-mono text-md border border-gray-200">
                   <div className="flex items-center mb-6">
                     
                     <div className="flex px-6 space-x-2">
@@ -190,16 +190,16 @@ export default function Home() {
                   {/* Email Body */}
                   <div className="px-6 py-4">
                     <div className="space-y-3">
-                      <p className="text-sm mb-4 text-gray-600">
+                      <p className="text-md mb-4 text-gray-600">
                         Hi team, <br/><br/>
                       </p>
-                      <p className="text-sm text-gray-800 leading-relaxed">
+                      <p className="text-md text-gray-800 leading-relaxed">
                         Video playback was updated for unpaid users. 
                         Now, they will see the paywall when video playback ends.
                         <br/><br/>
                       </p>
                       
-                      <p className="text-sm mt-4 text-gray-600">
+                      <p className="text-md mt-4 text-gray-600">
                         - Wins Column
                       </p>
                     </div>

@@ -433,7 +433,7 @@ export class GitHubWebhookService {
    * Generate a cryptographically secure webhook secret
    */
   private static generateWebhookSecret(): string {
-    // Generate a random 32-byte secret and encode as hex
+    // Generate a random 32-byte secret and encode as hex (Node-only)
     const crypto = require('crypto');
     return crypto.randomBytes(32).toString('hex');
   }

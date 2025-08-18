@@ -215,10 +215,15 @@ class JobSystemStartup {
         await this.stop()
         
         startupLogger.info('✅ Graceful shutdown complete')
-        process.exit(0)
+        // Avoid process.exit in environments that may run on Edge or managed runtimes
+        if (typeof process !== 'undefined' && process.exit) {
+          try { process.exit(0) } catch {}
+        }
       } catch (error) {
         startupLogger.error('Error during shutdown', error)
-        process.exit(1)
+        if (typeof process !== 'undefined' && process.exit) {
+          try { process.exit(1) } catch {}
+        }
       }
     }
 

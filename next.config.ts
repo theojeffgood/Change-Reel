@@ -5,6 +5,19 @@ const nextConfig: NextConfig = {
   experimental: {
     optimizePackageImports: ['@/components'],
   },
+  async headers() {
+    const allowOrigin = process.env.NEXTAUTH_URL || '*'
+    return [
+      {
+        source: '/_next/:path*',
+        headers: [
+          { key: 'Access-Control-Allow-Origin', value: allowOrigin },
+          { key: 'Access-Control-Allow-Methods', value: 'GET,OPTIONS' },
+          { key: 'Access-Control-Allow-Headers', value: 'Origin, X-Requested-With, Content-Type, Accept' },
+        ],
+      },
+    ]
+  },
   env: {
     OAUTH_CLIENT_ID: process.env.OAUTH_CLIENT_ID,
     OAUTH_CLIENT_SECRET: process.env.OAUTH_CLIENT_SECRET,

@@ -1,3 +1,5 @@
+export const runtime = 'nodejs'
+
 import { NextRequest, NextResponse } from 'next/server';
 import { getServerSession } from 'next-auth';
 import { authConfig } from '@/lib/auth/config';
@@ -99,10 +101,11 @@ export async function GET(request: NextRequest) {
  */
 async function getTokenScopes(token: string): Promise<string[]> {
   try {
+    const authToken = String(token).trim();
     const response = await fetch('https://api.github.com/user', {
       method: 'HEAD',
       headers: {
-        Authorization: `Bearer ${token}`,
+        Authorization: `Bearer ${authToken}`,
         'User-Agent': 'Change-Reel/1.0',
       },
     });

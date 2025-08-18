@@ -291,10 +291,10 @@ export default function ConfigurationPage() {
       <div className="px-4 sm:px-6 lg:px-8 py-12">
         <div className="max-w-4xl mx-auto text-center">
           <h1 className="text-4xl md:text-5xl font-bold text-gray-900 mb-4">
-            Connect Your Product
+            Connect to your GitHub
           </h1>
           <p className="text-xl text-gray-600 max-w-2xl mx-auto">
-            Connect your development workflow to automatically create beautiful product newsletters that keep everyone informed
+            Connect your development workflow to automatically create summaries of your product updates
           </p>
         </div>
       </div>
@@ -305,14 +305,11 @@ export default function ConfigurationPage() {
           <div className="lg:col-span-1">
             <div className="bg-white rounded-xl shadow-lg border border-gray-200 p-8">
               <h2 className="text-2xl font-bold text-gray-900 mb-8">
-                Product Newsletter Setup
+                Product Summary Setup
               </h2>
 
               {/* GitHub Connection Status */}
               <div className="mb-8">
-                <label className="block text-sm font-medium text-gray-700 mb-4">
-                  Development Platform Connection
-                </label>
                 <div className="border border-gray-200 rounded-xl overflow-hidden">
                   {githubStatus?.connected ? (
                     /* Connected State */
@@ -363,7 +360,7 @@ export default function ConfigurationPage() {
                           <span className="text-gray-400 text-2xl">🔗</span>
                         </div>
                         <h3 className="text-lg font-semibold text-gray-900 mb-2">
-                          Connect to Start Your Newsletter
+                          Connect to Start Your Wins Column
                         </h3>
                         <p className="text-gray-600 mb-6">
                           Securely connect to your development platform to automatically track product updates and generate newsletters
@@ -380,7 +377,9 @@ export default function ConfigurationPage() {
                             </>
                           ) : (
                             <>
-                              <span className="mr-2">🔗</span>
+                              <svg className="mr-2 w-7 h-7" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
+                                <path fillRule="evenodd" clipRule="evenodd" d="M12 2C6.477 2 2 6.484 2 12.018c0 4.424 2.865 8.176 6.839 9.504.5.092.682-.217.682-.483 0-.237-.009-.868-.013-1.703-2.782.605-3.369-1.342-3.369-1.342-.454-1.156-1.11-1.464-1.11-1.464-.908-.62.069-.608.069-.608 1.004.071 1.532 1.032 1.532 1.032.892 1.53 2.341 1.088 2.91.833.091-.647.35-1.088.636-1.339-2.221-.253-4.555-1.112-4.555-4.943 0-1.091.39-1.986 1.029-2.686-.103-.253-.446-1.272.098-2.65 0 0 .84-.27 2.75 1.026A9.564 9.564 0 0112 6.844c.851.004 1.707.115 2.506.337 1.909-1.296 2.748-1.026 2.748-1.026.546 1.378.202 2.397.099 2.65.64.7 1.028 1.595 1.028 2.686 0 3.841-2.337 4.687-4.565 4.936.359.31.678.923.678 1.861 0 1.343-.012 2.427-.012 2.758 0 .268.18.58.688.481A10.02 10.02 0 0022 12.018C22 6.484 17.523 2 12 2z"/>
+                              </svg>
                               Connect Your Account
                             </>
                           )}
@@ -436,7 +435,6 @@ export default function ConfigurationPage() {
                             href="/admin" 
                             className="inline-flex items-center px-4 py-2 text-sm font-medium text-white bg-blue-600 rounded-lg hover:bg-blue-700 transition-colors"
                           >
-                            
                             View Dashboard →
                           </Link>
                         </div>

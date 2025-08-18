@@ -10,23 +10,7 @@ export default function CommitHistoryPanel() {
   const { commits, isLoading, error, page, totalPages, setPage } = useCommitHistory();
 
   return (
-    <div className="bg-white rounded-xl shadow-sm border border-gray-200">
-      {/* Header */}
-      <div className="p-6 border-b border-gray-200">
-        <div className="flex items-center justify-between">
-          <div>
-            <h2 className="text-xl font-semibold text-gray-900">Recent Product Updates</h2>
-            <p className="text-sm text-gray-600 mt-1">AI-generated newsletter content from your latest product changes</p>
-          </div>
-          <div className="flex items-center space-x-2">
-            <div className="w-3 h-3 bg-green-500 rounded-full"></div>
-            <span className="text-sm text-gray-600">Live Monitoring</span>
-          </div>
-        </div>
-      </div>
-
-      {/* Content */}
-      <div className="p-6">
+      <div>
         {error && (
           <div className="mb-6 bg-red-50 border border-red-200 rounded-lg p-4">
             <div className="flex items-center">
@@ -78,6 +62,5 @@ export default function CommitHistoryPanel() {
           </>
         )}
       </div>
-    </div>
   );
 } 

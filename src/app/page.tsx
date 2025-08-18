@@ -87,7 +87,7 @@ export default function Home() {
               See Our AI In Action
             </h2>
             <p className="text-xl text-gray-600 max-w-3xl mx-auto">
-              Watch how technical changes become clear business updates in seconds
+              Turn technical changes into clear business updates in seconds
             </p>
           </div>
 
@@ -95,15 +95,8 @@ export default function Home() {
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-12 items-center">
               {/* Left Side - Code Example */}
               <div className="relative">
+                <div className="mb-3 text-sm font-semibold text-gray-500 uppercase tracking-wide">Turn this</div>
                 <div className="bg-white rounded-xl py-6 font-mono text-md border border-gray-200">
-                  <div className="flex items-center mb-6">
-                    
-                    <div className="flex px-6 space-x-2">
-                      <div className="w-3 h-3 bg-red-500 rounded-full"></div>
-                      <div className="w-3 h-3 bg-yellow-500 rounded-full"></div>
-                      <div className="w-3 h-3 bg-green-500 rounded-full"></div>
-                    </div>  
-                  </div>
 
                   <div className="space-y-0.5">
                     <div className="px-6 text-gray-700 py-0.5">
@@ -121,7 +114,7 @@ export default function Home() {
                       <span className="px-3 text-green-600 mr-3 font-mono text-sm w-4 text-center">+</span>
                       <div className="y-0.5 flex-1">
                         <div className="text-gray-700">
-                          <span className="ml-1.5 text-purple-600">video</span>.<span className="text-green-600">didEnd</span> = {'{'}</div>
+                          <span className="ml-1.5 text-purple-600">video</span>.<span className="text-green-600">hasEnded</span> = {'{'}</div>
                       </div>
                     </div>
                     <div className="flex items-center bg-green-50">
@@ -168,6 +161,7 @@ export default function Home() {
 
               {/* Right Side - Plain English Description */}
               <div className="lg:pl-8">
+                <div className="mb-3 text-sm font-semibold text-gray-500 uppercase tracking-wide">Into this</div>
                 <div className="bg-white rounded-2xl shadow-lg border border-gray-200 overflow-hidden">
                   {/* Email Header */}
                   <div className="bg-gray-50 px-6 py-4 border-b border-gray-200">
@@ -180,9 +174,6 @@ export default function Home() {
                           <h3 className="text-sm font-semibold text-gray-900">Wins Column</h3>
                           <p className="text-xs text-gray-500">Product Updates</p>
                         </div>
-                      </div>
-                      <div className="text-right">
-                        <p className="text-xs text-gray-500">Today, 2:34 PM</p>
                       </div>
                     </div>
                   </div>
@@ -296,15 +287,11 @@ export default function Home() {
                 </li>
                 <li className="flex items-center">
                   <span className="text-green-500 mr-3">✓</span>
-                  <span className="text-gray-700">Up to 100 newsletter subscribers</span>
+                  <span className="text-gray-700">Up to 100 subscribers</span>
                 </li>
                 <li className="flex items-center">
                   <span className="text-green-500 mr-3">✓</span>
-                  <span className="text-gray-700">Basic email templates</span>
-                </li>
-                <li className="flex items-center">
-                  <span className="text-green-500 mr-3">✓</span>
-                  <span className="text-gray-700">Email support</span>
+                  <span className="text-gray-700">Support from an actual human</span>
                 </li>
                 <li className="flex items-center">
                   <span className="text-green-500 mr-3">✓</span>
@@ -347,23 +334,11 @@ export default function Home() {
                 </li>
                 <li className="flex items-center">
                   <span className="text-green-500 mr-3">✓</span>
-                  <span className="text-gray-700">Up to 1,000 newsletter subscribers</span>
+                  <span className="text-gray-700">Up to 1,000 subscribers</span>
                 </li>
                 <li className="flex items-center">
                   <span className="text-green-500 mr-3">✓</span>
-                  <span className="text-gray-700">Custom email templates</span>
-                </li>
-                <li className="flex items-center">
-                  <span className="text-green-500 mr-3">✓</span>
-                  <span className="text-gray-700">Advanced analytics dashboard</span>
-                </li>
-                <li className="flex items-center">
-                  <span className="text-green-500 mr-3">✓</span>
-                  <span className="text-gray-700">Priority email support</span>
-                </li>
-                <li className="flex items-center">
-                  <span className="text-green-500 mr-3">✓</span>
-                  <span className="text-gray-700">Slack integration</span>
+                  <span className="text-gray-700">Support from an actual human</span>
                 </li>
                 <li className="flex items-center">
                   <span className="text-green-500 mr-3">✓</span>
@@ -402,27 +377,11 @@ export default function Home() {
                 </li>
                 <li className="flex items-center">
                   <span className="text-green-500 mr-3">✓</span>
-                  <span className="text-gray-700">Unlimited newsletter subscribers</span>
+                  <span className="text-gray-700">Unlimited subscribers</span>
                 </li>
                 <li className="flex items-center">
                   <span className="text-green-500 mr-3">✓</span>
-                  <span className="text-gray-700">White-label newsletters</span>
-                </li>
-                <li className="flex items-center">
-                  <span className="text-green-500 mr-3">✓</span>
-                  <span className="text-gray-700">Advanced team management</span>
-                </li>
-                <li className="flex items-center">
-                  <span className="text-green-500 mr-3">✓</span>
-                  <span className="text-gray-700">API access</span>
-                </li>
-                <li className="flex items-center">
-                  <span className="text-green-500 mr-3">✓</span>
-                  <span className="text-gray-700">Dedicated account manager</span>
-                </li>
-                <li className="flex items-center">
-                  <span className="text-green-500 mr-3">✓</span>
-                  <span className="text-gray-700">Phone & email support</span>
+                  <span className="text-gray-700">Priority support from an actual human</span>
                 </li>
                 <li className="flex items-center">
                   <span className="text-green-500 mr-3">✓</span>
@@ -441,16 +400,8 @@ export default function Home() {
 
           <div className="text-center mt-12">
             <p className="text-gray-600 mb-4">
-              All plans include a 14-day free trial • Credits never expire • Cancel anytime
+              Credits never expire • Cancel anytime
             </p>
-            <p className="text-sm text-gray-500 mb-4">
-              Each credit generates one product update newsletter. Need more? <a href="mailto:sales@winscolumn.com" className="text-blue-600 hover:text-blue-700">Contact our sales team</a>
-            </p>
-            <div className="bg-gray-50 rounded-lg p-4 max-w-2xl mx-auto">
-              <p className="text-sm text-gray-700">
-                <strong>How credits work:</strong> Every time your team pushes code changes, we use 1 credit to generate and send a professional product update newsletter to your stakeholders.
-              </p>
-            </div>
           </div>
         </div>
       </div>
@@ -473,28 +424,28 @@ export default function Home() {
               Start free with GitHub →
             </Link>
             <Link 
-              href="/admin" 
+              href="#live-example" 
               className="inline-flex items-center px-8 py-4 border-2 border-white text-white text-lg font-semibold rounded-xl hover:bg-white hover:text-blue-600 transition-colors"
             >
               <span className="mr-2">👀</span>
-              View Live Demo
+              See Example
             </Link>
           </div>
           <p className="text-sm text-blue-200 mt-6">
-            Setup takes 2 minutes • No credit card required • Cancel anytime
+            Setup takes 2 minutes • Credits never expire • Cancel anytime
           </p>
         </div>
       </div>
 
       {/* Footer */}
-      <footer className="bg-gray-900 text-gray-300 px-4 sm:px-6 lg:px-8 py-12">
+      <footer className="bg-gray-100 text-black px-4 sm:px-6 lg:px-8 py-12">
         <div className="max-w-7xl mx-auto">
           <div className="flex flex-col md:flex-row justify-between items-center">
             <div className="flex items-center space-x-2 mb-4 md:mb-0">
               <div className="w-8 h-8 bg-gradient-to-r from-blue-600 to-purple-600 rounded-lg flex items-center justify-center">
-                <span className="text-white font-bold">📰</span>
+                <span className="text-black font-bold">📰</span>
               </div>
-              <span className="text-xl font-bold text-white">Wins Column</span>
+              <span className="text-xl font-bold text-black">Wins Column</span>
             </div>
             <div className="flex space-x-6">
               <Link href="/config" className="hover:text-white transition-colors">Get Started</Link>

@@ -173,7 +173,6 @@ export default function Home() {
                         </div>
                         <div>
                           <h3 className="text-sm font-semibold text-gray-900">Wins Column</h3>
-                          <p className="text-xs text-gray-500">Product Updates</p>
                         </div>
                       </div>
                     </div>
@@ -183,11 +182,11 @@ export default function Home() {
                   <div className="px-6 py-4">
                     <div className="space-y-3">
                       <p className="text-md mb-4 text-gray-600">
-                        Hi team, <br/><br/>
+                        Hi John, <br/><br/>
                       </p>
                       <p className="text-md text-gray-800 leading-relaxed">
-                        Video playback was updated for unpaid users. 
-                        Now, they will see the paywall when video playback ends.
+                        Video playback was updated. 
+                        Unpaid users are now shown the paywall when video playback ends.
                         <br/><br/>
                       </p>
                       
@@ -203,56 +202,110 @@ export default function Home() {
         </div>
       </div>
 
-      {/* How It Works */}
+      {/* Value Props */}
       <div className="px-4 sm:px-6 lg:px-8 py-16 bg-white">
         <div className="max-w-6xl mx-auto">
           <div className="text-center mb-16">
             <h2 className="text-3xl md:text-4xl font-bold text-gray-900 mb-4">
-              Automate your Product Comms
+              Everything you Need to Elevate your Product
             </h2>
-            <p className="text-xl text-gray-600">
-              Three simple steps to transform your product communication
+            <p className="text-xl text-gray-600 max-w-3xl mx-auto">
+              Our AI-powered platform gives you the insights you need to make informed decisions.
             </p>
           </div>
 
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
-            {/* Step 1 */}
-            <div className="text-center">
-              <div className="w-16 h-16 bg-gradient-to-r from-blue-500 to-blue-600 rounded-full flex items-center justify-center mx-auto mb-6">
-                <span className="text-white text-2xl font-bold">1</span>
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+            {/* Plugs directly into your tech stack */}
+            <div className="bg-white rounded-xl p-6 shadow-sm border border-gray-200 flex items-start space-x-4">
+              <div className="w-12 h-12 rounded-lg border border-blue-100 flex items-center justify-center text-blue-600">
+                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                  <line x1="4" y1="7" x2="20" y2="7"></line>
+                  <line x1="4" y1="12" x2="20" y2="12"></line>
+                  <line x1="4" y1="17" x2="20" y2="17"></line>
+                </svg>
               </div>
-              <h3 className="text-xl font-bold text-gray-900 mb-4">Connect Your GitHub Account</h3>
-              <p className="text-gray-600">
-                Select your repository. No integrations. No API keys. We&apos;ll automatically detect when new features ship.
-              </p>
+              <div>
+                <h3 className="text-lg font-semibold text-gray-900">Plugs Into Your Tech Stack</h3>
+                <p className="text-gray-600">We're everywhere your engineers are</p>
+              </div>
             </div>
 
-            {/* Step 2 */}
-            <div className="text-center">
-              <div className="w-16 h-16 bg-gradient-to-r from-purple-500 to-purple-600 rounded-full flex items-center justify-center mx-auto mb-6">
-                <span className="text-white text-2xl font-bold">2</span>
+            {/* No integration necessary */}
+            <div className="bg-white rounded-xl p-6 shadow-sm border border-gray-200 flex items-start space-x-4">
+              <div className="w-12 h-12 rounded-lg border border-blue-100 flex items-center justify-center text-blue-600">
+                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                  <circle cx="12" cy="12" r="9"></circle>
+                  <path d="M9 12l2 2 4-4"></path>
+                </svg>
               </div>
-              <h3 className="text-xl font-bold text-gray-900 mb-4">Our AI Watches Your Updates</h3>
-              <p className="text-gray-600">
-                We watch for commits & pull requests. Then we run the diffs through our AI to see what's changed.
-              </p>
+              <div>
+                <h3 className="text-lg font-semibold text-gray-900">No Integration Needed</h3>
+                <p className="text-gray-600">Plug & play. Zero dev</p>
+              </div>
             </div>
 
-            {/* Step 3 */}
-            <div className="text-center">
-              <div className="w-16 h-16 bg-gradient-to-r from-green-500 to-green-600 rounded-full flex items-center justify-center mx-auto mb-6">
-                <span className="text-white text-2xl font-bold">3</span>
+            {/* Insights-tied-to-performance */}
+            <div className="bg-white rounded-xl p-6 shadow-sm border border-gray-200 flex items-start space-x-4">
+              <div className="w-12 h-12 rounded-lg border border-blue-100 flex items-center justify-center text-blue-600">
+                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                  <polyline points="4,14 9,10 13,12 20,6"></polyline>
+                  <line x1="4" y1="20" x2="20" y2="20"></line>
+                </svg>
               </div>
-              <h3 className="text-xl font-bold text-gray-900 mb-4">Updates in Plain English</h3>
-              <p className="text-gray-600">
-                Our AI automatically writes clear, professional summaries of new features, bug fixes, and improvements.
-              </p>
+              <div>
+                <h3 className="text-lg font-semibold text-gray-900">Proprietary Insights</h3>
+                <p className="text-gray-600">4-factor analysis including code changes, comments, commit messages, history</p>
+              </div>
+            </div>
+
+            {/* Development network */}
+            <div className="bg-white rounded-xl p-6 shadow-sm border border-gray-200 flex items-start space-x-4">
+              <div className="w-12 h-12 rounded-lg border border-blue-100 flex items-center justify-center text-blue-600">
+                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                  <circle cx="12" cy="12" r="9"></circle>
+                  <line x1="3" y1="12" x2="21" y2="12"></line>
+                  <line x1="12" y1="3" x2="12" y2="21"></line>
+                </svg>
+              </div>
+              <div>
+                <h3 className="text-lg font-semibold text-gray-900">Development Network <span className="ml-2 text-xs font-medium text-blue-600 uppercase">Coming soon</span></h3>
+                <p className="text-gray-600">Compare your team against other teams of similar size</p>
+              </div>
+            </div>
+
+            {/* Smart alerts */}
+            <div className="bg-white rounded-xl p-6 shadow-sm border border-gray-200 flex items-start space-x-4">
+              <div className="w-12 h-12 rounded-lg border border-blue-100 flex items-center justify-center text-blue-600">
+                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                  <circle cx="12" cy="12" r="9"></circle>
+                  <line x1="12" y1="8" x2="12" y2="13"></line>
+                  <circle cx="12" cy="16" r="1"></circle>
+                </svg>
+              </div>
+              <div>
+                <h3 className="text-lg font-semibold text-gray-900">Smart Alerts <span className="ml-2 text-xs font-medium text-blue-600 uppercase">Coming soon</span></h3>
+                <p className="text-gray-600">Get notified when your team ships</p>
+              </div>
+            </div>
+
+            {/* Secure */}
+            <div className="bg-white rounded-xl p-6 shadow-sm border border-gray-200 flex items-start space-x-4">
+              <div className="w-12 h-12 rounded-lg border border-blue-100 flex items-center justify-center text-blue-600">
+                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                  <rect x="5" y="11" width="14" height="8" rx="2"></rect>
+                  <path d="M8 11V8a4 4 0 018 0v3"></path>
+                </svg>
+              </div>
+              <div>
+                <h3 className="text-lg font-semibold text-gray-900">Secure</h3>
+                <p className="text-gray-600">GitHub auth + we store nothing on our servers</p>
+              </div>
             </div>
           </div>
         </div>
       </div>
 
-      {/* Pricing Section */}
+      {/* Pricing Section - Pay-as-you-go Credits */}
       <div className="px-4 sm:px-6 lg:px-8 py-20 bg-gray-50">
         <div className="max-w-7xl mx-auto">
           <div className="text-center mb-16">
@@ -260,35 +313,31 @@ export default function Home() {
               Simple, Transparent Pricing
             </h2>
             <p className="text-xl text-gray-600 max-w-3xl mx-auto">
-              Choose the plan that fits your team size and newsletter needs
+              Start for free, then pay only for what you use.
             </p>
           </div>
 
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
-            {/* Starter Plan */}
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-14 px-14">
+            {/* Starter Pack */}
             <div className="bg-white rounded-2xl p-8 shadow-lg border border-gray-200 relative">
               <div className="text-center mb-8">
-                <h3 className="text-2xl font-bold text-gray-900 mb-2">Starter</h3>
+                <h3 className="text-2xl font-bold text-gray-900 mb-2">Starter Pack</h3>
                 <div className="mb-4">
-                  <span className="text-4xl font-bold text-gray-900">$49</span>
-                  <span className="text-gray-600">/month</span>
+                  <span className="text-4xl font-bold text-gray-900">$19</span>
+                  <span className="text-gray-600"> one‑time</span>
                 </div>
                 <div className="mb-2">
                   <span className="text-2xl font-bold text-blue-600">500</span>
                   <span className="text-gray-600"> credits</span>
 
                 </div>
-                <p className="text-gray-600">~$0.10 per credit</p>
+                <p className="text-gray-600">(0.10 per credit)</p>
               </div>
               
               <ul className="space-y-4 mb-8">
                 <li className="flex items-center">
                   <span className="text-green-500 mr-3">✓</span>
-                  <span className="text-gray-700">1 repository connection</span>
-                </li>
-                <li className="flex items-center">
-                  <span className="text-green-500 mr-3">✓</span>
-                  <span className="text-gray-700">Up to 100 subscribers</span>
+                  <span className="text-gray-700">Use across any repositories</span>
                 </li>
                 <li className="flex items-center">
                   <span className="text-green-500 mr-3">✓</span>
@@ -298,44 +347,44 @@ export default function Home() {
                   <span className="text-green-500 mr-3">✓</span>
                   <span className="text-gray-700">Credits never expire</span>
                 </li>
+                <li className="flex items-center">
+                  <span className="text-green-500 mr-3">✓</span>
+                  <span className="text-gray-700">Replenish what you need</span>
+                </li>
               </ul>
 
               <Link 
                 href="/config" 
-                className="w-full inline-flex items-center justify-center px-6 py-3 bg-gray-900 text-white font-semibold rounded-lg hover:bg-gray-800 transition-colors"
+                className="w-full inline-flex items-center justify-center px-6 py-3 bg-white text-black font-semibold rounded-lg border-black border-1 hover:bg-gray-200 transition-colors"
               >
-                Start Free Trial
+                Get Started
               </Link>
             </div>
 
-            {/* Professional Plan */}
+            {/* Growth Pack */}
             <div className="bg-white rounded-2xl p-8 shadow-xl border-2 border-blue-500 relative transform scale-105">
               <div className="absolute -top-4 left-1/2 transform -translate-x-1/2">
                 <span className="bg-blue-500 text-white px-4 py-1 rounded-full text-sm font-semibold">Most Popular</span>
               </div>
               
               <div className="text-center mb-8">
-                <h3 className="text-2xl font-bold text-gray-900 mb-2">Professional</h3>
+                <h3 className="text-2xl font-bold text-gray-900 mb-2">Growth Pack</h3>
                 <div className="mb-4">
-                  <span className="text-4xl font-bold text-gray-900">$149</span>
-                  <span className="text-gray-600">/month</span>
+                  <span className="text-4xl font-bold text-gray-900">$49</span>
+                  <span className="text-gray-600"> one‑time</span>
                 </div>
                 <div className="mb-2">
                   <span className="text-2xl font-bold text-blue-600">2,000</span>
                   <span className="text-gray-600"> credits</span>
 
                 </div>
-                <p className="text-gray-600">~$0.075 per credit</p>
+                <p className="text-gray-600">(0.075 per credit)</p>
               </div>
               
               <ul className="space-y-4 mb-8">
                 <li className="flex items-center">
                   <span className="text-green-500 mr-3">✓</span>
-                  <span className="text-gray-700">Up to 5 repository connections</span>
-                </li>
-                <li className="flex items-center">
-                  <span className="text-green-500 mr-3">✓</span>
-                  <span className="text-gray-700">Up to 1,000 subscribers</span>
+                  <span className="text-gray-700">Use across any repositories</span>
                 </li>
                 <li className="flex items-center">
                   <span className="text-green-500 mr-3">✓</span>
@@ -344,6 +393,10 @@ export default function Home() {
                 <li className="flex items-center">
                   <span className="text-green-500 mr-3">✓</span>
                   <span className="text-gray-700">Credits never expire</span>
+                </li>
+                <li className="flex items-center">
+                  <span className="text-green-500 mr-3">✓</span>
+                  <span className="text-gray-700">10% off replenished credits</span>
                 </li>
               </ul>
 
@@ -351,34 +404,30 @@ export default function Home() {
                 href="/config" 
                 className="w-full inline-flex items-center justify-center px-6 py-3 bg-blue-600 text-white font-semibold rounded-lg hover:bg-blue-700 transition-colors"
               >
-                Start Free Trial
+                Start Free
               </Link>
             </div>
 
-            {/* Enterprise Plan */}
+            {/* Scale Pack */}
             <div className="bg-white rounded-2xl p-8 shadow-lg border border-gray-200 relative">
               <div className="text-center mb-8">
-                <h3 className="text-2xl font-bold text-gray-900 mb-2">Enterprise</h3>
+                <h3 className="text-2xl font-bold text-gray-900 mb-2">Scale Pack</h3>
                 <div className="mb-4">
-                  <span className="text-4xl font-bold text-gray-900">$399</span>
-                  <span className="text-gray-600">/month</span>
+                  <span className="text-4xl font-bold text-gray-900">$199</span>
+                  <span className="text-gray-600"> one‑time</span>
                 </div>
                 <div className="mb-2">
                   <span className="text-2xl font-bold text-blue-600">6,000</span>
                   <span className="text-gray-600"> credits</span>
 
                 </div>
-                <p className="text-gray-600">~$0.067 per credit</p>
+                <p className="text-gray-600">(0.067 per credit)</p>
               </div>
               
               <ul className="space-y-4 mb-8">
                 <li className="flex items-center">
                   <span className="text-green-500 mr-3">✓</span>
-                  <span className="text-gray-700">Unlimited repository connections</span>
-                </li>
-                <li className="flex items-center">
-                  <span className="text-green-500 mr-3">✓</span>
-                  <span className="text-gray-700">Unlimited subscribers</span>
+                  <span className="text-gray-700">Use across any repositories</span>
                 </li>
                 <li className="flex items-center">
                   <span className="text-green-500 mr-3">✓</span>
@@ -388,11 +437,15 @@ export default function Home() {
                   <span className="text-green-500 mr-3">✓</span>
                   <span className="text-gray-700">Credits never expire</span>
                 </li>
+                <li className="flex items-center">
+                  <span className="text-green-500 mr-3">✓</span>
+                  <span className="text-gray-700">25% off replenished credits</span>
+                </li>
               </ul>
 
               <Link 
                 href="/config" 
-                className="w-full inline-flex items-center justify-center px-6 py-3 bg-gray-900 text-white font-semibold rounded-lg hover:bg-gray-800 transition-colors"
+                className="w-full inline-flex items-center justify-center px-6 py-3 bg-white text-black font-semibold rounded-lg border-gray-500 border-1 hover:bg-gray-200 transition-colors"
               >
                 Contact Sales
               </Link>

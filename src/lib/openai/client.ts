@@ -45,7 +45,7 @@ export class OpenAIClient implements IOpenAIClient {
       apiKey: config.apiKey,
     });
 
-    this.model = config.model || 'gpt-4-turbo-preview';
+    this.model = config.model || process.env.OPENAI_MODEL || 'gpt-5';
     this.maxTokens = config.maxTokens || 150;
     this.temperature = config.temperature || 0.1;
     this.templateEngine = config.templateEngine || new PromptTemplateEngine();

@@ -1,0 +1,145 @@
+# Task ID: 10
+# Title: Develop Basic Admin UI
+# Status: done
+# Dependencies: 4
+# Priority: medium
+# Description: Create a simple admin interface for viewing the configured repository and generated summaries.
+# Details:
+1. Design and implement a basic admin page using React and Tailwind CSS
+2. Create components for viewing repository configuration
+3. Implement UI for viewing recent commits and their summaries
+4. Add loading states and error handling
+7. Create simple data fetching from the Supabase database
+8. Implement basic state management
+9. Follow component-based architecture with clear interfaces
+10. Create comprehensive unit tests for UI components
+11. Implement integration tests for UI workflows
+
+# Test Strategy:
+Implement comprehensive unit tests with Jest and React Testing Library for all UI components. Test the admin UI across different screen sizes and browsers. Verify that all data is properly displayed and that filtering works correctly. Test loading states, error handling, and user interactions. Create test fixtures for different data scenarios. Mock API responses for component testing. Aim for 80% code coverage for UI components. Include integration tests that verify end-to-end UI workflows with mocked backend services.
+
+# Subtasks:
+## 1. Design component architecture [done]
+### Dependencies: None
+### Description: Create component hierarchy and interfaces
+### Details:
+Design modular components with clear responsibilities.
+<info added on 2025-06-27T22:28:28.756Z>
+## Admin UI Component Architecture Plan
+
+### 1. Directory / File Structure
+```
+src/
+  app/
+    admin/
+      layout.tsx            # Admin page shell, sidebar + main content
+      page.tsx              # Entry point that composes Repository & Commit views
+      components/
+        RepositoryConfigPanel.tsx  # Displays repo info pulled from /api/config
+        CommitHistoryPanel.tsx     # Parent container for commit list + filters
+        CommitList.tsx             # Virtualized list of commits
+        CommitCard.tsx             # Individual commit summary card
+        FiltersBar.tsx             # Date / type filters
+        PaginationControls.tsx     # Simple pager (prev/next)
+        LoadingSpinner.tsx         # Reusable spinner component
+        ErrorBoundary.tsx          # Reusable error boundary wrapper
+  hooks/
+    useRepositoryConfig.ts         # Data fetch hook for repo config
+    useCommitHistory.ts            # Fetch commits + pagination
+  context/
+    AdminUIContext.tsx             # Holds filters & pagination state
+```
+
+### 2. Component Responsibilities & Interfaces (excerpt)
+| Component | Props | Description |
+|-----------|-------|-------------|
+| AdminLayout | { children } | Shell with header/nav; wraps ErrorBoundary |
+| RepositoryConfigPanel | none | Shows repo name, visibility, webhook status via hook |
+| CommitList | { commits: Commit[] } | Efficiently renders commit cards (react-window) |
+| LoadingSpinner | { size?: 'sm'|'md'|'lg' } | Tailwind animated spinner |
+| ErrorBoundary | React error boundary with fallback UI |
+
+### 3. Shared Type
+```
+export interface Commit {
+  id: string;
+  sha: string;
+  author: string;
+  summary: string;
+  type: 'feature' | 'fix' | 'refactor' | 'chore';
+  timestamp: string;
+}
+```
+
+### 4. State Management
+React Context (`AdminUIContext`) stores filters (dateRange, changeTypes[]) and pagination ({ page, pageSize }). Provider lives in AdminLayout.
+
+### 5. Data Fetching Strategy
+SWR or custom fetcher. Hooks return { data, isLoading, error } enabling LoadingSpinner & ErrorBoundary.
+
+### 6. Testing Considerations
+Pure presentational components, hooks mocked in tests, ErrorBoundary exposes onError for assertions.
+
+### 7. Implementation Order
+1. Scaffold directories & placeholder components (task branch).
+2. Implement RepositoryConfigPanel (Subtask 10.2).
+3. Commit history list & filters (10.3–10.4).
+4. Hooks & context (10.5–10.6).
+5. Loading/error wrappers (10.8).
+6. Unit tests (10.9) then integration tests (10.10).
+</info added on 2025-06-27T22:28:28.756Z>
+
+## 2. Implement repository configuration view [done]
+### Dependencies: None
+### Description: Create UI for viewing repository settings
+### Details:
+Create responsive component with proper data display.
+
+## 3. Develop commit history component [done]
+### Dependencies: None
+### Description: Create UI for viewing commit history
+### Details:
+Implement efficient list rendering with pagination.
+
+## 5. Create data fetching hooks [done]
+### Dependencies: None
+### Description: Implement React hooks for data fetching
+### Details:
+Create reusable hooks with proper error handling.
+
+## 6. Implement state management [done]
+### Dependencies: None
+### Description: Add state management for UI components
+### Details:
+Use appropriate state management approach (Context, Redux, etc.).
+
+## 7. Create test fixtures for UI testing [done]
+### Dependencies: None
+### Description: Develop sample data for UI testing
+### Details:
+Create realistic data for different UI scenarios.
+
+## 8. Add loading states and error handling [done]
+### Dependencies: None
+### Description: Enhance admin UI components by implementing appropriate loading indicators and robust error handling mechanisms
+### Details:
+Implement reusable loading spinner component and an error boundary wrapper. Integrate these into repository configuration and commit history views. Ensure consistent UX across various data fetching states.
+
+## 9. Write unit tests for UI components [done]
+### Dependencies: None
+### Description: Develop comprehensive Jest + React Testing Library unit tests for all Admin UI components
+### Details:
+Cover repository configuration view, commit history component, loading and error states. Aim for at least 85% coverage across admin UI module.
+
+## 10. Implement integration tests for Admin UI workflows [done]
+### Dependencies: None
+### Description: Create integration tests that verify end-to-end Admin UI flows using mocked backend services
+### Details:
+Use Jest and React Testing Library along with MSW to simulate API interactions. Validate repository configuration loading, commit history pagination, and error scenarios.
+
+## 11. Implement Commit History Pagination [done]
+### Dependencies: None
+### Description: Add pagination controls to the commit history view. The history should only display commits that have been processed by Change Reel (i.e., have a generated summary).
+### Details:
+Refactor the useCommitHistory hook to support page-based fetching instead of infinite scroll. Update the backend API and database service to filter for commits where the 'summary' field is not null and to return a total count for calculating total pages. Implement the PaginationControls React component and integrate it into the CommitHistoryPanel.
+

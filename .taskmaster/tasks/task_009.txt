@@ -1,0 +1,65 @@
+# Task ID: 9
+# Title: Implement Resend Email Integration
+# Status: deferred
+# Dependencies: 7, 8
+# Priority: medium
+# Description: Develop functionality to send templated changelog emails using the Resend API.
+# Details:
+1. Set up Resend API client with proper authentication
+2. Create HTML email templates based on the sample in the PRD
+3. Implement email sending service with templating functionality
+4. Add support for batching multiple commits into a single email
+5. Implement basic email scheduling (daily digest)
+6. Track sent emails in the Supabase database
+7. Implement retry logic for failed email deliveries
+8. Create preview functionality for email templates
+9. Follow dependency injection pattern for email service
+10. Create comprehensive unit tests with mocked Resend API responses
+11. Implement integration tests for email sending workflow
+
+# Test Strategy:
+Implement comprehensive unit tests with Jest for all email integration code. Use MSW to mock Resend API responses. Test email sending with various configurations. Verify that emails are correctly formatted, contain the expected commit summaries, and are properly tracked in the database. Test error handling for API failures and invalid templates. Create test fixtures for different email templates and content types. Test batching logic and scheduling functionality. Aim for 90% code coverage for email integration code. Include integration tests with actual Resend API for critical paths (with appropriate safeguards).
+
+# Subtasks:
+## 1. Create Resend API client [pending]
+### Dependencies: None
+### Description: Implement Resend client with proper configuration
+### Details:
+Follow dependency injection pattern for testability.
+
+## 2. Implement email template system [pending]
+### Dependencies: None
+### Description: Create HTML email templates with variable substitution
+### Details:
+Create modular template system with reusable components.
+
+## 3. Develop email sending service [pending]
+### Dependencies: None
+### Description: Create service to send emails via Resend API
+### Details:
+Follow dependency injection pattern for testability.
+
+## 4. Implement email batching [pending]
+### Dependencies: None
+### Description: Add support for combining multiple commits in one email
+### Details:
+Create efficient batching algorithm with configurable limits.
+
+## 5. Create email scheduling system [pending]
+### Dependencies: None
+### Description: Implement daily digest email scheduling
+### Details:
+Create configurable scheduling with timezone support.
+
+## 6. Implement email tracking [pending]
+### Dependencies: None
+### Description: Add functionality to track sent emails
+### Details:
+Create comprehensive tracking with metadata.
+
+## 7. Create test fixtures for email testing [pending]
+### Dependencies: None
+### Description: Develop sample email data for testing
+### Details:
+Create realistic email content for different scenarios.
+

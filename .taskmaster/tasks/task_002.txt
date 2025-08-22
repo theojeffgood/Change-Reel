@@ -1,0 +1,62 @@
+# Task ID: 2
+# Title: Configure Supabase Integration
+# Status: done
+# Dependencies: 1
+# Priority: high
+# Description: Set up Supabase for database and storage services for the MVP instead of file-based storage.
+# Details:
+The Supabase project 'Change Reel' has already been created with environment variables set up. Focus on:
+
+1. Install the Supabase client library in the Next.js application
+2. Create a configuration file for Supabase client initialization
+3. Set up the connection to the existing Supabase project using the environment variables
+4. Design and create database tables for repository, commit, and configuration data
+5. Create a data access layer for CRUD operations using Supabase
+6. Implement error handling and data validation
+7. Test Supabase database operations
+8. Configure Supabase storage buckets if needed for larger assets
+9. Follow dependency injection pattern for all Supabase service implementations
+10. Create comprehensive unit tests with mocked Supabase client
+
+Note: Authentication features will be deferred to post-MVP.
+
+# Test Strategy:
+Implement comprehensive unit tests with Jest for all Supabase-related functionality. Mock the Supabase client to avoid actual API calls during testing. Verify that the Supabase client is properly initialized in the Next.js app. Test that data can be properly stored, retrieved, updated, and deleted using Supabase. Test with sample data representing commits and configuration. Ensure environment variables are properly accessed and used in the connection setup. Aim for 90% code coverage for core Supabase services. Test error handling scenarios and edge cases like connection failures or invalid data.
+
+# Subtasks:
+## 1. Install Supabase client library [done]
+### Dependencies: None
+### Description: Add the Supabase JavaScript client library to the Next.js project
+### Details:
+Install the latest version of the Supabase client library and any related type definitions for TypeScript support.
+
+## 2. Create Supabase client configuration [done]
+### Dependencies: None
+### Description: Create a utility file to initialize the Supabase client using the existing environment variables for the 'Change Reel' project
+### Details:
+Implement using dependency injection pattern to allow for easy mocking in tests. Create interfaces for the Supabase client services.
+
+## 3. Design database schema [done]
+### Dependencies: None
+### Description: Design the database tables needed for repositories, commits, and configuration data
+### Details:
+Create clear interfaces for all database models. Document relationships between tables.
+
+## 4. Implement data access layer [done]
+### Dependencies: None
+### Description: Create service functions for CRUD operations against the Supabase database
+### Details:
+Follow repository pattern with clear interfaces. Implement dependency injection for testability. Create separate modules for different data entities.
+
+## 5. Test connection and operations [done]
+### Dependencies: None
+### Description: Write tests to verify the Supabase connection and basic data operations
+### Details:
+Create both unit tests (with mocks) and integration tests (with test database).
+
+## 6. Create test utilities for Supabase mocking [done]
+### Dependencies: None
+### Description: Develop reusable test utilities for mocking Supabase client in unit tests
+### Details:
+Create mock factory functions that can be reused across test files.
+

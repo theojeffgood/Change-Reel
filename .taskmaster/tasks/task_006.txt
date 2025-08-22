@@ -1,0 +1,66 @@
+# Task ID: 6
+# Title: Develop GitHub API Integration for Diff Retrieval
+# Status: done
+# Dependencies: 5
+# Priority: high
+# Description: Implement functionality to fetch commit diffs from GitHub using their API.
+# Details:
+1. Create a GitHub API client utility using Octokit.js
+2. Configure the client to use the access token from environment variables
+3. Implement functions to fetch commit details by SHA
+4. Retrieve raw diffs for commits using the GitHub API
+5. Handle pagination for large diffs
+6. Implement caching to avoid redundant API calls
+7. Add error handling for API rate limits and failures
+8. Create utility functions to parse and clean diff content
+9. Implement filtering for noise files (package-lock.json, generated files)
+10. Follow dependency injection pattern for GitHub service
+11. Create comprehensive unit tests with mocked GitHub API responses
+12. Implement integration tests for GitHub API interactions
+
+# Test Strategy:
+Implement comprehensive unit tests with Jest for all GitHub API integration code. Use MSW to mock GitHub API responses. Test diff retrieval with various commit types and sizes. Verify that diffs are correctly fetched, parsed, and filtered according to requirements. Test error handling for API rate limits, network failures, and invalid responses. Create test fixtures for different diff formats and sizes. Test caching logic and pagination handling. Aim for 90% code coverage for GitHub API integration code. Include integration tests with a test GitHub repository for critical paths.
+
+# Subtasks:
+## 1. Create GitHub API client [done]
+### Dependencies: None
+### Description: Implement Octokit.js client with proper configuration
+### Details:
+Follow dependency injection pattern for testability.
+
+## 2. Implement commit fetching service [done]
+### Dependencies: None
+### Description: Create service to retrieve commit details from GitHub
+### Details:
+Create modular service with clear interfaces.
+
+## 3. Develop diff retrieval functionality [done]
+### Dependencies: None
+### Description: Implement functions to fetch and process commit diffs
+### Details:
+Handle pagination and large diffs efficiently.
+
+## 4. Create caching mechanism [done]
+### Dependencies: None
+### Description: Implement caching to reduce API calls
+### Details:
+Use efficient caching strategy with proper invalidation.
+
+## 5. Implement diff parsing utilities [done]
+### Dependencies: None
+### Description: Create utilities to parse and clean diff content
+### Details:
+Create modular parsers with clear interfaces.
+
+## 6. Develop noise filtering functionality [done]
+### Dependencies: None
+### Description: Implement filtering for irrelevant files in diffs
+### Details:
+Create configurable filter rules.
+
+## 7. Create test fixtures for GitHub API testing [done]
+### Dependencies: None
+### Description: Develop sample API responses for testing
+### Details:
+Create realistic API responses for different scenarios.
+

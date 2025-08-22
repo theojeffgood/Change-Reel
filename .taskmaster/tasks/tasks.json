@@ -471,7 +471,7 @@
         "id": 9,
         "title": "Implement Resend Email Integration",
         "description": "Develop functionality to send templated changelog emails using the Resend API.",
-        "status": "pending",
+        "status": "deferred",
         "dependencies": [
           7,
           8
@@ -653,7 +653,7 @@
         "id": 11,
         "title": "Create Commit History View",
         "description": "Implement a simple page showing commits and their summaries for the configured repository.",
-        "status": "pending",
+        "status": "deferred",
         "dependencies": [
           10
         ],
@@ -692,7 +692,7 @@
             "id": 5,
             "title": "Create pagination component",
             "description": "Implement pagination for commit history",
-            "status": "in-progress",
+            "status": "deferred",
             "dependencies": [],
             "details": "Create accessible pagination with proper state management.",
             "testStrategy": "Test pagination with various data volumes. Verify correct page navigation."
@@ -721,7 +721,7 @@
         "id": 12,
         "title": "Implement Public Changelog Page",
         "description": "Create a simple publicly accessible changelog page that displays published commit summaries.",
-        "status": "pending",
+        "status": "deferred",
         "dependencies": [
           7
         ],
@@ -798,7 +798,7 @@
         "id": 13,
         "title": "Develop Basic Summary Management",
         "description": "Create a simple interface for viewing generated summaries and manually publishing them.",
-        "status": "pending",
+        "status": "deferred",
         "dependencies": [
           7,
           9
@@ -1056,7 +1056,7 @@
         "id": 15,
         "title": "Implement Simple Email Configuration",
         "description": "Create functionality for configuring email recipients for changelog notifications.",
-        "status": "pending",
+        "status": "deferred",
         "dependencies": [
           9
         ],
@@ -1133,7 +1133,7 @@
         "id": 16,
         "title": "Develop Basic Settings UI",
         "description": "Create simple user interface for managing application-wide settings.",
-        "status": "pending",
+        "status": "deferred",
         "dependencies": [
           10
         ],
@@ -1210,7 +1210,7 @@
         "id": 17,
         "title": "Implement Basic Security Features",
         "description": "Develop essential security features for the MVP.",
-        "status": "pending",
+        "status": "deferred",
         "dependencies": [
           5
         ],
@@ -1517,11 +1517,222 @@
             "testStrategy": "Verify testing framework accuracy with controlled scenarios."
           }
         ]
+      },
+      {
+        "id": 21,
+        "title": "Implement Stripe Billing & Checkout Integration",
+        "description": "Integrate Stripe Embedded Checkout for prepaid credits (top-up) billing, including server-side SDK setup, webhook handling, credit balance management in Supabase, and access control based on credit availability.",
+        "status": "pending",
+        "dependencies": [
+          4,
+          5,
+          17
+        ],
+        "priority": "high",
+        "details": "1. **Stripe SDK Setup**\n   - Install official Stripe SDK: `npm install stripe @stripe/stripe-js`\n   - Configure environment variables in `.env.local`:\n     ```\n     STRIPE_SECRET_KEY=sk_test_...\n     STRIPE_WEBHOOK_SECRET=whsec_...\n     NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY=pk_test_...\n     ```\n   - Create Stripe client singleton with dependency injection pattern\n   - Set up credit pack Price ID mapping in config file or environment variables\n\n2. **Server Actions & API Routes (Edge-first)**\n   - Create `/app/api/stripe/checkout-session/route.ts` for creating Checkout Sessions (Edge runtime)\n   - Implement Node.js webhook handler at `/app/api/stripe/webhook/route.ts` (signature verification requires Node runtime)\n   - Use server actions where possible for checkout session creation\n   - Implement proper error handling and logging\n\n3. **Database Schema Updates**\n   - Add billing tables to Supabase:\n     ```sql\n     CREATE TABLE billing_customers (\n       id UUID PRIMARY KEY DEFAULT gen_random_uuid(),\n       user_id UUID REFERENCES auth.users(id) UNIQUE,\n       stripe_customer_id TEXT UNIQUE,\n       created_at TIMESTAMP DEFAULT NOW()\n     );\n     \n     CREATE TABLE credit_balances (\n       user_id UUID PRIMARY KEY REFERENCES auth.users(id),\n       balance DECIMAL(10,2) NOT NULL DEFAULT 0,\n       updated_at TIMESTAMP DEFAULT NOW()\n     );\n     \n     CREATE TABLE credits_ledger (\n       id UUID PRIMARY KEY DEFAULT gen_random_uuid(),\n       user_id UUID REFERENCES auth.users(id),\n       amount DECIMAL(10,2) NOT NULL,\n       type TEXT NOT NULL, -- 'credit' or 'debit'\n       description TEXT,\n       stripe_event_id TEXT,\n       created_at TIMESTAMP DEFAULT NOW()\n     );\n     \n     CREATE TABLE pricing_config (\n       id UUID PRIMARY KEY DEFAULT gen_random_uuid(),\n       model TEXT NOT NULL,\n       input_cost_per_1k DECIMAL(10,6),\n       output_cost_per_1k DECIMAL(10,6),\n       markup_percentage DECIMAL(5,2),\n       created_at TIMESTAMP DEFAULT NOW()\n     );\n     ```\n   - Create indexes for efficient lookups\n   - Implement RLS policies for user access\n\n4. **Embedded Checkout Implementation**\n   - Create `/app/billing/page.tsx` with Stripe Embedded Checkout for credit packs\n   - Display available credit packs (1k, 10k, 100k credits) with prices\n   - Use `@stripe/stripe-js` for client-side integration\n   - Handle success redirect to `/billing/success`\n   - Handle cancel redirect back to `/billing`\n   - Show current credit balance prominently\n\n5. **Webhook Handler**\n   - Implement signature verification using `stripe.webhooks.constructEvent`\n   - Handle events:\n     - `checkout.session.completed`: Grant credits to user\n     - `payment_intent.succeeded`: Confirm credit grant\n     - `charge.refunded`: Deduct credits from balance\n     - `charge.dispute.created`: Handle disputes by deducting credits\n   - Implement idempotency using Stripe event IDs\n   - Use atomic database transactions for credit updates\n\n6. **Credit Accounting System**\n   - Create `lib/credits.ts` with helper functions:\n     ```typescript\n     export async function getCreditBalance(userId: string): Promise<number>\n     export async function deductCredits(userId: string, amount: number, description: string): Promise<boolean>\n     export async function addCredits(userId: string, amount: number, stripeEventId: string): Promise<void>\n     export async function hasEnoughCredits(userId: string, requiredAmount: number): Promise<boolean>\n     ```\n   - Implement optimistic concurrency control for balance updates\n   - Create ledger entries for all credit transactions\n\n7. **Usage Metering Integration**\n   - Integrate with existing OpenAI flow to calculate token costs\n   - Estimate credits needed before API calls based on prompt length\n   - Deduct actual credits after receiving OpenAI response\n   - Apply markup percentage from pricing_config\n   - Block summarization when insufficient credits\n\n8. **Billing Management UI**\n   - Create billing page showing:\n     - Current credit balance with visual indicator\n     - Recent credit transactions from ledger\n     - \"Top Up\" button to purchase more credits\n     - Usage history with credit consumption\n   - Add low balance warnings throughout the app\n   - Implement server components for real-time balance display\n\n9. **Access Control Implementation**\n   - Update middleware to check credit balance before allowing summarization\n   - Show \"Insufficient Credits\" message with top-up CTA\n   - Allow read-only access when credits are low\n   - Implement grace period for negative balances (optional)\n\n10. **Admin & Reconciliation Tools**\n    - Create admin utilities for:\n      - Manual credit adjustments\n      - Reconciling Stripe events with ledger\n      - Viewing user credit history\n      - Exporting transaction reports\n    - Implement audit logging for all credit operations",
+        "testStrategy": "1. **Unit Tests**\n   - Mock Stripe SDK using Jest mocks\n   - Test checkout session creation with various credit pack Price IDs\n   - Test webhook signature verification logic\n   - Test credit accounting functions with concurrent operations\n   - Test access control helpers with different credit balances\n   - Verify atomic ledger updates\n\n2. **Integration Tests**\n   - Use Stripe test mode for real API calls\n   - Test full checkout flow with test cards\n   - Verify webhook event processing with sample payloads\n   - Test credit grant/deduct lifecycle\n   - Verify ledger entries match Stripe events\n   - Test optimistic concurrency handling\n\n3. **E2E Testing**\n   - Set up Stripe CLI for local webhook forwarding:\n     ```bash\n     stripe listen --forward-to localhost:3000/api/stripe/webhook\n     ```\n   - Test complete top-up flow from UI to credit grant\n   - Verify credit balance updates in real-time\n   - Test usage deduction during summarization\n   - Test refund handling and credit deduction\n\n4. **Security Testing**\n   - Verify webhook signatures prevent tampering\n   - Test invalid API keys handling\n   - Verify CSRF protection on billing forms\n   - Test rate limiting on API endpoints\n   - Verify secure storage of customer data\n   - Test for race conditions in credit operations\n\n5. **Performance Testing**\n   - Measure checkout session creation latency\n   - Test webhook processing time\n   - Verify database query performance for balance checks\n   - Test concurrent credit operations\n   - Benchmark ledger query performance\n\n6. **Documentation Verification**\n   - Update README with:\n     - Required environment variables\n     - Stripe dashboard configuration for credit packs\n     - Local development setup with Stripe CLI\n     - Testing instructions with test cards\n     - Credit system architecture overview\n   - Document reconciliation procedures",
+        "subtasks": [
+          {
+            "id": 1,
+            "title": "Install Stripe SDKs and Configure Environment Variables",
+            "description": "Install the official Stripe SDK packages and set up environment variables for API keys and webhook secrets",
+            "dependencies": [],
+            "details": "Run `npm install stripe @stripe/stripe-js` to install both server and client SDKs. Create or update `.env.local` file with STRIPE_SECRET_KEY, STRIPE_WEBHOOK_SECRET, and NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY. Add these variables to your deployment environment as well.",
+            "status": "done",
+            "testStrategy": "Create a test script to verify environment variables are loaded correctly and SDK can be initialized without errors"
+          },
+          {
+            "id": 2,
+            "title": "Implement Environment Variable Validation",
+            "description": "Create a validation utility to ensure all required Stripe environment variables are present and properly formatted",
+            "dependencies": [
+              "21.1"
+            ],
+            "details": "Create `lib/stripe/config.ts` with a validation function that checks for presence of all required environment variables at startup. Throw descriptive errors if any are missing or malformed. Include validation for test vs live key prefixes.",
+            "status": "done",
+            "testStrategy": "Write unit tests that verify validation fails appropriately for missing or invalid environment variables"
+          },
+          {
+            "id": 3,
+            "title": "Create Supabase Billing Tables and Indexes",
+            "description": "Set up database schema for billing customers, credit balances, credits ledger, and pricing configuration",
+            "dependencies": [],
+            "details": "Execute SQL migrations to create billing_customers, credit_balances, credits_ledger, and pricing_config tables. Add indexes on user_id, stripe_customer_id, and created_at columns. Implement RLS policies to ensure users can only access their own billing data.",
+            "status": "done",
+            "testStrategy": "Test table creation and RLS policies by attempting to insert and query data as different users"
+          },
+          {
+            "id": 4,
+            "title": "Create Stripe Client Singleton with Credit Pack Configuration",
+            "description": "Implement a dependency-injected Stripe client singleton with credit pack Price ID mapping",
+            "dependencies": [
+              "21.2"
+            ],
+            "details": "Create `lib/stripe/client.ts` with a singleton pattern for the Stripe client. Include credit pack configuration mapping (1k, 10k, 100k credits) to Stripe Price IDs. Use environment variables or a config file for Price ID mapping. Export typed interfaces for credit packs.",
+            "status": "done",
+            "testStrategy": "Mock the Stripe client in tests and verify singleton behavior and correct Price ID mapping"
+          },
+          {
+            "id": 5,
+            "title": "Implement Edge-Compatible Checkout Session API Route",
+            "description": "Create an Edge runtime API route for creating Stripe Checkout Sessions",
+            "dependencies": [
+              "21.4"
+            ],
+            "details": "Create `/app/api/stripe/checkout-session/route.ts` using Edge runtime. Implement POST handler to create Checkout Sessions with selected credit pack. Include user authentication, customer creation/retrieval, and proper error handling. Return session URL for client redirect.\n<info added on 2025-08-19T18:03:04.902Z>\nUse Node.js runtime instead of Edge runtime. Implement standard request body parsing with `await request.json()`. Use standard Next.js authentication patterns without Edge-specific APIs. Ensure compatibility with Node.js runtime environment for all Stripe API calls and authentication checks.\n</info added on 2025-08-19T18:03:04.902Z>",
+            "status": "done",
+            "testStrategy": "Test with mock Stripe responses, verify authentication requirements, and test error scenarios"
+          },
+          {
+            "id": 6,
+            "title": "Build Billing Page with Embedded Checkout",
+            "description": "Create the billing page UI with Stripe Embedded Checkout integration and credit balance display",
+            "dependencies": [
+              "21.3",
+              "21.5"
+            ],
+            "details": "Create `/app/billing/page.tsx` as a server component that fetches user's current credit balance. Display credit packs with pricing. Implement client component for Embedded Checkout using @stripe/stripe-js. Handle success/cancel redirects. Show prominent current balance indicator.",
+            "status": "done",
+            "testStrategy": "Test UI rendering with various credit balances, verify Embedded Checkout initialization, and test redirect handling"
+          },
+          {
+            "id": 7,
+            "title": "Implement Node.js Webhook Handler with Signature Verification",
+            "description": "Create a Node runtime webhook handler for processing Stripe events with signature verification",
+            "dependencies": [
+              "21.4"
+            ],
+            "details": "Create `/app/api/stripe/webhook/route.ts` using Node runtime for signature verification. Implement stripe.webhooks.constructEvent for secure event validation. Add request body parsing for raw webhook payload. Include comprehensive error logging.",
+            "status": "done",
+            "testStrategy": "Use Stripe CLI to test webhook signature verification and event parsing with sample events"
+          },
+          {
+            "id": 8,
+            "title": "Handle Stripe Events with Atomic Credit Updates",
+            "description": "Implement event handlers for checkout completion, refunds, and disputes with atomic database transactions",
+            "dependencies": [
+              "21.3",
+              "21.7"
+            ],
+            "details": "In webhook handler, implement logic for checkout.session.completed (grant credits), payment_intent.succeeded (confirm), charge.refunded (deduct), and charge.dispute.created (deduct). Use database transactions for atomic updates. Store Stripe event IDs for idempotency. Update both credit_balances and credits_ledger.",
+            "status": "done",
+            "testStrategy": "Test each event type with database transaction verification and idempotency checks"
+          },
+          {
+            "id": 9,
+            "title": "Create Credit Accounting Library with Concurrency Control",
+            "description": "Build a credit management library with functions for balance operations and optimistic concurrency control",
+            "dependencies": [
+              "21.3"
+            ],
+            "details": "Create `lib/credits.ts` with getCreditBalance, deductCredits, addCredits, and hasEnoughCredits functions. Implement optimistic locking using version numbers or timestamps. Create ledger entries for all transactions. Include detailed error handling for insufficient funds.",
+            "status": "done",
+            "testStrategy": "Test concurrent credit operations, verify ledger accuracy, and test edge cases like negative balances"
+          },
+          {
+            "id": 10,
+            "title": "Integrate Credit Deduction into OpenAI Usage Flow",
+            "description": "Modify existing OpenAI integration to check credits before API calls and deduct based on actual usage",
+            "dependencies": [
+              "21.9"
+            ],
+            "details": "Update OpenAI service to estimate required credits based on prompt length before API calls. Check credit balance and block if insufficient. After receiving response, calculate actual token usage with markup from pricing_config. Deduct credits and create ledger entry with usage details.",
+            "status": "done",
+            "testStrategy": "Test credit estimation accuracy, verify blocking on insufficient credits, and validate correct deduction amounts"
+          },
+          {
+            "id": 11,
+            "title": "Build Credit Balance UI Components and Top-up CTAs",
+            "description": "Create UI components for displaying credit balance, usage history, and top-up calls-to-action throughout the app",
+            "dependencies": [
+              "21.6",
+              "21.9"
+            ],
+            "details": "Create reusable components for credit balance display with visual indicators (progress bars, color coding). Add recent transactions list from credits_ledger. Implement low balance warnings and top-up CTAs. Use server components for real-time balance updates. Add to navigation and key user flows.",
+            "status": "done",
+            "testStrategy": "Test UI components with various balance states, verify real-time updates, and test CTA interactions"
+          },
+          {
+            "id": 12,
+            "title": "Create Tests, Documentation, and Basic Admin Tools",
+            "description": "Implement comprehensive tests, Stripe CLI setup documentation, and basic admin utilities for credit management",
+            "dependencies": [
+              "21.1",
+              "21.2",
+              "21.3",
+              "21.4",
+              "21.5",
+              "21.6",
+              "21.7",
+              "21.8",
+              "21.9",
+              "21.10",
+              "21.11"
+            ],
+            "details": "Write integration tests using Stripe test mode. Document Stripe CLI setup for local webhook testing. Create README with billing system overview and testing instructions. Build basic admin API endpoints for manual credit adjustments and transaction queries with proper authorization.",
+            "status": "pending",
+            "testStrategy": "Run full integration tests with Stripe test mode, verify documentation accuracy, and test admin tools with authorization checks"
+          },
+          {
+            "id": 13,
+            "title": "Define real credit packs, prices, and Stripe Price IDs",
+            "description": "In Stripe Dashboard, create Products and one-time Prices for credit packs (e.g., 1k, 10k, 100k credits) in USD. Record Price IDs and final conversion (e.g., $10 = 10,000 credits, 20% markup). Add them to environment/config mapping. Update success/cancel URLs if needed.",
+            "details": "",
+            "status": "pending",
+            "dependencies": [],
+            "parentTaskId": 21
+          },
+          {
+            "id": 14,
+            "title": "Populate Credits Remaining metric with real data",
+            "description": "Fetch and display the authenticated user’s real credit balance in the Admin dashboard MetricsBar fourth card.",
+            "details": "Implement a client-safe fetch for the current user’s credit balance and show it in the fourth metric card on `src/app/admin/components/MetricsBar.tsx`.\n- Source of truth: use `/api/billing/balance` endpoint (or BillingService via a minimal API) to return `{ balance, recentTransactions }` for the signed-in user.\n- Replace the placeholder value currently reusing `contributors` with the real balance; handle loading and error states gracefully.\n- Ensure this works only for authenticated users; for unauthenticated, show a clear CTA linking to `/billing` with brief explanatory text.\n- Add simple unit test(s) for the data formatting and error handling.\n- Avoid introducing new dependencies.",
+            "status": "done",
+            "dependencies": [],
+            "parentTaskId": 21
+          },
+          {
+            "id": 15,
+            "title": "Reconcile credits post-summary with actual token usage",
+            "description": "After OpenAI returns, compute actual USD from tokens used (input/output) using pricing_config, convert to credits with markup, and reconcile against the pre-deducted estimate (refund or additionally charge). Ensure atomic updates, idempotency (keyed by job/commit), and ledger entries for adjustments.",
+            "details": "",
+            "status": "done",
+            "dependencies": [],
+            "parentTaskId": 21
+          },
+          {
+            "id": 16,
+            "title": "Use real diffs in queued summary jobs (remove placeholders)",
+            "description": "Update /api/commits/[id]/queue-summary to enqueue a fetch_diff job (or fetch diffs directly) and make generate_summary depend on it. Ensure generate_summary reads real diff_content from dependency context, removing placeholder strings.",
+            "details": "",
+            "status": "done",
+            "dependencies": [],
+            "parentTaskId": 21
+          },
+          {
+            "id": 17,
+            "title": "Replace BillingClient x-user-id header with authenticated user id",
+            "description": "In src/app/billing/ui/BillingClient.tsx, remove the hardcoded x-user-id. Use NextAuth session (or a small server endpoint) to resolve the authenticated user id, and send that with API calls. Remove the TODO.",
+            "details": "",
+            "status": "done",
+            "dependencies": [],
+            "parentTaskId": 21
+          },
+          {
+            "id": 18,
+            "title": "Align pricing model and parameters with summarization model",
+            "description": "Ensure billing charges the same model as used by summarization. Move model id, output token reserve, and markup defaults to config (pricing_config or env). Update BillingService.chargeSummaryEstimation to read from config and keep parity.",
+            "details": "",
+            "status": "pending",
+            "dependencies": [],
+            "parentTaskId": 21
+          }
+        ]
       }
     ],
     "metadata": {
       "created": "2025-06-24T18:47:19.240Z",
-      "updated": "2025-07-24T19:01:17.292Z",
+      "updated": "2025-08-22T20:53:02.659Z",
       "description": "Tasks for master context"
     }
   }

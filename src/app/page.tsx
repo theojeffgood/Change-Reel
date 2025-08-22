@@ -1,33 +1,11 @@
 import Link from 'next/link';
+import SiteHeader from '@/components/layout/SiteHeader';
+import SiteFooter from '@/components/layout/SiteFooter';
 
 export default function Home() {
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-50 to-blue-50">
-      {/* Navigation */}
-      <nav className="relative px-4 sm:px-6 lg:px-8 py-6">
-        <div className="max-w-7xl mx-auto flex items-center justify-between">
-          <div className="flex items-center space-x-2">
-            <div className="w-8 h-8 bg-gradient-to-r from-blue-600 to-purple-600 rounded-lg flex items-center justify-center">
-              <span className="text-white font-bold">⚡</span>
-            </div>
-            <span className="text-xl font-bold text-gray-900">Wins Column</span>
-          </div>
-          <div className="flex items-center space-x-4">
-            <Link 
-              href="/config" 
-              className="text-gray-600 hover:text-gray-900 transition-colors"
-            >
-              Sign In
-            </Link>
-                          <Link 
-                href="/admin" 
-                className="inline-flex items-center px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
-              >
-                Get Started
-              </Link>
-          </div>
-        </div>
-      </nav>
+      <SiteHeader isAuthenticated={false} />
 
       {/* Hero Section */}
       <div className="px-4 sm:px-6 lg:px-8 py-20">
@@ -38,11 +16,11 @@ export default function Home() {
               AI-Powered Product Updates
             </div>
           <h1 className="text-5xl md:text-7xl font-bold text-gray-900 mb-6">
-            What your Team Ships
-            <span className="bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent"> Delivered in Plain English</span>
+            Know what your devs ship.
+            <span className="bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent"> Without asking.</span>
           </h1>
           <p className="text-xl md:text-2xl text-gray-600 mb-8 max-w-3xl mx-auto leading-relaxed">
-          We watch your codebase, watch for changes, and say what we find. Product comms, automated. 
+          Plain-English updates from your codebase, straight to your inbox. Clarity for stakeholders, zero overhead for your engineers. Powered by AI. 
           </p>
           <div className="flex flex-col sm:flex-row gap-4 justify-center">
             <Link 
@@ -63,7 +41,7 @@ export default function Home() {
           </div>
           
           {/* Feature Toasts */}
-          <div className="flex flex-col sm:flex-row gap-14 justify-center mt-12">
+          <div className="flex flex-col sm:flex-row gap-6 justify-center mt-12">
             <div className="inline-flex items-center px-4 py-2 text-gray-600 text-sm font-medium">
               <span className="mr-2">🎟️</span>
               Pay As You Go
@@ -207,10 +185,10 @@ export default function Home() {
         <div className="max-w-6xl mx-auto">
           <div className="text-center mb-16">
             <h2 className="text-3xl md:text-4xl font-bold text-gray-900 mb-4">
-              Everything you Need to Elevate your Product
+              Insights at your fingertips. All without asking
             </h2>
             <p className="text-xl text-gray-600 max-w-3xl mx-auto">
-              Our AI-powered platform gives you the insights you need to make informed decisions.
+            When someone pushes to GitHub, Wins Column sends out an update. Keep your sales team aligned.
             </p>
           </div>
 
@@ -444,7 +422,7 @@ export default function Home() {
               </ul>
 
               <Link 
-                href="/config" 
+                href="mailto:theo@winscolumn.com" 
                 className="w-full inline-flex items-center justify-center px-6 py-3 bg-white text-black font-semibold rounded-lg border-gray-500 border-1 hover:bg-gray-200 transition-colors"
               >
                 Contact Sales
@@ -464,7 +442,7 @@ export default function Home() {
       <div className="px-4 sm:px-6 lg:px-8 py-20 bg-gradient-to-r from-blue-600 to-purple-600">
         <div className="max-w-4xl mx-auto text-center">
           <h2 className="text-3xl md:text-4xl font-bold text-white mb-6">
-            Ready to Automate Your Product Communication?
+            Built for busy teams who ship.
           </h2>
           <p className="text-xl text-blue-100 mb-8 max-w-2xl mx-auto">
             Join forward-thinking teams who have already transformed how they communicate product updates
@@ -492,29 +470,7 @@ export default function Home() {
         </div>
       </div>
 
-      {/* Footer */}
-      <footer className="bg-gray-100 text-black px-4 sm:px-6 lg:px-8 py-12">
-        <div className="max-w-7xl mx-auto">
-          <div className="flex flex-col md:flex-row justify-between items-center">
-            <div className="flex items-center space-x-2 mb-4 md:mb-0">
-              <div className="w-8 h-8 bg-gradient-to-r from-blue-600 to-purple-600 rounded-lg flex items-center justify-center">
-              <span className="text-white font-bold">⚡</span>
-              </div>
-              <span className="text-xl font-bold text-black">Wins Column</span>
-            </div>
-            <div className="flex space-x-6">
-              <Link href="/config" className="hover:text-white transition-colors">Get Started</Link>
-              <Link href="/admin" className="hover:text-white transition-colors">Dashboard</Link>
-              <a href="mailto:support@winscolumn.com" className="hover:text-white transition-colors">Support</a>
-            </div>
-          </div>
-          <div className="border-t border-gray-800 mt-8 pt-8 text-center">
-            <p className="text-sm text-gray-400">
-              © 2024 Wins Column. Transform your product updates into professional communication.
-            </p>
-          </div>
-        </div>
-      </footer>
+      <SiteFooter />
     </div>
   );
 }

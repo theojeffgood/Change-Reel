@@ -3,6 +3,8 @@
 import { useState, useEffect } from 'react';
 import { useSession, signIn, signOut } from 'next-auth/react';
 import Link from 'next/link';
+import SiteHeader from '@/components/layout/SiteHeader'
+import SiteFooter from '@/components/layout/SiteFooter'
 
 interface GitHubStatus {
   connected: boolean;
@@ -254,31 +256,7 @@ export default function ConfigurationPage() {
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-50 to-blue-50">
-      {/* Navigation */}
-      <nav className="relative px-4 sm:px-6 lg:px-8 py-6">
-        <div className="max-w-7xl mx-auto flex items-center justify-between">
-          <Link href="/" className="flex items-center space-x-2">
-            <div className="w-8 h-8 bg-gradient-to-r from-blue-600 to-purple-600 rounded-lg flex items-center justify-center">
-              <span className="text-white font-bold">⚡</span>
-            </div>
-            <span className="text-xl font-bold text-gray-900">Wins Column</span>
-          </Link>
-          <div className="flex items-center space-x-4">
-            <Link 
-              href="/admin" 
-              className="text-gray-600 hover:text-gray-900 transition-colors"
-            >
-              Dashboard
-            </Link>
-            <Link 
-              href="/" 
-              className="inline-flex items-center px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
-            >
-              Back to Home
-            </Link>
-          </div>
-        </div>
-      </nav>
+      <SiteHeader />
       
       {/* Confirmation Dialog */}
       <ConfirmDialog 
@@ -454,6 +432,7 @@ export default function ConfigurationPage() {
           {/* Removed documentation sidebar and dev-only helper content for a simpler, user-facing page */}
         </div>
       </div>
+      <SiteFooter />
     </div>
   );
 } 

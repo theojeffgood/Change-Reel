@@ -1,0 +1,144 @@
+# Task ID: 8
+# Title: Create Simple Job Processing System
+# Status: done
+# Dependencies: 5, 6, 7
+# Priority: high
+# Description: Implement a basic job processing system to handle commit ingestion, diff fetching, and summarization sequentially.
+# Details:
+1. Create a simple job queue using Supabase database storage
+2. Implement job handlers for commit processing, diff fetching, and summarization
+3. Create a basic job runner that processes jobs sequentially
+4. Implement job scheduling, retries, and error handling
+5. Add logging for job execution
+6. Create utility functions for job management
+7. Implement job status tracking in the database
+8. Follow dependency injection pattern for job processing services
+9. Create comprehensive unit tests with mocked dependencies
+10. Implement integration tests for job processing workflow
+
+# Test Strategy:
+Implement comprehensive unit tests with Jest for all job processing code. Mock dependencies like database and external services. Test the job system with various scenarios including success cases, failures with retries, and sequential job execution. Verify that jobs are processed correctly and with appropriate retry behavior. Test error handling, job status tracking, and logging. Create test fixtures for different job types and states. Aim for 90% code coverage for job processing code. Include integration tests that verify end-to-end job processing with actual dependencies for critical paths.
+
+# Subtasks:
+## 1. Design job queue schema [done]
+### Dependencies: None
+### Description: Create database schema for job queue
+### Details:
+Design efficient schema with proper indexes.
+
+## 2. Implement job queue service [done]
+### Dependencies: None
+### Description: Create service for job queue operations
+### Details:
+Follow dependency injection pattern for testability.
+
+## 3. Develop job handlers [done]
+### Dependencies: None
+### Description: Create handlers for different job types
+### Details:
+Create modular handlers with clear interfaces.
+
+## 4. Implement job runner [done]
+### Dependencies: None
+### Description: Create service to process jobs sequentially
+### Details:
+Create efficient runner with proper error handling.
+
+## 5. Create retry mechanism [done]
+### Dependencies: None
+### Description: Implement retry logic for failed jobs
+### Details:
+Create configurable retry strategy with backoff.
+<info added on 2025-06-27T20:47:26.547Z>
+✅ **Retry mechanism implementation completed**
+
+The retry logic has been fully implemented in the JobProcessor class (src/lib/jobs/processor.ts):
+
+**Key Features Implemented:**
+- **Configurable retry strategy** with exponential backoff support
+- **Maximum attempt limits** (default: 3 attempts, configurable up to 10)
+- **Retry delay calculation** with exponential backoff: base_delay * 2^attempt_number
+- **Maximum retry delay cap** to prevent excessive wait times
+- **Automatic retry scheduling** for failed jobs within attempt limits
+- **Permanent failure marking** for jobs that exceed max attempts
+
+**Configuration Options:**
+- `retry_delay_ms`: Base retry delay (default: 1000ms)
+- `max_retry_delay_ms`: Maximum retry delay cap (default: 30000ms)  
+- `exponential_backoff`: Enable/disable exponential backoff (default: true)
+
+**Implementation Details:**
+- Failed jobs are automatically scheduled for retry with calculated delay
+- Job status transitions: pending → running → (failed + retry_scheduled) → pending → running → completed/failed
+- Retry attempts tracked in job.attempts field
+- Error details preserved for debugging
+
+**Code Location:** 
+- Main retry logic: `handleJobFailure()` method
+- Delay calculation: `calculateRetryDelay()` method
+- Retry scheduling: Uses `jobQueueService.scheduleRetry()`
+
+The retry mechanism is production-ready with comprehensive error handling and logging.
+</info added on 2025-06-27T20:47:26.547Z>
+
+## 6. Implement job status tracking [done]
+### Dependencies: None
+### Description: Add functionality to track job status
+### Details:
+Create comprehensive status tracking with timestamps.
+
+## 7. Create test fixtures for job testing [done]
+### Dependencies: None
+### Description: Develop sample job data for testing
+### Details:
+Create realistic job data for different scenarios.
+<info added on 2025-07-22T19:44:52.725Z>
+✅ COMPLETED: Automatic Job Processing System Startup
+
+Successfully implemented complete automatic startup system for job processing:
+
+**Key Components Created:**
+
+1. **Job System Startup Service** (`src/lib/startup/job-system-startup.ts`):
+   - Initializes all job processing dependencies on app startup
+   - Validates environment variables 
+   - Creates service dependencies with error handling
+   - Configures system based on environment (production/development)
+   - Implements graceful shutdown handlers for SIGTERM, SIGINT, uncaughtException
+   - Provides global access to job system instance
+
+2. **Next.js Instrumentation Hook** (`instrumentation.ts`):
+   - Automatically starts job processing when Next.js server boots
+   - Handles initialization errors gracefully without crashing app
+   - Enables automatic background job processing
+
+3. **Next.js Configuration** (updated `next.config.ts`):
+   - Instrumentation enabled by default when instrumentation.ts exists
+   - Maintains existing standalone output configuration
+
+4. **Job Status API** (`/api/jobs/status`):
+   - GET endpoint for monitoring job system status and queue statistics
+   - POST endpoint for checking current processing activity
+   - Replaces manual `/api/jobs/process` endpoint
+   - Provides real-time system health information
+
+**System Behavior:**
+- App starts → Job processor starts automatically  
+- Background polling every 2 seconds
+- Webhooks create jobs → Jobs processed automatically
+- No manual intervention required
+- Graceful shutdown on app termination
+
+**Configuration:**
+- Production: 10 concurrent jobs, 10-minute timeout, 7-day cleanup
+- Development: 3 concurrent jobs, 5-minute timeout, 1-day cleanup
+- Exponential backoff retry logic with proper error handling
+
+**Migration Complete:**
+- Replaced manual job processing with automatic background system
+- Jobs now process within 2 seconds of creation
+- System is production-ready with monitoring and error handling
+
+The job processing system now starts automatically when the Next.js application boots and runs continuously in the background. No more manual API calls needed!
+</info added on 2025-07-22T19:44:52.725Z>
+

@@ -1,0 +1,77 @@
+# Task ID: 5
+# Title: Implement GitHub Webhook Integration
+# Status: done
+# Dependencies: 4
+# Priority: high
+# Description: Create API endpoints to receive and process GitHub webhook events for commit notifications.
+# Details:
+1. Create a Next.js API route at `/api/webhooks/github`
+2. Implement webhook signature verification for security
+3. Parse incoming webhook payloads to extract commit information
+4. Filter events to only process push events
+5. Store relevant commit metadata in the Supabase database
+6. Add manual webhook setup instructions for the configured repository
+7. Add error handling and logging for webhook processing
+8. Implement retry logic for failed webhook processing
+9. Follow dependency injection pattern for webhook processing services
+10. Create comprehensive unit tests with mocked webhook payloads
+11. Implement integration tests for webhook endpoint
+
+# Test Strategy:
+Implement comprehensive unit tests with Jest for webhook processing logic. Use MSW to mock GitHub webhook requests. Test webhook endpoint with sample GitHub webhook payloads. Verify signature validation, proper event filtering, and correct data storage in the database. Test error handling for invalid signatures, malformed payloads, and database failures. Create test fixtures for different webhook event types. Aim for 90% code coverage for webhook processing logic. Include integration tests that verify end-to-end webhook processing.
+
+# Subtasks:
+## 1. Create webhook API endpoint [done]
+### Dependencies: None
+### Description: Implement Next.js API route for GitHub webhooks
+### Details:
+Create modular handler with clear separation of concerns.
+
+## 2. Implement webhook signature verification [done]
+### Dependencies: None
+### Description: Add security verification for incoming webhook requests
+### Details:
+Follow GitHub's signature verification protocol.
+
+## 3. Create webhook payload parser [done]
+### Dependencies: None
+### Description: Develop utility to extract relevant data from webhook payloads
+### Details:
+Create modular parser with clear interfaces.
+
+## 4. Implement webhook event filtering [done]
+### Dependencies: None
+### Description: Add logic to process only relevant webhook events
+### Details:
+Create configurable filter for different event types.
+<info added on 2025-06-26T18:13:30.690Z>
+Implemented configurable webhook event filtering system with the following components:
+
+1. Created GitHubWebhookParser.shouldProcessEvent() method to filter events based on type
+2. Added User-Agent validation to reject non-GitHub requests
+3. Implemented signature verification with detailed error handling
+4. Built comprehensive filtering logic in /api/webhooks/github/route.ts
+5. Added repository configuration validation
+6. Integrated with database services for project lookup and commit creation
+7. Implemented proper error handling for all processing failures
+8. Created extensive test suite covering all filtering scenarios
+9. Fixed Jest environment setup with proper Next.js Request/Response polyfills
+
+All 105 tests are now passing with the webhook endpoint fully functional and ready for production use.
+</info added on 2025-06-26T18:13:30.690Z>
+
+## 5. Create webhook processing service [done]
+### Dependencies: None
+### Description: Develop service to handle webhook processing workflow
+### Details:
+Follow dependency injection pattern for testability.
+<info added on 2025-06-26T18:27:42.863Z>
+Implemented webhook processing service following dependency injection pattern for testability. Created `src/lib/github/webhook-processing-service.ts` with clear separation of concerns (validation, parsing, signature verification, database operations) and comprehensive interfaces. Added factory method for easy instantiation. Developed extensive test suite (112 passing tests) with mocked dependencies covering all validation paths and scenarios. Refactored webhook route handler, reducing complexity from ~200 to ~80 lines while maintaining functionality. The implementation provides improved testability, modularity, maintainability, reusability, and type safety through clean architecture principles with clear boundaries between application layers.
+</info added on 2025-06-26T18:27:42.863Z>
+
+## 6. Create test fixtures for webhook testing [done]
+### Dependencies: None
+### Description: Develop sample webhook payloads for testing
+### Details:
+Create realistic webhook payloads for different scenarios.
+

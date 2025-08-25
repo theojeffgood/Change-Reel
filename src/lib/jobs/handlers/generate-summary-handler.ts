@@ -6,6 +6,8 @@ import {
 } from '../../types/jobs'
 
 import { ISummarizationService } from '../../openai/summarization-service'
+import { createBillingService } from '../../supabase/services/billing'
+import { ISupabaseClient } from '../../types/supabase'
 import { IJobQueueService } from '../../types/jobs'
 import { ICommitService } from '../../supabase/services/commits'
 
@@ -24,7 +26,8 @@ export class GenerateSummaryHandler implements JobHandler<GenerateSummaryJobData
   constructor(
     private summarizationService: ISummarizationService,
     private commitService: ICommitService,
-    private jobQueueService: IJobQueueService
+    private jobQueueService: IJobQueueService,
+    private supabaseClient?: ISupabaseClient
   ) {}
 
   async handle(job: Job, data: GenerateSummaryJobData): Promise<JobResult> {
@@ -87,6 +90,26 @@ export class GenerateSummaryHandler implements JobHandler<GenerateSummaryJobData
         repository: '', // Not available in current Commit interface
       }
 
+      // Billing: resolve user from project_id (projects.user_id)
+      let userId: string | undefined
+      if (this.supabaseClient && job.project_id) {
+        const { data: proj } = await this.supabaseClient
+          .from('projects')
+          .select('user_id')
+          .eq('id', job.project_id)
+          .maybeSingle()
+        userId = (proj as any)?.user_id || undefined
+      }
+      if (userId && this.supabaseClient) {
+        const billing = createBillingService(this.supabaseClient)
+        // Pre-check only: ensure user has at least 1 credit per summary
+        const requiredCredits = await billing.estimateSummaryCredits(diffContent)
+        const has = await billing.hasCredits(userId, requiredCredits)
+        if (!has) {
+          return { success: false, error: 'Insufficient credits' }
+        }
+      }
+
       // Generate the summary using OpenAI
       const summaryResult = await this.summarizationService.processDiff(
         diffContent,
@@ -123,6 +146,19 @@ export class GenerateSummaryHandler implements JobHandler<GenerateSummaryJobData
             dbError: updateResult.error.message,
             summary: summaryResult.summary, // Include summary for potential retry
           },
+        }
+      }
+
+      // Post-charge: deduct exactly 1 credit per completed summary under new pricing
+      if (userId && this.supabaseClient) {
+        try {
+          const billing = createBillingService(this.supabaseClient)
+          await billing.deductCredits(userId, 1, 'Commit summary (1 credit)')
+        } catch (e) {
+          // If deduction fails here, we leave summary saved but log the issue for follow-up
+          // A future reconciliation task can handle this path
+          // eslint-disable-next-line no-console
+          console.error('Post-charge deduction failed:', e)
         }
       }
 

@@ -150,6 +150,17 @@ GET /api/config
 POST /api/webhooks/github
 ```
 
+### Admin Billing (requires ADMIN_EMAIL)
+
+```
+POST /api/admin/billing/adjust
+Body: { "userId": "<uuid>", "amount": number, "description"?: string }
+# Positive adds credits; negative debits. Returns { success, balance }
+
+GET /api/admin/billing/transactions?userId=<uuid>&limit=50
+Returns { userId, transactions: [{ id, amount, type, description, created_at }, ...] }
+```
+
 ## 🛡️ Security
 
 - OAuth tokens are encrypted using AES-256

@@ -10,6 +10,8 @@ import { BackupService, createBackupService } from './backup'
 import type { IBackupService } from './backup'
 import { JobQueueService, createJobQueueService } from './jobs'
 import type { IJobService } from './jobs'
+import { BillingService, createBillingService } from './billing'
+import type { IBillingService } from './billing'
 
 // Re-export types for convenience
 export * from '../../types/supabase'
@@ -26,6 +28,8 @@ export { BackupService, createBackupService }
 export type { IBackupService }
 export { JobQueueService, createJobQueueService }
 export type { IJobService }
+export { BillingService, createBillingService }
+export type { IBillingService }
 
 // Service container interface
 export interface ISupabaseServices {
@@ -34,6 +38,7 @@ export interface ISupabaseServices {
   commits: ICommitService
   backup: IBackupService
   jobs: IJobService
+  billing: IBillingService
 }
 
 // Factory function to create all services with dependency injection
@@ -44,6 +49,7 @@ export function createSupabaseServices(supabaseClient: ISupabaseClient): ISupaba
     commits: createCommitService(supabaseClient),
     backup: createBackupService(supabaseClient),
     jobs: createJobQueueService(supabaseClient),
+    billing: createBillingService(supabaseClient),
   }
 }
 
@@ -73,6 +79,10 @@ export class SupabaseServiceProvider {
 
   get jobs(): IJobService {
     return this.services.jobs
+  }
+
+  get billing(): IBillingService {
+    return this.services.billing
   }
 
   // Get all services (useful for testing)

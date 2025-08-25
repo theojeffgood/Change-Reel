@@ -53,7 +53,8 @@ export function createJobProcessingSystem(dependencies: JobSystemDependencies) {
     generateSummary: new GenerateSummaryHandler(
       dependencies.openaiService,
       dependencies.commitService,
-      jobQueueService
+      jobQueueService,
+      supabaseClient
     ),
     sendEmail: new SendEmailHandler(
       dependencies.commitService,

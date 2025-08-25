@@ -3,6 +3,7 @@ import { Commit } from '@/lib/types/supabase';
 
 interface CommitCardProps {
   commit: Commit;
+  hasCredits?: boolean;
 }
 
 const getUpdateTypeColor = (type: string) => {
@@ -20,20 +21,6 @@ const getUpdateTypeColor = (type: string) => {
   }
 };
 
-const getUpdateTypeIcon = (type: string) => {
-  switch (type.toLowerCase()) {
-    case 'feature':
-      return '🚀';
-    case 'fix':
-      return '🔧';
-    case 'refactor':
-      return '⚡';
-    case 'chore':
-      return '🔧';
-    default:
-      return '📝';
-  }
-};
 
 const getUpdateTypeLabel = (type: string) => {
   switch (type.toLowerCase()) {
@@ -50,56 +37,58 @@ const getUpdateTypeLabel = (type: string) => {
   }
 };
 
-export default function CommitCard({ commit }: CommitCardProps) {
+export default function CommitCard({ commit, hasCredits = false }: CommitCardProps) {
   const timeAgo = new Date(commit.timestamp).toLocaleString();
 
   return (
     <div className="bg-white border border-gray-200 rounded-xl p-6 hover:shadow-md transition-shadow">
       <div className="flex items-start justify-between mb-4">
-        <div className="flex items-center space-x-3">
-          <div className="w-10 h-10 bg-gray-100 rounded-full flex items-center justify-center">
-            <span className="text-lg">{getUpdateTypeIcon(commit.type || 'unknown')}</span>
-          </div>
-          <div>
-            <div className="flex items-center space-x-2 mb-1">
-              <span className={`inline-flex items-center px-2 py-1 text-xs font-medium rounded border ${getUpdateTypeColor(commit.type || 'unknown')}`}>
-                <span className="mr-1">{getUpdateTypeIcon(commit.type || 'unknown')}</span>
-                {getUpdateTypeLabel(commit.type || 'unknown')}
-              </span>
+        <div>
+          <div className="mb-2 flex items-start gap-3">
+            <span className={`inline-flex px-2 py-2 text-xs font-medium rounded border ${getUpdateTypeColor(commit.type || 'unknown')}`}>
+              {getUpdateTypeLabel(commit.type || 'unknown')}
+            </span>
+            <div className="flex flex-col text-sm text-gray-600 leading-tight">
+              <span>By: {commit.author}</span>
+              <span>At: {timeAgo}</span>
             </div>
-            <p className="text-sm text-gray-600">
-              By {commit.author} • {timeAgo}
-            </p>
           </div>
-        </div>
-        
-        <div className="flex items-center space-x-2">
-          <span className={`inline-flex items-center px-2 py-1 text-xs font-medium rounded-full ${
-            commit.summary ? 'bg-green-100 text-green-800' : 'bg-yellow-100 text-yellow-800'
-          }`}>
-            {commit.summary ? '' : '⏳ Processing'}
-          </span>
         </div>
       </div>
 
       <div className="mb-4">
-        <h3 className="text-lg font-semibold text-gray-900 mb-2">Feature Summary</h3>
         {commit.summary ? (
-          <div className="bg-gray-50 rounded-lg p-4 border border-gray-200">
+          <div className="">
+            <h3 className="text-lg font-semibold text-gray-900 mb-2">What Changed:</h3>
             <p className="text-gray-800 leading-relaxed">{commit.summary}</p>
           </div>
+        ) : hasCredits ? (
+          <div className="text-center">
+            <form action={`/api/commits/${commit.id}/queue-summary`} method="post">
+              <button
+                type="submit"
+                className="inline-flex items-center px-3 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors text-lg"
+              >
+                Create summary →
+              </button>
+            </form>
+          </div>
         ) : (
-          <div className="bg-yellow-50 rounded-lg p-4 border border-yellow-200">
-            <div className="flex items-center">
-              <div className="animate-spin w-5 h-5 border-2 border-yellow-600 border-t-transparent rounded-full mr-3"></div>
-              <p className="text-yellow-800 font-medium">Generating newsletter content...</p>
-            </div>
-            <p className="text-yellow-700 text-sm mt-2">
-              Our AI is analyzing this product update to create clear, business-focused newsletter content.
+          <div className="bg-yellow-50 rounded-lg p-8 border border-yellow-200">
+            <p className="text-xl text-yellow-800 text-center font-medium">Not Enough Credits</p>
+            <p className="text-lg text-yellow-700 text-center mt-2">
+              Add credits to create a new summary.
             </p>
+            <div className="mt-3 text-center">
+              <a
+                href="/billing"
+                className="inline-flex items-center px-3 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors text-lg"
+              >
+                Create summary →
+              </a>
+            </div>
           </div>
         )}
-        
       </div>
     </div>
   );

@@ -6,7 +6,7 @@ import CommitList from './CommitList';
 import LoadingSpinner from './LoadingSpinner';
 import PaginationControls from './PaginationControls';
 
-export default function CommitHistoryPanel() {
+export default function CommitHistoryPanel({ hasCredits }: { hasCredits: boolean }) {
   const { commits, isLoading, error, page, totalPages, setPage } = useCommitHistory();
 
   return (
@@ -31,7 +31,7 @@ export default function CommitHistoryPanel() {
           <>
             {commits && commits.length > 0 ? (
               <>
-                <CommitList commits={commits} />
+                <CommitList commits={commits} hasCredits={hasCredits} />
                 {totalPages > 1 && (
                   <div className="mt-6 pt-6 border-t border-gray-200">
                     <PaginationControls

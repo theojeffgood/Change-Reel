@@ -1,0 +1,651 @@
+# Task ID: 14
+# Title: Implement Manual Repository Configuration
+# Status: done
+# Dependencies: None
+# Priority: high
+# Description: Create a simple interface for configuring the GitHub repository via GitHub OAuth App integration.
+# Details:
+1. Design and implement a basic configuration page
+2. Create form for viewing current repository configuration
+3. Add documentation for GitHub OAuth App setup
+4. Implement automatic webhook setup via OAuth
+5. Implement configuration validation
+6. Add UI for testing the repository connection
+7. Create simple setup guide
+8. Implement configuration export/import functionality
+9. Follow component-based architecture with clear interfaces
+10. Create comprehensive unit tests for UI components
+11. Implement integration tests for configuration workflow
+12. Register GitHub OAuth App with GitHub
+13. Implement OAuth flow in Next.js (/api/auth/github/callback)
+14. Store OAuth tokens securely (encrypted in database or secure storage)
+15. Use OAuth tokens for GitHub API calls (repository access, webhook creation)
+
+# Test Strategy:
+Implement comprehensive unit tests with Jest and React Testing Library for all UI components. Test the configuration interface with various scenarios. Verify that current configuration is correctly displayed and that validation works properly. Test OAuth flow, error handling, and connection testing. Create test fixtures for different configuration states. Mock API responses for component testing. Aim for 80% code coverage for UI components. Include integration tests that verify end-to-end configuration workflows with mocked backend services. Test OAuth token storage and security measures.
+
+# Subtasks:
+## 1. Design configuration page layout [done]
+### Dependencies: None
+### Description: Create page layout for repository configuration
+### Details:
+Design intuitive layout with proper form organization.
+<info added on 2025-06-25T17:17:40.375Z>
+✅ COMPLETED: Configuration page layout design and implementation
+
+**What was implemented:**
+- Created `/config` route with comprehensive configuration page layout
+- Designed responsive 3-column layout (form + documentation sidebar)  
+- Implemented clean header with action buttons (Test Connection, Save Configuration)
+- Created proper visual hierarchy with cards and sections
+- Used consistent Tailwind CSS styling with the existing app theme
+
+**Key components created:**
+- `ConfigurationPage` - Main page layout with header and grid structure
+- `ConfigurationForm` - Interactive form with repository settings, GitHub token, webhook secret, and email recipients
+- `ConfigurationDocs` - Documentation sidebar with setup guides, troubleshooting, and environment variables
+
+**Layout features:**
+- Responsive design that works on mobile and desktop
+- Clear separation between form and documentation
+- Professional header with contextual action buttons
+- Proper spacing and visual hierarchy
+- Consistent with existing app design patterns
+
+**Navigation:**
+- Added navigation link from home page to configuration
+- Updated home page status to show configuration interface progress
+- Updated app metadata to reflect Change Reel branding
+
+The layout provides an intuitive and professional interface for repository configuration management.
+</info added on 2025-06-25T17:17:40.375Z>
+
+## 2. Implement configuration form component [done]
+### Dependencies: None
+### Description: Create form for repository configuration
+### Details:
+Implement form with proper validation and error handling.
+<info added on 2025-06-25T17:22:40.504Z>
+✅ ENHANCED: Configuration form component with comprehensive validation and error handling
+
+**What was implemented:**
+
+**1. Form Validation System:**
+- Repository URL validation (GitHub-specific, proper format checking)
+- GitHub token validation (format checking for `ghp_` and `github_pat_` tokens)
+- Webhook secret validation (minimum 8 characters)
+- Email validation for recipients (regex pattern + duplicate checking)
+- Required field validation for all inputs
+
+**2. Error Handling & User Feedback:**
+- Comprehensive error state management with field-specific errors
+- Visual error indicators (red borders on invalid fields)
+- Success/error message display with proper styling
+- Real-time error clearing when users start typing
+- Connection test error reporting with detailed messages
+
+**3. Form Submission Logic:**
+- Proper form validation before submission
+- Loading states during save operations
+- API integration with `/api/config` endpoint
+- Error handling for failed submissions
+- Success feedback for successful saves
+
+**4. Connection Testing:**
+- Pre-validation before testing connection
+- Loading states during test
+- Visual feedback for connection status (success/failure icons)
+- API integration with `/api/test-connection` endpoint
+- Detailed error messages for failed connections
+
+**5. Email Management:**
+- Dynamic email recipient list management
+- Add/remove functionality with validation
+- Enter key support for adding emails
+- Duplicate prevention
+- Visual list display with remove buttons
+
+**6. Enhanced UX Features:**
+- Loading spinners for async operations
+- Disabled states for buttons during operations
+- Clear visual hierarchy with proper typography
+- Responsive design considerations
+- Proper form accessibility with labels and required indicators
+
+**Technical Implementation:**
+- TypeScript interfaces for type safety
+- State management for form data, errors, and loading states
+- Proper event handling and form submission
+- Error boundary patterns
+- Clean separation of validation logic
+
+The form now provides a production-ready interface with comprehensive validation, error handling, and user feedback systems.
+</info added on 2025-06-25T17:22:40.504Z>
+
+## 3. Develop documentation components [done]
+### Dependencies: None
+### Description: Create UI for displaying setup documentation
+### Details:
+Create clear, step-by-step instructions with visual aids.
+<info added on 2025-06-25T17:26:23.752Z>
+Comprehensive documentation components with detailed setup instructions including:
+
+1. Step-by-Step Setup Guide with GitHub token creation process, webhook setup instructions, email configuration guidance, and verification steps.
+
+2. Security Best Practices Section covering token management, webhook security, environment variables, and production deployment considerations.
+
+3. Environment Variables Documentation listing all required variables with descriptions and formatting.
+
+4. Comprehensive Troubleshooting Guide addressing connection failures, webhook issues, email problems, and rate limiting in an expandable card format.
+
+5. Support & Resources Section with links to official documentation and external resources.
+
+6. Enhanced UX Features including professional icons, color-coded indicators, responsive layouts, proper typography, and warning callouts.
+
+Technical implementation features modular component structure, accessible markup, responsive design, consistent Tailwind CSS styling, and proper link handling with security attributes.
+</info added on 2025-06-25T17:26:23.752Z>
+
+## 4. Implement connection testing functionality [done]
+### Dependencies: None
+### Description: Add UI for testing repository connection
+### Details:
+Create interactive testing with clear feedback.
+<info added on 2025-06-25T17:35:13.977Z>
+Connection testing functionality with comprehensive API endpoints
+
+**What was implemented:**
+
+**1. Test Connection API Endpoint (`/api/test-connection`):**
+- POST endpoint for testing GitHub repository connections
+- Comprehensive input validation (URL format, token format)
+- GitHub API integration with proper headers and authentication
+- Repository URL parsing with regex validation for GitHub URLs
+- Multi-level access validation:
+  - Basic repository access test
+  - Write access validation (for webhook setup capability)
+  - Permission level detection and reporting
+- Detailed error handling for all HTTP status codes:
+  - 401: Invalid token/insufficient permissions
+  - 403: Access forbidden
+  - 404: Repository not found
+  - 429: Rate limiting
+  - 500: Internal server errors
+- Structured response format with success/error states and detailed repository information
+
+**2. Configuration Save API Endpoint (`/api/config`):**
+- POST endpoint for saving configuration with full validation
+- GET endpoint for retrieving existing configuration (without sensitive data)
+- DELETE endpoint for clearing configuration
+- Comprehensive validation system:
+  - Repository URL format validation
+  - GitHub token format validation (supports both `ghp_` and `github_pat_` formats)
+  - Webhook secret strength validation (minimum 8 characters)
+  - Email format validation with detailed error reporting
+- Pre-save connection testing (validates GitHub access before saving)
+- Security-conscious data handling (doesn't return sensitive tokens in responses)
+- Structured error responses with detailed validation messages
+
+**3. Enhanced ConfigurationForm Component:**
+- Loading state with skeleton UI during configuration retrieval
+- Automatic configuration loading on component mount
+- Real-time field validation with immediate error clearing
+- Enhanced error handling with field-specific and general error states
+- Improved visual feedback:
+  - Loading spinners for async operations
+  - Success/error message display
+  - Connection status indicators with icons
+  - Proper error state styling (red borders, error backgrounds)
+- Better user experience:
+  - Disabled states during operations
+  - Enter key support for email addition
+  - Duplicate email prevention
+  - Clean form validation flow
+
+**4. Security & Production Considerations:**
+- Proper error handling to prevent information leakage
+- Input sanitization and validation
+- Rate limiting awareness in error handling
+- Secure token handling (password fields, no token storage in responses)
+- Proper HTTP status codes for different error conditions
+- User-Agent headers for API requests
+
+**Technical Implementation:**
+- TypeScript interfaces for type safety across API and frontend
+- Consistent error response formats
+- Proper async/await patterns with error handling
+- Loading state management
+- Form validation with real-time feedback
+- API integration with proper fetch patterns
+</info added on 2025-06-25T17:35:13.977Z>
+
+## 5. Create configuration validation service [done]
+### Dependencies: None
+### Description: Implement validation for repository configuration
+### Details:
+Create comprehensive validation with helpful error messages.
+<info added on 2025-06-25T17:40:34.844Z>
+Implemented a comprehensive validation system with detailed error messaging:
+
+1. Created a centralized validation service (`src/lib/validation/configValidation.ts`) with:
+   - GitHub URL validation using regex patterns and URL parsing
+   - Token validation for both classic and fine-grained GitHub tokens
+   - Webhook secret validation with security strength checking
+   - RFC-compliant email validation with length limits and duplicate detection
+   - Repository information extraction utilities
+
+2. Developed extensive unit test suite with 100+ test cases covering:
+   - All validation scenarios and edge cases
+   - Boundary testing for inputs
+   - Security testing for weak secrets
+
+3. Integrated validation with API endpoints:
+   - Enhanced `/api/test-connection` and `/api/config` with proper validation
+   - Improved error responses with detailed validation messages
+   - Added security measures for sensitive data handling
+
+4. Connected validation to UI components:
+   - Implemented real-time validation in ConfigurationForm
+   - Added user-friendly error feedback
+   - Enhanced form submission with pre-validation checks
+
+The system provides a type-safe, security-focused validation architecture with excellent maintainability and comprehensive test coverage.
+</info added on 2025-06-25T17:40:34.844Z>
+
+## 6. Update configuration form for OAuth [done]
+### Dependencies: 14.2
+### Description: Replace manual token input with GitHub OAuth flow
+### Details:
+1. Remove GitHub token input field from configuration form
+2. Remove webhook secret manual configuration
+3. Add "Connect with GitHub" button that initiates OAuth flow
+4. Display connected repository information after OAuth authentication
+5. Show connection status (connected/disconnected)
+6. Add disconnect functionality
+7. Preserve email configuration functionality
+8. Update form validation to work with OAuth flow
+9. Ensure proper error handling for OAuth failures
+<info added on 2025-06-25T19:32:29.573Z>
+The configuration form has been successfully updated to use the OAuth approach with the following improvements:
+
+1. Repository Selection Feature:
+   - Implemented repository fetching after OAuth authentication
+   - Added display of both public and private repositories
+   - Implemented loading states during repository fetching
+   - Created dropdown selection with repository visibility indicators
+
+2. Enhanced OAuth Flow:
+   - Configured NextAuth session with proper accessToken handling
+   - Added GitHub connection status checking and user information display
+   - Implemented automatic repository fetching after successful authentication
+   - Added proper disconnect functionality that clears repositories and selection
+
+3. Improved Form Validation:
+   - Implemented conditional button disabling based on repository selection and email configuration
+   - Added clear validation messages and requirements
+   - Implemented loading states for all asynchronous operations
+
+4. Updated Configuration Actions:
+   - Enhanced Save Configuration to validate selection and emails before saving
+   - Modified Test Connection to validate repository selection before testing
+   - Added placeholder code for future database and webhook integration
+
+5. User Experience Enhancements:
+   - Updated setup guide with revised steps
+   - Added permissions explanation in the sidebar
+   - Implemented visual loading indicators throughout the form
+   - Added clear success and error messaging
+
+The configuration form now has a complete OAuth flow integration ready for testing at http://localhost:3000/config.
+</info added on 2025-06-25T19:32:29.573Z>
+
+## 7. Create test fixtures for configuration testing [done]
+### Dependencies: None
+### Description: Develop sample data for configuration testing
+### Details:
+1. Create test fixtures for OAuth authentication scenarios
+2. Develop mock OAuth tokens and responses
+3. Create sample repository data for connected repositories
+4. Develop fixtures for various error states and edge cases
+5. Create test data for webhook configuration
+6. Develop fixtures for email configuration testing
+7. Create mock GitHub API responses for testing
+
+## 8. Implement GitHub OAuth App registration [done]
+### Dependencies: None
+### Description: Register OAuth application with GitHub
+### Details:
+1. Register new OAuth App in GitHub Developer Settings
+2. Configure callback URL for the application
+3. Generate client ID and client secret
+4. Set up proper application name and description
+5. Configure proper scopes for repository access and webhook creation
+6. Document the registration process for future reference
+7. Set up environment variables for OAuth credentials
+<info added on 2025-06-25T18:40:27.276Z>
+**OAUTH APP REGISTRATION STEPS:**
+
+1. **Go to GitHub Developer Settings:**
+   - Navigate to https://github.com/settings/applications/new
+   - Or go to Settings → Developer Settings → OAuth Apps → New OAuth App
+
+2. **Application Details to Register:**
+   - **Application name**: "Change Reel - Git Commit Changelog"
+   - **Homepage URL**: Will be the production domain (TBD, use localhost for now)
+   - **Authorization callback URL**: `http://localhost:3000/api/auth/github/callback` (for development)
+   - **Application description**: "Automated changelog generation from Git commits with AI-powered summaries"
+
+3. **Required OAuth Scopes:**
+   - `repo` - Full access to repositories (needed for webhook creation and commit access)
+   - `write:repo_hook` - Write access to repository hooks (for webhook management)
+   - `user:email` - Access to user email (for notifications)
+
+4. **Environment Variables Needed:**
+   ```
+   GITHUB_CLIENT_ID=your_client_id_here
+   GITHUB_CLIENT_SECRET=your_client_secret_here
+   NEXTAUTH_SECRET=your_random_secret_here
+   NEXTAUTH_URL=http://localhost:3000
+   ```
+
+**NEXT STEPS:**
+- Register the OAuth app with the above configuration
+- Note down the Client ID and Client Secret
+- Set up environment variables
+- Configure callback URL for production deployment later
+</info added on 2025-06-25T18:40:27.276Z>
+<info added on 2025-06-25T19:45:52.113Z>
+**CALLBACK URL CORRECTION**
+
+⚠️ **IMPORTANT URL PATTERN CORRECTION**
+
+The callback URL pattern for NextAuth.js differs from what was initially configured:
+
+- ❌ **Incorrect pattern used**: `/api/auth/github/callback`
+- ✅ **Correct pattern required**: `/api/auth/callback/github`
+
+**Updated Authorization callback URLs:**
+- Development: `http://localhost:3000/api/auth/callback/github`
+- Production: `https://yourdomain.com/api/auth/callback/github` (when ready)
+
+**Steps to fix:**
+1. Go to GitHub Developer Settings → OAuth Apps → Change Reel
+2. Edit the "Authorization callback URL" field
+3. Update to the correct pattern: `http://localhost:3000/api/auth/callback/github`
+4. Save changes
+
+This corrects the "redirect_uri is not associated with this application" error that occurs during OAuth flow.
+
+**NextAuth.js URL Structure Reference:**
+- Sign-in: `/api/auth/signin/github`
+- Callback: `/api/auth/callback/github`
+- Session: `/api/auth/session`
+</info added on 2025-06-25T19:45:52.113Z>
+
+## 9. Implement OAuth flow in Next.js [done]
+### Dependencies: 14.8
+### Description: Create API routes for GitHub OAuth authentication
+### Details:
+1. Create `/api/auth/github` route to initiate OAuth flow
+2. Implement `/api/auth/github/callback` to handle OAuth callback
+3. Set up secure token storage mechanism
+4. Implement session management for authenticated users
+5. Create utility functions for making authenticated GitHub API calls
+6. Implement automatic webhook creation after successful authentication
+7. Add proper error handling for OAuth flow failures
+8. Implement token refresh mechanism
+9. Add security measures to prevent CSRF attacks
+<info added on 2025-06-25T19:17:02.818Z>
+## OAuth API Routes Testing Results
+
+**Environment Variables Configuration:**
+- All required OAuth environment variables successfully added to .env file
+- GITHUB_CLIENT_ID and GITHUB_CLIENT_SECRET properly set from GitHub OAuth App
+- NEXTAUTH_SECRET generated and configured
+- NEXTAUTH_URL set to http://localhost:3000
+
+**API Endpoints Testing Results:**
+- GitHub Status Endpoint (/api/auth/github/status) responding correctly
+- NextAuth Providers Endpoint (/api/auth/providers) properly configured
+- GitHub provider returning correct signin/callback URLs
+- NextAuth API routes successfully configured at /api/auth/[...nextauth]
+
+**OAuth Infrastructure Status:**
+- Token storage service implemented and functional
+- OAuth status checking mechanism operational
+- Database migration for oauth_tokens table prepared
+- NextAuth session management working as expected
+
+**Verification Steps Completed:**
+- Development server successfully running on http://localhost:3000
+- Application rendering correctly with React/Tailwind
+- OAuth backend infrastructure fully operational and ready for authentication testing
+</info added on 2025-06-25T19:17:02.818Z>
+<info added on 2025-06-25T19:28:10.443Z>
+## Configuration Page Implementation
+
+**Configuration Page Features:**
+- Created comprehensive React configuration page with NextAuth integration
+- Implemented OAuth connection status display with real-time updates
+- Added GitHub user profile display with avatar and username
+- Built email recipients management interface
+- Implemented loading states and error handling for all API interactions
+- Applied Tailwind CSS for consistent styling across the application
+
+**Authentication Infrastructure:**
+- Created AuthProvider wrapper component for session management
+- Updated application layout to include NextAuth SessionProvider
+- Implemented client-side session management with proper state handling
+- Temporarily using JWT-only sessions for OAuth flow testing
+- Removed SupabaseAdapter temporarily to simplify initial testing
+
+**Current Issues:**
+- OAuth signin endpoint returning 400 Bad Request errors
+- Browser-based testing required instead of cURL for proper flow testing
+- Environment variable loading may need verification
+
+**Testing Plan:**
+- Complete OAuth flow testing through browser at http://localhost:3000/config
+- Verify "Connect with GitHub" button initiates proper authentication flow
+- Confirm environment variables are correctly loaded in production context
+- Re-implement database integration after successful OAuth flow verification
+</info added on 2025-06-25T19:28:10.443Z>
+<info added on 2025-06-25T19:29:38.405Z>
+## Environment Variables Configuration Status
+
+**All Required OAuth Environment Variables Added:**
+- OPENAI_API_KEY (existing)
+- NEXT_PUBLIC_SUPABASE_URL (existing) 
+- NEXT_PUBLIC_SUPABASE_ANON_KEY (existing)
+- GITHUB_CLIENT_ID ✅ (from GitHub OAuth App)
+- GITHUB_CLIENT_SECRET ✅ (from GitHub OAuth App)  
+- NEXTAUTH_SECRET ✅ (generated)
+- NEXTAUTH_URL ✅ (set to http://localhost:3000)
+
+**OAuth Infrastructure Status:**
+✅ NextAuth configuration working correctly
+✅ GitHub OAuth provider properly configured  
+✅ Configuration page (/config) successfully created and loading
+✅ OAuth API endpoints responding correctly:
+  - /api/auth/signin/github → 302 redirects (expected behavior)
+  - /api/auth/session → 200 (session management working)
+  - /api/auth/github/status → 401 (unauthenticated, as expected)
+  - /api/auth/providers → 200 (GitHub provider configured)
+
+**Next Steps for Complete OAuth Testing:**
+1. Test the full OAuth flow by visiting http://localhost:3000/api/auth/signin/github in browser
+2. Complete GitHub authorization and return to app
+3. Verify session is created and user can access repository data
+4. Test the /config page OAuth connection functionality
+
+The OAuth backend infrastructure is fully operational and ready for end-to-end authentication testing.
+</info added on 2025-06-25T19:29:38.405Z>
+
+## 10. Update documentation for OAuth setup [done]
+### Dependencies: 14.3, 14.8, 14.9
+### Description: Revise documentation to reflect OAuth integration
+### Details:
+1. Update setup documentation to focus on OAuth App registration
+2. Create new section explaining OAuth benefits vs manual approaches
+3. Add screenshots of OAuth flow for users
+4. Update troubleshooting section for OAuth-specific issues
+5. Revise environment variables documentation
+6. Add security best practices for OAuth implementation
+7. Update webhook section to explain automatic creation
+8. Create administrator guide for OAuth App management
+
+## 11. Update validation service for OAuth [done]
+### Dependencies: 14.5, 14.9
+### Description: Modify validation to work with OAuth tokens
+### Details:
+1. Update repository URL validation to work with OAuth flow
+2. Remove token format validation (no longer needed with OAuth)
+3. Remove webhook secret validation (automatically generated)
+4. Maintain email validation functionality
+5. Add validation for OAuth-specific parameters
+6. Update test suite to reflect OAuth validation changes
+7. Ensure backward compatibility during transition period
+
+## 12. Implement secure OAuth token storage [done]
+### Dependencies: 14.9
+### Description: Create secure storage mechanism for OAuth tokens
+### Details:
+1. Design database schema for storing encrypted OAuth tokens
+2. Implement token encryption/decryption utilities
+3. Create secure token retrieval mechanism
+4. Implement token refresh functionality
+5. Add token revocation capabilities
+6. Ensure proper error handling for token operations
+7. Add audit logging for token usage
+8. Implement token rotation for enhanced security
+
+## 13. Implement automatic webhook creation [done]
+### Dependencies: 14.9
+### Description: Create system for automatic webhook setup using OAuth permissions
+### Details:
+1. Design webhook creation flow after successful OAuth authentication
+2. Implement webhook creation API using OAuth tokens
+3. Generate secure webhook secrets automatically
+4. Store webhook configuration securely
+5. Add webhook verification functionality
+6. Implement webhook update/recreation capabilities
+7. Add proper error handling for webhook creation failures
+8. Create webhook management interface
+<info added on 2025-07-21T16:41:05.456Z>
+Implemented automatic webhook creation functionality. Created /api/webhooks/setup endpoint that automatically creates GitHub webhooks using the GitHubWebhookService after OAuth authentication and repository selection. Updated configuration page to automatically create webhooks when saving configuration instead of requiring manual copy/paste. Removed webhook secret display from admin UI since it's no longer needed for manual setup. The system now provides a seamless experience with no manual webhook configuration required.
+</info added on 2025-07-21T16:41:05.456Z>
+
+## 14. Adapt connection testing for OAuth [done]
+### Dependencies: 14.4, 14.9
+### Description: Update connection testing functionality to work with OAuth tokens
+### Details:
+1. Update connection testing API to use OAuth tokens
+2. Modify connection status display for OAuth authentication
+3. Add repository permission verification using OAuth scopes
+4. Implement connection status caching for better performance
+5. Add detailed repository information display after connection
+6. Enhance error reporting for OAuth-specific issues
+7. Add webhook verification as part of connection testing
+<info added on 2025-06-25T21:01:16.992Z>
+Successfully adapted connection testing functionality for OAuth tokens
+
+**What was implemented:**
+
+**1. New OAuth-based Connection Testing API (`/api/test-connection`):**
+- Created POST endpoint that uses NextAuth session authentication
+- Integrated with `getOAuthToken()` to retrieve user's GitHub OAuth token
+- Comprehensive GitHub API testing including:
+  - Repository access verification with detailed error handling
+  - Permission level detection (admin, push, pull)
+  - Webhook creation capability testing
+  - Existing webhook detection for Change Reel
+- Detailed error handling for all HTTP status codes (401, 403, 404, 429, 500)
+- Structured response format with repository details and webhook permissions
+
+**2. Enhanced Configuration Page Integration:**
+- Updated `handleTestConnection()` to use the new OAuth-based API
+- Removed dependency on manual token input
+- Added comprehensive result display showing:
+  - Repository name and visibility (private/public)
+  - User permission level (admin/write/read)
+  - Webhook creation capability status
+  - Existing webhook detection and URL display
+- Improved error messaging with specific failure details
+- Better user feedback with formatted success/error messages
+
+**3. Security & OAuth Integration:**
+- Proper session validation using NextAuth
+- Secure token retrieval from encrypted storage
+- OAuth token validation before making GitHub API calls
+- Request information logging for security audit trails
+- Proper error handling for expired or invalid tokens
+
+**4. GitHub API Integration Features:**
+- Repository metadata retrieval (name, description, permissions, etc.)
+- Webhook management API testing
+- Rate limiting awareness and error handling
+- Proper User-Agent headers for API requests
+- Support for both public and private repositories
+
+**Technical Implementation:**
+- TypeScript interfaces for type safety
+- Comprehensive error handling with user-friendly messages
+- Integration with existing OAuth token storage system
+- Clean separation of concerns between API and UI layers
+- Proper async/await patterns with error recovery
+</info added on 2025-06-25T21:01:16.992Z>
+
+## 15. Implement OAuth token refresh and revocation [done]
+### Dependencies: 14.9, 14.12
+### Description: Create system for handling token lifecycle
+### Details:
+1. Implement token refresh mechanism for expired tokens
+2. Create token revocation flow for disconnecting repositories
+3. Add automatic token refresh before expiration
+4. Implement proper error handling for refresh failures
+5. Create background job for token health checking
+6. Add notification system for token issues
+7. Implement secure token rotation for enhanced security
+<info added on 2025-06-25T21:05:52.930Z>
+OAuth Token Management System Implementation
+
+1. Enhanced Token Storage Functions:
+   - Implemented refreshOAuthToken() with provider-specific handling
+   - Created token health monitoring (shouldRefreshToken(), performTokenHealthCheck())
+   - Added comprehensive security audit logging for token events
+
+2. Token Management API (/api/auth/tokens):
+   - Built endpoints for refresh, revoke, status, and health-check actions
+   - Implemented security features including session validation and request logging
+   - Added structured error responses with appropriate HTTP status codes
+
+3. Configuration Page UI Enhancements:
+   - Developed token management section with status checking and revocation
+   - Added confirmation dialogs and user-friendly notifications
+   - Implemented conditional rendering based on connection status
+
+4. Token Lifecycle Management:
+   - Created robust token validation with expiration checking
+   - Implemented secure token revocation with proper cleanup
+   - Added detailed reporting for token operations
+
+5. Background Health Monitoring:
+   - Built system-wide token health check with batch processing
+   - Implemented automatic detection of tokens approaching expiration
+   - Added error resilience and comprehensive logging
+
+All components follow TypeScript best practices with proper async patterns, comprehensive error handling, and security-first implementation.
+</info added on 2025-06-25T21:05:52.930Z>
+
+## 16. Create user-friendly OAuth connection UI [done]
+### Dependencies: 14.6, 14.9
+### Description: Develop intuitive UI for GitHub OAuth connection flow
+### Details:
+1. Design and implement "Connect with GitHub" button with GitHub branding
+2. Create loading states during OAuth authentication process
+3. Develop clear success/error messaging for OAuth flow
+4. Implement repository selection interface after authentication
+5. Add visual indicators for connection status
+6. Create disconnect button with confirmation dialog
+7. Implement responsive design for OAuth flow on all devices
+8. Add accessibility features for OAuth connection UI
+

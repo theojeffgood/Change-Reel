@@ -14,8 +14,8 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: 'Wins Column - Automated Git Commit Changelogs',
-  description: 'Automated changelog generation from your Git commits using AI',
+  title: 'Wins Column - An Automated Changelog for your Products',
+  description: 'Know what your engineers ship without asking them',
 };
 
 export default function RootLayout({

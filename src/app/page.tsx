@@ -16,7 +16,7 @@ export default function Home() {
               AI-Powered Product Updates
             </div>
           <h1 className="text-5xl md:text-7xl font-bold text-gray-900 mb-6">
-            Know what your devs ship.
+            Know what your dev ships.
             <span className="bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent"> Without asking.</span>
           </h1>
           <p className="text-xl md:text-2xl text-gray-600 mb-8 max-w-3xl mx-auto leading-relaxed">
@@ -293,6 +293,7 @@ export default function Home() {
             <p className="text-xl text-gray-600 max-w-3xl mx-auto">
               Start for free, then pay only for what you use.
             </p>
+            <p className="text-gray-600 mt-4">(1 code change = 1 summary = 1 credit)</p>
           </div>
 
           <div className="grid grid-cols-1 md:grid-cols-3 gap-14 px-14">
@@ -301,29 +302,25 @@ export default function Home() {
               <div className="text-center mb-8">
                 <h3 className="text-2xl font-bold text-gray-900 mb-2">Starter Pack</h3>
                 <div className="mb-4">
-                  <span className="text-4xl font-bold text-gray-900">$19</span>
-                  <span className="text-gray-600"> one‑time</span>
+                  <span className="text-4xl font-bold text-gray-900">$0</span>
+                  {/* <span className="text-gray-600"> free</span> */}
                 </div>
                 <div className="mb-2">
-                  <span className="text-2xl font-bold text-blue-600">500</span>
-                  <span className="text-gray-600"> credits</span>
+                  <span className="text-2xl font-bold text-blue-600">3</span>
+                  <span className="text-gray-600"> free credits</span>
 
                 </div>
-                <p className="text-gray-600">(0.10 per credit)</p>
+                {/* <p className="text-gray-600">Free credits to start</p> */}
               </div>
               
               <ul className="space-y-4 mb-8">
                 <li className="flex items-center">
                   <span className="text-green-500 mr-3">✓</span>
-                  <span className="text-gray-700">Use across any repositories</span>
+                  <span className="text-gray-700">1 repository </span>
                 </li>
                 <li className="flex items-center">
                   <span className="text-green-500 mr-3">✓</span>
                   <span className="text-gray-700">Support from an actual human</span>
-                </li>
-                <li className="flex items-center">
-                  <span className="text-green-500 mr-3">✓</span>
-                  <span className="text-gray-700">Credits never expire</span>
                 </li>
                 <li className="flex items-center">
                   <span className="text-green-500 mr-3">✓</span>
@@ -348,21 +345,21 @@ export default function Home() {
               <div className="text-center mb-8">
                 <h3 className="text-2xl font-bold text-gray-900 mb-2">Growth Pack</h3>
                 <div className="mb-4">
-                  <span className="text-4xl font-bold text-gray-900">$49</span>
+                  <span className="text-4xl font-bold text-gray-900">$29</span>
                   <span className="text-gray-600"> one‑time</span>
                 </div>
                 <div className="mb-2">
-                  <span className="text-2xl font-bold text-blue-600">2,000</span>
+                  <span className="text-2xl font-bold text-blue-600">100</span>
                   <span className="text-gray-600"> credits</span>
 
                 </div>
-                <p className="text-gray-600">(0.075 per credit)</p>
+                {/* <p className="text-gray-600">(0.075 per credit)</p> */}
               </div>
               
               <ul className="space-y-4 mb-8">
                 <li className="flex items-center">
                   <span className="text-green-500 mr-3">✓</span>
-                  <span className="text-gray-700">Use across any repositories</span>
+                  <span className="text-gray-700">Unlimited repositories</span>
                 </li>
                 <li className="flex items-center">
                   <span className="text-green-500 mr-3">✓</span>
@@ -374,7 +371,7 @@ export default function Home() {
                 </li>
                 <li className="flex items-center">
                   <span className="text-green-500 mr-3">✓</span>
-                  <span className="text-gray-700">10% off replenished credits</span>
+                  <span className="text-gray-700">15% off replenished credits</span>
                 </li>
               </ul>
 
@@ -389,23 +386,23 @@ export default function Home() {
             {/* Scale Pack */}
             <div className="bg-white rounded-2xl p-8 shadow-lg border border-gray-200 relative">
               <div className="text-center mb-8">
-                <h3 className="text-2xl font-bold text-gray-900 mb-2">Scale Pack</h3>
+                <h3 className="text-2xl font-bold text-gray-900 mb-2">Enterprise</h3>
                 <div className="mb-4">
-                  <span className="text-4xl font-bold text-gray-900">$199</span>
+                  <span className="text-4xl font-bold text-gray-900">$249</span>
                   <span className="text-gray-600"> one‑time</span>
                 </div>
                 <div className="mb-2">
-                  <span className="text-2xl font-bold text-blue-600">6,000</span>
+                  <span className="text-2xl font-bold text-blue-600">1,500</span>
                   <span className="text-gray-600"> credits</span>
 
                 </div>
-                <p className="text-gray-600">(0.067 per credit)</p>
+                {/* <p className="text-gray-600">(0.067 per credit)</p> */}
               </div>
               
               <ul className="space-y-4 mb-8">
                 <li className="flex items-center">
                   <span className="text-green-500 mr-3">✓</span>
-                  <span className="text-gray-700">Use across any repositories</span>
+                  <span className="text-gray-700">Unlimited repositories</span>
                 </li>
                 <li className="flex items-center">
                   <span className="text-green-500 mr-3">✓</span>

@@ -40,7 +40,7 @@ export default async function AdminPage() {
 
         <div className="flex items-center justify-between"> 
           <h2 className="text-3xl font-bold text-gray-900 mb-2">
-            Recent Product Updates
+            Product Timeline
           </h2>
 
           <div className="flex items-center space-x-2">

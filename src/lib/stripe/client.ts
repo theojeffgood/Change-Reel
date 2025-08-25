@@ -15,12 +15,11 @@ export function getStripeClient(): Stripe {
   return stripeSingleton;
 }
 
-export type CreditPackKey = 'credits1k' | 'credits10k' | 'credits100k';
+export type CreditPackKey = 'credits100' | 'credits1000';
 
 export interface CreditPackMapping {
-  credits1k?: string;
-  credits10k?: string;
-  credits100k?: string;
+  credits100?: string;
+  credits1000?: string;
 }
 
 export function getCreditPackPriceId(key: CreditPackKey): string | undefined {

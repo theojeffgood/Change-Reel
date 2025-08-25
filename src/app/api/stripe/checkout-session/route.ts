@@ -6,7 +6,7 @@ import { getServiceRoleSupabaseService } from '@/lib/supabase/client';
 export const runtime = 'nodejs';
 
 type CreateSessionBody = {
-  credit_pack: 'credits1k' | 'credits10k' | 'credits100k';
+  credit_pack: 'credits100' | 'credits1000';
 };
 
 export async function POST(req: NextRequest) {
@@ -58,6 +58,14 @@ export async function POST(req: NextRequest) {
       return_url: returnUrl,
       payment_method_types: ['card'],
       metadata: { user_id: userId, credit_pack: body.credit_pack },
+      payment_intent_data: {
+        metadata: {
+          user_id: userId,
+          credit_pack: body.credit_pack,
+          // Explicit credits purchased for webhook logic (removes need for creditsPerUsd)
+          credits: body.credit_pack === 'credits1000' ? '1500' : '100',
+        },
+      },
     });
 
     // For Embedded Checkout we return client_secret used by the client SDK

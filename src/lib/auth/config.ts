@@ -63,7 +63,7 @@ export const authConfig: NextAuthOptions = {
       if (account?.provider === 'github' && account.access_token && profile?.id) {
         try {
           // Import Supabase service
-          const { getSupabaseService } = await import('@/lib/supabase/client');
+          const { getSupabaseService, getServiceRoleSupabaseService } = await import('@/lib/supabase/client');
           const supabaseService = getSupabaseService();
 
           // Create or update user record in database
@@ -81,6 +81,18 @@ export const authConfig: NextAuthOptions = {
               console.error('Failed to create user record:', createError);
             } else {
               console.log('User record created successfully:', newUser?.email);
+              // Grant starter credits (3) to newly created users
+              try {
+                if (newUser?.id) {
+                  const { createBillingService } = await import('@/lib/supabase/services/billing');
+                  const supaRole = getServiceRoleSupabaseService().getClient();
+                  const billing = createBillingService(supaRole);
+                  await billing.addCredits(newUser.id, 3, 'Starter credits');
+                  console.log('[billing] granted starter credits', { userId: newUser.id, amount: 3 });
+                }
+              } catch (creditErr) {
+                console.error('Failed to grant starter credits:', creditErr);
+              }
             }
           }
 

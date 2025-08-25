@@ -8,9 +8,8 @@ export interface StripeEnvConfig {
   publishableKey: string;
   webhookSecret: string;
   priceIds: {
-    credits1k?: string;
-    credits10k?: string;
-    credits100k?: string;
+    credits100?: string;
+    credits1000?: string;
   };
   creditsPerUsd: number; // e.g., 1000 => $1 == 1,000 credits
   markupPercent: number; // e.g., 20 => 20%
@@ -51,9 +50,8 @@ export function getStripeEnvConfig(): StripeEnvConfig {
   const isLiveMode = secretKey.startsWith("sk_live_");
 
   const priceIds = {
-    credits1k: getOptionalEnv("STRIPE_PRICE_CREDITS_1K"),
-    credits10k: getOptionalEnv("STRIPE_PRICE_CREDITS_10K"),
-    credits100k: getOptionalEnv("STRIPE_PRICE_CREDITS_100K"),
+    credits100: getOptionalEnv("STRIPE_PRICE_CREDITS_100"),
+    credits1000: getOptionalEnv("STRIPE_PRICE_CREDITS_1000"),
   };
 
   const creditsPerUsd = parseNumberEnv("CREDITS_PER_USD", 1000);

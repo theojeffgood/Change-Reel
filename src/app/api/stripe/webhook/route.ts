@@ -50,26 +50,32 @@ export async function POST(req: NextRequest) {
           }
         }
 
-        // Determine credits from Price metadata or fallback to amount_total * creditsPerUsd
+        // Determine credits explicitly from PaymentIntent metadata (set during checkout session creation)
         let creditsToGrant = 0
         try {
-          const items = await stripe.checkout.sessions.listLineItems(session.id, { expand: ['data.price.product'] })
-          if (items.data.length > 0) {
-            const item = items.data[0] as Stripe.LineItem & { price?: Stripe.Price & { product?: Stripe.Product } }
-            const priceMeta = (item.price?.metadata || {}) as Record<string, string>
-            const productMeta = (item.price?.product as Stripe.Product | undefined)?.metadata || {}
-            const metaCredits = Number(priceMeta.credits || productMeta.credits)
+          if (session.payment_intent) {
+            const piId = typeof session.payment_intent === 'string' ? session.payment_intent : session.payment_intent.id
+            const pi = await stripe.paymentIntents.retrieve(piId)
+            const metaCredits = Number((pi.metadata?.credits as string) || '0')
             if (!Number.isNaN(metaCredits) && metaCredits > 0) {
               creditsToGrant = metaCredits
             }
           }
+          // Fallback: still try to inspect price/product metadata (in case legacy data exists)
+          if (!creditsToGrant) {
+            const items = await stripe.checkout.sessions.listLineItems(session.id, { expand: ['data.price.product'] })
+            if (items.data.length > 0) {
+              const item = items.data[0] as Stripe.LineItem & { price?: Stripe.Price & { product?: Stripe.Product } }
+              const priceMeta = (item.price?.metadata || {}) as Record<string, string>
+              const productMeta = (item.price?.product as Stripe.Product | undefined)?.metadata || {}
+              const metaCredits = Number(priceMeta.credits || productMeta.credits)
+              if (!Number.isNaN(metaCredits) && metaCredits > 0) {
+                creditsToGrant = metaCredits
+              }
+            }
+          }
         } catch (e: any) {
-          console.error('[billing] listLineItems error', e?.message)
-        }
-
-        if (!creditsToGrant) {
-          const amountTotalUsd = (session.amount_total || 0) / 100
-          creditsToGrant = Math.round(amountTotalUsd * cfg.creditsPerUsd)
+          console.error('[billing] determine credits error', e?.message)
         }
 
         if (creditsToGrant > 0) {
@@ -90,11 +96,19 @@ export async function POST(req: NextRequest) {
           console.error('Refund event missing user_id metadata', { eventId: event.id })
           break
         }
-        const amountUsd = (charge.amount_refunded || 0) / 100
-        // Convert refunded USD back to credits using env conversion factor
-        const credits = Math.round(amountUsd * cfg.creditsPerUsd)
+        // Proportionally compute credits to revoke based on PaymentIntent metadata
+        const paymentIntentId = typeof charge.payment_intent === 'string' ? charge.payment_intent : (charge.payment_intent as Stripe.PaymentIntent | null)?.id
+        if (!paymentIntentId) break
+        const pi = await stripe.paymentIntents.retrieve(paymentIntentId)
+        const totalCredits = Number((pi.metadata?.credits as string) || '0')
+        const totalUsd = ((pi.amount_received || pi.amount || 0) / 100)
+        const refundedUsd = (charge.amount_refunded || 0) / 100
+        let credits = 0
+        if (totalCredits > 0 && totalUsd > 0 && refundedUsd > 0) {
+          const proportion = Math.min(1, Math.max(0, refundedUsd / totalUsd))
+          credits = Math.round(totalCredits * proportion)
+        }
         if (credits > 0) {
-          // Best-effort deduct (may not deduct fully if insufficient balance)
           await billing.deductCredits(userId, credits, 'Stripe refund')
         }
         break
@@ -103,16 +117,24 @@ export async function POST(req: NextRequest) {
         const dispute = event.data.object as Stripe.Dispute
         const chargeId = typeof dispute.charge === 'string' ? dispute.charge : dispute.charge.id
         if (!chargeId) break
-        // Retrieve charge to access metadata with user_id
         const charge = await stripe.charges.retrieve(chargeId)
         const userId = (charge.metadata?.user_id as string) || undefined
         if (!userId) {
           console.error('Dispute event missing user_id metadata', { eventId: event.id })
           break
         }
-        // Use disputed amount to calculate temporary hold
-        const amountUsd = (dispute.amount || 0) / 100
-        const credits = Math.round(amountUsd * cfg.creditsPerUsd)
+        // Proportionally hold credits based on disputed amount vs original PaymentIntent
+        const paymentIntentId = typeof charge.payment_intent === 'string' ? charge.payment_intent : (charge.payment_intent as Stripe.PaymentIntent | null)?.id
+        if (!paymentIntentId) break
+        const pi = await stripe.paymentIntents.retrieve(paymentIntentId)
+        const totalCredits = Number((pi.metadata?.credits as string) || '0')
+        const totalUsd = ((pi.amount_received || pi.amount || 0) / 100)
+        const disputedUsd = (dispute.amount || 0) / 100
+        let credits = 0
+        if (totalCredits > 0 && totalUsd > 0 && disputedUsd > 0) {
+          const proportion = Math.min(1, Math.max(0, disputedUsd / totalUsd))
+          credits = Math.round(totalCredits * proportion)
+        }
         if (credits > 0) {
           await billing.deductCredits(userId, credits, 'Stripe dispute hold')
         }

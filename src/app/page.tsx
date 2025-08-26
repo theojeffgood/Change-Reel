@@ -4,7 +4,7 @@ import SiteFooter from '@/components/layout/SiteFooter';
 
 export default function Home() {
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-50 to-blue-50">
+    <div className="min-h-screen bg-white">
       <SiteHeader isAuthenticated={false} />
 
       {/* Hero Section */}
@@ -17,7 +17,7 @@ export default function Home() {
             </div>
           <h1 className="text-5xl md:text-7xl font-bold text-gray-900 mb-6">
             Know what your dev ships.
-            <span className="bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent"> Without asking.</span>
+            <span className="bg-clip-text text-transparent bg-gradient-to-r from-black to-gray-700"> Without asking.</span>
           </h1>
           <p className="text-xl md:text-2xl text-gray-600 mb-8 max-w-3xl mx-auto leading-relaxed">
           Plain-English updates from your codebase, straight to your inbox. Clarity for stakeholders, zero overhead for your engineers. Powered by AI. 
@@ -25,7 +25,7 @@ export default function Home() {
           <div className="flex flex-col sm:flex-row gap-4 justify-center">
             <Link 
               href="/config" 
-              className="inline-flex items-center px-8 py-4 bg-blue-600 text-white text-lg font-semibold rounded-xl hover:bg-blue-700 transition-colors shadow-lg"
+              className="inline-flex items-center px-8 py-4 bg-black text-white text-lg font-semibold rounded-xl hover:bg-gray-800 transition-colors shadow-lg"
             >
               <svg className="mr-2 w-7 h-7" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
                 <path fillRule="evenodd" clipRule="evenodd" d="M12 2C6.477 2 2 6.484 2 12.018c0 4.424 2.865 8.176 6.839 9.504.5.092.682-.217.682-.483 0-.237-.009-.868-.013-1.703-2.782.605-3.369-1.342-3.369-1.342-.454-1.156-1.11-1.464-1.11-1.464-.908-.62.069-.608.069-.608 1.004.071 1.532 1.032 1.532 1.032.892 1.53 2.341 1.088 2.91.833.091-.647.35-1.088.636-1.339-2.221-.253-4.555-1.112-4.555-4.943 0-1.091.39-1.986 1.029-2.686-.103-.253-.446-1.272.098-2.65 0 0 .84-.27 2.75 1.026A9.564 9.564 0 0112 6.844c.851.004 1.707.115 2.506.337 1.909-1.296 2.748-1.026 2.748-1.026.546 1.378.202 2.397.099 2.65.64.7 1.028 1.595 1.028 2.686 0 3.841-2.337 4.687-4.565 4.936.359.31.678.923.678 1.861 0 1.343-.012 2.427-.012 2.758 0 .268.18.58.688.481A10.02 10.02 0 0022 12.018C22 6.484 17.523 2 12 2z"/>
@@ -44,7 +44,7 @@ export default function Home() {
           <div className="flex flex-col sm:flex-row gap-6 justify-center mt-12">
             <div className="inline-flex items-center px-4 py-2 text-gray-600 text-sm font-medium">
               <span className="mr-2">🎟️</span>
-              Pay As You Go
+              No Subscription
             </div>
             <div className="inline-flex items-center px-4 py-2 text-gray-600 text-sm font-medium">
               <span className="mr-2">⚡</span>
@@ -130,7 +130,7 @@ export default function Home() {
                   </div>
                 </div>
                 <div className="absolute -right-16 top-1/2 transform -translate-y-1/2 hidden lg:block">
-                  <div className="w-12 h-12 bg-blue-500 rounded-full flex items-center justify-center">
+                  <div className="w-12 h-12 bg-black rounded-full flex items-center justify-center">
                     <svg className="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 7l5 5m0 0l-5 5m5-5H6" />
                     </svg>
@@ -146,7 +146,7 @@ export default function Home() {
                   <div className="bg-gray-50 px-6 py-4 border-b border-gray-200">
                     <div className="flex items-center justify-between">
                       <div className="flex items-center space-x-3">
-                        <div className="w-8 h-8 bg-blue-500 rounded-full flex items-center justify-center">
+                        <div className="w-8 h-8 bg-black rounded-full flex items-center justify-center">
                           <span className="text-white text-sm font-bold">WC</span>
                         </div>
                         <div>
@@ -306,7 +306,7 @@ export default function Home() {
                   {/* <span className="text-gray-600"> free</span> */}
                 </div>
                 <div className="mb-2">
-                  <span className="text-2xl font-bold text-blue-600">3</span>
+                  <span className="text-2xl font-bold text-black">3</span>
                   <span className="text-gray-600"> free credits</span>
 
                 </div>
@@ -315,15 +315,15 @@ export default function Home() {
               
               <ul className="space-y-4 mb-8">
                 <li className="flex items-center">
-                  <span className="text-green-500 mr-3">✓</span>
+                  <span className="text-black mr-3">✓</span>
                   <span className="text-gray-700">1 repository </span>
                 </li>
                 <li className="flex items-center">
-                  <span className="text-green-500 mr-3">✓</span>
+                  <span className="text-black mr-3">✓</span>
                   <span className="text-gray-700">Support from an actual human</span>
                 </li>
                 <li className="flex items-center">
-                  <span className="text-green-500 mr-3">✓</span>
+                  <span className="text-black mr-3">✓</span>
                   <span className="text-gray-700">Replenish what you need</span>
                 </li>
               </ul>
@@ -337,9 +337,9 @@ export default function Home() {
             </div>
 
             {/* Growth Pack */}
-            <div className="bg-white rounded-2xl p-8 shadow-xl border-2 border-blue-500 relative transform scale-105">
+            <div className="bg-white rounded-2xl p-8 shadow-xl border-2 border-black relative transform scale-105">
               <div className="absolute -top-4 left-1/2 transform -translate-x-1/2">
-                <span className="bg-blue-500 text-white px-4 py-1 rounded-full text-sm font-semibold">Most Popular</span>
+                <span className="bg-black text-white px-4 py-1 rounded-full text-sm font-semibold">Most Popular</span>
               </div>
               
               <div className="text-center mb-8">
@@ -349,7 +349,7 @@ export default function Home() {
                   <span className="text-gray-600"> one‑time</span>
                 </div>
                 <div className="mb-2">
-                  <span className="text-2xl font-bold text-blue-600">100</span>
+                  <span className="text-2xl font-bold text-black">100</span>
                   <span className="text-gray-600"> credits</span>
 
                 </div>
@@ -358,26 +358,26 @@ export default function Home() {
               
               <ul className="space-y-4 mb-8">
                 <li className="flex items-center">
-                  <span className="text-green-500 mr-3">✓</span>
+                  <span className="text-black mr-3">✓</span>
                   <span className="text-gray-700">Unlimited repositories</span>
                 </li>
                 <li className="flex items-center">
-                  <span className="text-green-500 mr-3">✓</span>
+                  <span className="text-black mr-3">✓</span>
                   <span className="text-gray-700">Support from an actual human</span>
                 </li>
                 <li className="flex items-center">
-                  <span className="text-green-500 mr-3">✓</span>
+                  <span className="text-black mr-3">✓</span>
                   <span className="text-gray-700">Credits never expire</span>
                 </li>
                 <li className="flex items-center">
-                  <span className="text-green-500 mr-3">✓</span>
+                  <span className="text-black mr-3">✓</span>
                   <span className="text-gray-700">15% off replenished credits</span>
                 </li>
               </ul>
 
               <Link 
                 href="/config" 
-                className="w-full inline-flex items-center justify-center px-6 py-3 bg-blue-600 text-white font-semibold rounded-lg hover:bg-blue-700 transition-colors"
+                className="w-full inline-flex items-center justify-center px-6 py-3 bg-black text-white font-semibold rounded-lg hover:bg-blue-700 transition-colors"
               >
                 Start Free
               </Link>
@@ -392,7 +392,7 @@ export default function Home() {
                   <span className="text-gray-600"> one‑time</span>
                 </div>
                 <div className="mb-2">
-                  <span className="text-2xl font-bold text-blue-600">1,500</span>
+                  <span className="text-2xl font-bold text-black">1,500</span>
                   <span className="text-gray-600"> credits</span>
 
                 </div>
@@ -401,19 +401,19 @@ export default function Home() {
               
               <ul className="space-y-4 mb-8">
                 <li className="flex items-center">
-                  <span className="text-green-500 mr-3">✓</span>
+                  <span className="text-black mr-3">✓</span>
                   <span className="text-gray-700">Unlimited repositories</span>
                 </li>
                 <li className="flex items-center">
-                  <span className="text-green-500 mr-3">✓</span>
+                  <span className="text-black mr-3">✓</span>
                   <span className="text-gray-700">Priority support from an actual human</span>
                 </li>
                 <li className="flex items-center">
-                  <span className="text-green-500 mr-3">✓</span>
+                  <span className="text-black mr-3">✓</span>
                   <span className="text-gray-700">Credits never expire</span>
                 </li>
                 <li className="flex items-center">
-                  <span className="text-green-500 mr-3">✓</span>
+                  <span className="text-black mr-3">✓</span>
                   <span className="text-gray-700">25% off replenished credits</span>
                 </li>
               </ul>
@@ -436,7 +436,7 @@ export default function Home() {
       </div>
 
       {/* CTA Section */}
-      <div className="px-4 sm:px-6 lg:px-8 py-20 bg-gradient-to-r from-blue-600 to-purple-600">
+      <div className="px-4 sm:px-6 lg:px-8 py-20 bg-black">
         <div className="max-w-4xl mx-auto text-center">
           <h2 className="text-3xl md:text-4xl font-bold text-white mb-6">
             Built for busy teams who ship.
@@ -447,7 +447,7 @@ export default function Home() {
           <div className="flex flex-col sm:flex-row gap-4 justify-center">
             <Link 
               href="/config" 
-              className="inline-flex items-center px-8 py-4 bg-white text-blue-600 text-lg font-semibold rounded-xl hover:bg-gray-50 transition-colors shadow-lg"
+              className="inline-flex items-center px-8 py-4 bg-white text-black text-lg font-semibold rounded-xl hover:bg-gray-50 transition-colors shadow-lg"
             >
               <svg className="mr-2 w-7 h-7" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
                 <path fillRule="evenodd" clipRule="evenodd" d="M12 2C6.477 2 2 6.484 2 12.018c0 4.424 2.865 8.176 6.839 9.504.5.092.682-.217.682-.483 0-.237-.009-.868-.013-1.703-2.782.605-3.369-1.342-3.369-1.342-.454-1.156-1.11-1.464-1.11-1.464-.908-.62.069-.608.069-.608 1.004.071 1.532 1.032 1.532 1.032.892 1.53 2.341 1.088 2.91.833.091-.647.35-1.088.636-1.339-2.221-.253-4.555-1.112-4.555-4.943 0-1.091.39-1.986 1.029-2.686-.103-.253-.446-1.272.098-2.65 0 0 .84-.27 2.75 1.026A9.564 9.564 0 0112 6.844c.851.004 1.707.115 2.506.337 1.909-1.296 2.748-1.026 2.748-1.026.546 1.378.202 2.397.099 2.65.64.7 1.028 1.595 1.028 2.686 0 3.841-2.337 4.687-4.565 4.936.359.31.678.923.678 1.861 0 1.343-.012 2.427-.012 2.758 0 .268.18.58.688.481A10.02 10.02 0 0022 12.018C22 6.484 17.523 2 12 2z"/>

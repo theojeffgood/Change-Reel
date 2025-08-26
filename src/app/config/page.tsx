@@ -255,7 +255,7 @@ export default function ConfigurationPage() {
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-50 to-blue-50">
+    <div className="min-h-screen bg-white">
       <SiteHeader />
       
       {/* Confirmation Dialog */}
@@ -332,7 +332,7 @@ export default function ConfigurationPage() {
                     </div>
                   ) : (
                     /* Disconnected State */
-                    <div className="bg-gradient-to-r from-gray-50 to-slate-50 p-6">
+                    <div className="bg-gray-50 p-6">
                       <div className="text-center">
                         <div className="w-16 h-16 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-4">
                           <span className="text-gray-400 text-2xl">🔗</span>
@@ -346,7 +346,7 @@ export default function ConfigurationPage() {
                         <button
                           onClick={handleGitHubConnect}
                           disabled={loading}
-                          className="inline-flex items-center px-6 py-3 bg-gray-900 text-white rounded-lg hover:bg-gray-800 transition-colors disabled:opacity-50 font-semibold"
+                          className="inline-flex items-center px-6 py-3 bg-black text-white rounded-lg hover:bg-gray-800 transition-colors disabled:opacity-50 font-semibold"
                         >
                           {loading ? (
                             <>
@@ -377,7 +377,7 @@ export default function ConfigurationPage() {
                     </label>
                     {loadingRepos ? (
                       <div className="flex items-center space-x-3 p-4 border border-gray-200 rounded-xl">
-                        <div className="w-5 h-5 border-2 border-blue-600 border-t-transparent rounded-full animate-spin"></div>
+                        <div className="w-5 h-5 border-2 border-black border-t-transparent rounded-full animate-spin"></div>
                         <span className="text-gray-600">Loading your products...</span>
                       </div>
                     ) : repositories.length > 0 ? (
@@ -385,7 +385,7 @@ export default function ConfigurationPage() {
                         id="repository"
                         value={selectedRepository}
                         onChange={(e) => setSelectedRepository(e.target.value)}
-                        className="w-full rounded-xl border-gray-300 focus:border-blue-500 focus:ring-blue-500 text-gray-900 shadow-sm"
+                        className="w-full rounded-xl border-gray-300 focus:border-black focus:ring-black text-gray-900 shadow-sm"
                       >
                         <option value="">Choose a product to track...</option>
                         {repositories.map((repo) => (
@@ -411,7 +411,7 @@ export default function ConfigurationPage() {
                         <div className="mt-3">
                           <Link 
                             href="/admin" 
-                            className="inline-flex items-center px-4 py-2 text-sm font-medium text-white bg-blue-600 rounded-lg hover:bg-blue-700 transition-colors"
+                            className="inline-flex items-center px-4 py-2 text-sm font-medium text-white bg-black rounded-lg hover:bg-gray-800 transition-colors"
                           >
                             View Dashboard →
                           </Link>

@@ -93,32 +93,32 @@ export default function BillingClient() {
                   <span className="text-gray-600"> one‑time</span>
                 </div>
                 <div className="mb-2">
-                  <span className="text-2xl font-bold text-blue-600">100</span>
+                  <span className="text-2xl font-bold text-black">100</span>
                   <span className="text-gray-600"> credits</span>
                 </div>
                 {/* <p className="text-gray-600">(1 code change = 1 summary = 1 credit)</p> */}
               </div>
               <ul className="space-y-4 mb-8">
                 <li className="flex items-center">
-                  <span className="text-green-500 mr-3">✓</span>
+                  <span className="text-black mr-3">✓</span>
                   <span className="text-gray-700">Unlimited repositories</span>
                 </li>
                 <li className="flex items-center">
-                  <span className="text-green-500 mr-3">✓</span>
+                  <span className="text-black mr-3">✓</span>
                   <span className="text-gray-700">Support from an actual human</span>
                 </li>
                 <li className="flex items-center">
-                  <span className="text-green-500 mr-3">✓</span>
+                  <span className="text-black mr-3">✓</span>
                   <span className="text-gray-700">Credits never expire</span>
                 </li>
                 <li className="flex items-center">
-                  <span className="text-green-500 mr-3">✓</span>
+                  <span className="text-black mr-3">✓</span>
                   <span className="text-gray-700">15% off replenished credits</span>
                 </li>
               </ul>
               <button 
                 onClick={() => handleSelectPlan('growth')} 
-                className="w-full inline-flex items-center justify-center px-6 py-3 bg-blue-600 text-white font-semibold rounded-lg hover:bg-blue-700 transition-colors"
+                className="w-full inline-flex items-center justify-center px-6 py-3 bg-black text-white font-semibold rounded-lg transition-colors"
               >
                 Get Started
               </button>
@@ -133,32 +133,32 @@ export default function BillingClient() {
                   <span className="text-gray-600"> one‑time</span>
                 </div>
                 <div className="mb-2">
-                  <span className="text-2xl font-bold text-blue-600">1,500</span>
+                  <span className="text-2xl font-bold text-black">1,500</span>
                   <span className="text-gray-600"> credits</span>
                 </div>
                 {/* <p className="text-gray-600">(0.067 per credit)</p> */}
               </div>
               <ul className="space-y-4 mb-8">
                 <li className="flex items-center">
-                  <span className="text-green-500 mr-3">✓</span>
+                  <span className="text-black mr-3">✓</span>
                   <span className="text-gray-700">Unlimited repositories</span>
                 </li>
                 <li className="flex items-center">
-                  <span className="text-green-500 mr-3">✓</span>
+                  <span className="text-black mr-3">✓</span>
                   <span className="text-gray-700">Priority support from an actual human</span>
                 </li>
                 <li className="flex items-center">
-                  <span className="text-green-500 mr-3">✓</span>
+                  <span className="text-black mr-3">✓</span>
                   <span className="text-gray-700">Credits never expire</span>
                 </li>
                 <li className="flex items-center">
-                  <span className="text-green-500 mr-3">✓</span>
+                  <span className="text-black mr-3">✓</span>
                   <span className="text-gray-700">25% off replenished credits</span>
                 </li>
               </ul>
               <button 
                 onClick={() => handleSelectPlan('enterprise')} 
-                className="w-full inline-flex items-center justify-center px-6 py-3 bg-blue-600 text-white font-semibold rounded-lg hover:bg-blue-700 transition-colors"
+                className="w-full inline-flex items-center justify-center px-6 py-3 bg-black text-white font-semibold rounded-lg transition-colors"
               >
                 Get Started
               </button>

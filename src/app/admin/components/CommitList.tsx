@@ -29,23 +29,6 @@ export default function CommitList({ commits, hasCredits }: CommitListProps) {
       {commits.map(commit => (
         <CommitCard key={commit.id} commit={commit} hasCredits={hasCredits} />
       ))}
-      {/* Sample card to showcase not-enough-credits experience */}
-      <CommitCard
-        commit={{
-          id: 'sample-commit',
-          project_id: 'sample-project',
-          sha: 'abcdef1',
-          author: 'Sample User',
-          timestamp: new Date().toISOString(),
-          summary: undefined,
-          type: 'feature',
-          is_published: false,
-          email_sent: false,
-          created_at: new Date().toISOString(),
-          updated_at: new Date().toISOString(),
-        }}
-        hasCredits={hasCredits}
-      />
     </div>
   );
 } 

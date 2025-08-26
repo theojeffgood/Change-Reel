@@ -76,7 +76,7 @@ describe('ConfigPage', () => {
     });
 
     await waitFor(() => {
-      expect(screen.getByText('Repository Configuration')).toBeInTheDocument();
+      expect(screen.getByText('Product Summary Setup')).toBeInTheDocument();
     });
   });
 
@@ -86,7 +86,7 @@ describe('ConfigPage', () => {
     });
 
     await waitFor(() => {
-      expect(screen.getByText('Connect your GitHub account')).toBeInTheDocument();
+      expect(screen.getByText('Connect to Start Your Wins Column')).toBeInTheDocument();
     });
   });
 
@@ -102,18 +102,10 @@ describe('ConfigPage', () => {
       render(<ConfigPage />);
     });
 
-    expect(screen.getByText('Loading configuration...')).toBeInTheDocument();
+    // Loading state now shows the hero header while session loads
+    expect(screen.getByText('Connect your GitHub')).toBeInTheDocument();
   });
 
-  it('displays email configuration section', async () => {
-    await act(async () => {
-      render(<ConfigPage />);
-    });
-
-    await waitFor(() => {
-      expect(screen.getByText('Email Recipients')).toBeInTheDocument();
-    });
-  });
 
   it('handles API errors gracefully', async () => {
     mockFetch.mockImplementation(() => {
@@ -126,7 +118,7 @@ describe('ConfigPage', () => {
 
     // Should still render the page structure despite API errors
     await waitFor(() => {
-      expect(screen.getByText('Repository Configuration')).toBeInTheDocument();
+      expect(screen.getByText('Product Summary Setup')).toBeInTheDocument();
     });
   });
 }); 

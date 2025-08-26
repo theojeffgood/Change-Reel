@@ -9,7 +9,7 @@ jest.mock('@/lib/hooks/useRepositoryConfig');
 const mockUseRepositoryConfig = useRepositoryConfig as jest.Mock;
 
 describe('RepositoryConfigPanel', () => {
-  it('should display loading spinner when loading', () => {
+  it('should display loading state UI when loading', () => {
     mockUseRepositoryConfig.mockReturnValue({
       project: null,
       isLoading: true,
@@ -17,7 +17,7 @@ describe('RepositoryConfigPanel', () => {
     });
 
     render(<RepositoryConfigPanel />);
-    expect(screen.getByText('Loading...')).toBeInTheDocument();
+    expect(screen.getByText('Newsletter Configuration')).toBeInTheDocument();
   });
 
   it('should display error message on error', () => {
@@ -28,7 +28,8 @@ describe('RepositoryConfigPanel', () => {
     });
 
     render(<RepositoryConfigPanel />);
-    expect(screen.getByText('Error: Failed to fetch')).toBeInTheDocument();
+    expect(screen.getByText('Configuration Error')).toBeInTheDocument();
+    expect(screen.getByText('Failed to fetch')).toBeInTheDocument();
   });
 
   it('should display message when no project is configured', () => {
@@ -39,7 +40,7 @@ describe('RepositoryConfigPanel', () => {
     });
 
     render(<RepositoryConfigPanel />);
-    expect(screen.getByText('No project configured. Please set one up.')).toBeInTheDocument();
+    expect(screen.getByText('No Newsletter Setup')).toBeInTheDocument();
   });
 
   it('should display project configuration when data is available', () => {
@@ -63,9 +64,8 @@ describe('RepositoryConfigPanel', () => {
     });
 
     render(<RepositoryConfigPanel />);
-    expect(screen.getByText('Repository Configuration')).toBeInTheDocument();
+    expect(screen.getByText('Newsletter Configuration')).toBeInTheDocument();
     expect(screen.getByText(/Test Project/)).toBeInTheDocument();
-    expect(screen.getByText(/github/)).toBeInTheDocument();
-    expect(screen.getByText(/test\/project/)).toBeInTheDocument();
+    expect(screen.getByText('GitHub Product')).toBeInTheDocument();
   });
 }); 

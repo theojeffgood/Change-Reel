@@ -21,6 +21,7 @@ const createMockGitHubClient = (): jest.Mocked<IGitHubApiClient> => ({
   getCommitDiff: jest.fn(),
   getRepository: jest.fn(),
   getRateLimit: jest.fn(),
+  getCommitDiffRaw: jest.fn(),
 });
 
 // Mock fetch for raw diff testing
@@ -191,40 +192,24 @@ describe('GitHubDiffService', () => {
 
     it('should fetch raw diff successfully', async () => {
       const mockRawDiff = 'diff --git a/test.txt b/test.txt\n+new content';
-      
-      (global.fetch as jest.Mock).mockResolvedValue({
-        ok: true,
-        text: () => Promise.resolve(mockRawDiff),
-      });
+      mockApiClient.getCommitDiffRaw.mockResolvedValue(mockRawDiff);
 
       const result = await diffService.getDiffRaw(mockDiffReference);
 
-      expect(global.fetch).toHaveBeenCalledWith(
-        'https://api.github.com/repos/testowner/testrepo/compare/main...feature-branch',
-        {
-          headers: {
-            'Accept': 'application/vnd.github.v3.diff',
-            'Authorization': 'token test-token',
-            'User-Agent': 'change-reel/1.0.0',
-          },
-        }
-      );
+      expect(mockApiClient.getCommitDiffRaw).toHaveBeenCalledWith('testowner', 'testrepo', 'main', 'feature-branch');
       expect(result).toBe(mockRawDiff);
     });
 
-    it('should handle HTTP errors', async () => {
-      (global.fetch as jest.Mock).mockResolvedValue({
-        ok: false,
-        status: 404,
-        statusText: 'Not Found',
-      });
+    it('should propagate API errors', async () => {
+      const apiError = new Error('HTTP 404: Not Found');
+      mockApiClient.getCommitDiffRaw.mockRejectedValue(apiError);
 
       await expect(diffService.getDiffRaw(mockDiffReference))
         .rejects.toThrow('Failed to fetch raw diff for main..feature-branch: HTTP 404: Not Found');
     });
 
     it('should handle network errors', async () => {
-      (global.fetch as jest.Mock).mockRejectedValue(new Error('Network error'));
+      mockApiClient.getCommitDiffRaw.mockRejectedValue(new Error('Network error'));
 
       await expect(diffService.getDiffRaw(mockDiffReference))
         .rejects.toThrow('Failed to fetch raw diff for main..feature-branch: Network error');

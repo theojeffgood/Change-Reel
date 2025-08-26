@@ -39,6 +39,9 @@ jest.mock('next-auth', () => ({
   default: jest.fn(),
 }));
 
+// Mock server-only for tests (Next.js server-only import)
+jest.mock('server-only', () => ({}), { virtual: true });
+
 // Mock Supabase
 jest.mock('@supabase/supabase-js', () => ({
   createClient: jest.fn(() => ({

@@ -40,7 +40,7 @@ describe('CommitList', () => {
   ];
 
   it('should render a list of commits', () => {
-    render(<CommitList commits={mockCommits} />);
+    render(<CommitList commits={mockCommits} hasCredits={true} />);
     const commitCards = screen.getAllByTestId('commit-card');
     expect(commitCards).toHaveLength(2);
     expect(screen.getByText('Summary 1')).toBeInTheDocument();
@@ -48,7 +48,7 @@ describe('CommitList', () => {
   });
 
   it('should display a message when no commits are provided', () => {
-    render(<CommitList commits={[]} />);
-    expect(screen.getByText('No commits found.')).toBeInTheDocument();
+    render(<CommitList commits={[]} hasCredits={false} />);
+    expect(screen.getByText('No commits found')).toBeInTheDocument();
   });
 }); 

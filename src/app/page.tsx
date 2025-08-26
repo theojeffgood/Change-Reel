@@ -15,12 +15,12 @@ export default function Home() {
               <span className="mr-2 animate-pulse">✨</span>
               AI-Powered Product Updates
             </div>
-          <h1 className="text-5xl md:text-7xl font-bold text-gray-900 mb-6">
-            Know what your dev ships.
-            <span className="bg-clip-text text-transparent bg-gradient-to-r from-black to-gray-700"> Without asking.</span>
+          <h1 className="text-5xl md:text-6xl font-bold text-gray-900 mb-6">
+            {/* Code Updates in Plain-English */}
+            Notifications <br/> from your codebase. <br/> In plain English
           </h1>
           <p className="text-xl md:text-2xl text-gray-600 mb-8 max-w-3xl mx-auto leading-relaxed">
-          Plain-English updates from your codebase, straight to your inbox. Clarity for stakeholders, zero overhead for your engineers. Powered by AI. 
+            Know what your engineers build. Without asking.
           </p>
           <div className="flex flex-col sm:flex-row gap-4 justify-center">
             <Link 
@@ -59,23 +59,20 @@ export default function Home() {
       </div>
 
       {/* Live Example */}
-      <div id="live-example" className="px-4 sm:px-6 lg:px-8 py-16">
+      <div id="live-example" className="px-4 sm:px-6 lg:px-8 py-6">
         <div className="max-w-7xl mx-auto">
-          <div className="text-center mb-16">
-            <h2 className="text-3xl md:text-4xl font-bold text-gray-900 mb-4">
-              See Our AI In Action
-            </h2>
-            <p className="text-xl text-gray-600 max-w-3xl mx-auto">
-              Turn technical changes into clear business updates in seconds
-            </p>
-          </div>
+          {/* <div className="text-center mb-8">
+            <h3 className="text-3xl md:text-4xl font-medium text-gray-900 mb-2">
+            Turn technical changes into clear updates in seconds
+            </h3>
+          </div> */}
 
-          <div className="bg-white rounded-3xl p-8 shadow-xl border border-gray-200">
+          <div className="bg-gray-50 rounded-3xl p-8 shadow-lg border border-gray-200">
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-12 items-center">
               {/* Left Side - Code Example */}
               <div className="relative">
-                <div className="mb-3 text-sm font-semibold text-gray-500 uppercase tracking-wide">Turn this</div>
-                <div className="bg-white rounded-xl py-6 font-mono text-md border border-gray-200">
+                <div className="mb-3 text-xl font-semibold uppercase tracking-wide">Turn this</div>
+                <div className="bg-white rounded-xl py-6 font-mono text-lg border border-gray-200">
 
                   <div className="space-y-0.5">
                     <div className="px-6 text-gray-700 py-0.5">
@@ -113,20 +110,11 @@ export default function Home() {
                     <div className="flex items-center bg-green-50">
                       <span className="px-3 text-green-600 mr-3 font-mono text-sm w-4 text-center">+</span>
                       <div className="py-0.5 flex-1">
-                        <div className="ml-1.5 text-gray-700 ml-4">{'}'}</div>
-                      </div>
-                    </div>
-                    <div className="flex items-center bg-green-50">
-                      <span className="px-3 text-green-600 mr-3 font-mono text-sm w-4 text-center">+</span>
-                      <div className="py-0.5 flex-1">
                         <div className="ml-1.5 text-gray-700">{'}'}</div>
                       </div>
                     </div>
                     
                     {/* Empty line below hunk */}
-                    <div className="py-1.5"></div>
-                    
-                    <div className="px-3 text-gray-700 py-0.5">{'}'}</div>
                   </div>
                 </div>
                 <div className="absolute -right-16 top-1/2 transform -translate-y-1/2 hidden lg:block">
@@ -138,41 +126,31 @@ export default function Home() {
                 </div>
               </div>
 
-              {/* Right Side - Plain English Description */}
+              {/* Right Side - Summary Card (Admin-style) */}
               <div className="lg:pl-8">
-                <div className="mb-3 text-sm font-semibold text-gray-500 uppercase tracking-wide">Into this</div>
-                <div className="bg-white rounded-2xl shadow-lg border border-gray-200 overflow-hidden">
-                  {/* Email Header */}
-                  <div className="bg-gray-50 px-6 py-4 border-b border-gray-200">
-                    <div className="flex items-center justify-between">
-                      <div className="flex items-center space-x-3">
-                        <div className="w-8 h-8 bg-black rounded-full flex items-center justify-center">
-                          <span className="text-white text-sm font-bold">WC</span>
+                <div className="mb-3 text-xl font-semibold uppercase tracking-wide">Into this</div>
+                <div className="bg-white border border-gray-200 rounded-xl p-6 shadow-md">
+                  <div className="flex items-start justify-between mb-4">
+                    <div>
+                      {/* <div className="mb-2 flex items-start gap-3">
+                        <span className="inline-flex px-2 py-2 text-xs font-medium rounded border bg-green-100 text-gray-800 border-gray-200">
+                          New <br/> Feature
+                        </span>
+                        <div className="flex flex-col text-sm text-gray-600 leading-tight">
+                          <span >By: John Codeo</span>
+                          <span>At: 8-23-25</span>
                         </div>
-                        <div>
-                          <h3 className="text-sm font-semibold text-gray-900">Wins Column</h3>
-                        </div>
-                      </div>
+                      </div> */}
                     </div>
                   </div>
-                  
-                  {/* Email Body */}
-                  <div className="px-6 py-4">
-                    <div className="space-y-3">
-                      <p className="text-md mb-4 text-gray-600">
-                        Hi John, <br/><br/>
-                      </p>
-                      <p className="text-md text-gray-800 leading-relaxed">
-                        Video playback was updated. 
-                        Unpaid users are now shown the paywall when video playback ends.
-                        <br/><br/>
-                      </p>
-                      
-                      <p className="text-md mt-4 text-gray-600">
-                        - Wins Column
-                      </p>
-                    </div>
-                  </div>
+
+                  <h3 className="text-xl font-semibold text-gray-900 mb-6">New Feature!</h3>
+                  <p className="text-gray-800 text-lg leading-relaxed mb-8">
+                    Users in the free-trial now see a paywall when their video ends.
+                  </p>
+                  <p className="text-gray-800 text-xs leading-relaxed mb-8">
+                    Shipped on: 8-23-25
+                  </p>
                 </div>
               </div>
             </div>

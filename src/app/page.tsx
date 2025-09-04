@@ -71,7 +71,7 @@ export default function Home() {
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-12 items-center">
               {/* Left Side - Code Example */}
               <div className="relative">
-                <div className="mb-3 text-xl font-semibold uppercase tracking-wide">Turn this</div>
+                <div className="mb-3 text-xl text-black font-semibold uppercase tracking-wide">Turn this</div>
                 <div className="bg-white rounded-xl py-6 font-mono text-lg border border-gray-200">
 
                   <div className="space-y-0.5">
@@ -128,21 +128,8 @@ export default function Home() {
 
               {/* Right Side - Summary Card (Admin-style) */}
               <div className="lg:pl-8">
-                <div className="mb-3 text-xl font-semibold uppercase tracking-wide">Into this</div>
+                <div className="mb-3 text-xl text-black font-semibold uppercase tracking-wide">Into this</div>
                 <div className="bg-white border border-gray-200 rounded-xl p-6 shadow-md">
-                  <div className="flex items-start justify-between mb-4">
-                    <div>
-                      {/* <div className="mb-2 flex items-start gap-3">
-                        <span className="inline-flex px-2 py-2 text-xs font-medium rounded border bg-green-100 text-gray-800 border-gray-200">
-                          New <br/> Feature
-                        </span>
-                        <div className="flex flex-col text-sm text-gray-600 leading-tight">
-                          <span >By: John Codeo</span>
-                          <span>At: 8-23-25</span>
-                        </div>
-                      </div> */}
-                    </div>
-                  </div>
 
                   <h3 className="text-xl font-semibold text-gray-900 mb-6">New Feature!</h3>
                   <p className="text-gray-800 text-lg leading-relaxed mb-8">
@@ -196,7 +183,7 @@ export default function Home() {
               </div>
               <div>
                 <h3 className="text-lg font-semibold text-gray-900">No Integration Needed</h3>
-                <p className="text-gray-600">Plug & play. Zero dev</p>
+                <p className="text-gray-600">Zero.</p>
               </div>
             </div>
 
@@ -225,7 +212,7 @@ export default function Home() {
               </div>
               <div>
                 <h3 className="text-lg font-semibold text-gray-900">Development Network <span className="ml-2 text-xs font-medium text-blue-600 uppercase">Coming soon</span></h3>
-                <p className="text-gray-600">Compare your team against other teams of similar size</p>
+                <p className="text-gray-600">Compare your engineering team against its peers</p>
               </div>
             </div>
 
@@ -254,7 +241,7 @@ export default function Home() {
               </div>
               <div>
                 <h3 className="text-lg font-semibold text-gray-900">Secure</h3>
-                <p className="text-gray-600">GitHub auth + we store nothing on our servers</p>
+                <p className="text-gray-600">We don't store your data</p>
               </div>
             </div>
           </div>
@@ -266,11 +253,11 @@ export default function Home() {
         <div className="max-w-7xl mx-auto">
           <div className="text-center mb-16">
             <h2 className="text-3xl md:text-4xl font-bold text-gray-900 mb-4">
-              Simple, Transparent Pricing
+              Only pay for what you use
             </h2>
-            <p className="text-xl text-gray-600 max-w-3xl mx-auto">
-              Start for free, then pay only for what you use.
-            </p>
+            {/* <p className="text-xl text-gray-600 max-w-3xl mx-auto">
+              No subscription here
+            </p> */}
             <p className="text-gray-600 mt-4">(1 code change = 1 summary = 1 credit)</p>
           </div>
 
@@ -414,8 +401,8 @@ export default function Home() {
       </div>
 
       {/* CTA Section */}
-      <div className="px-4 sm:px-6 lg:px-8 py-20 bg-black">
-        <div className="max-w-4xl mx-auto text-center">
+      <div className="px-4 sm:px-6 lg:px-8 py-20 bg-gray-50">
+        <div className="max-w-6xl mx-auto text-center p-14 rounded-4xl bg-black">
           <h2 className="text-3xl md:text-4xl font-bold text-white mb-6">
             Built for busy teams who ship.
           </h2>

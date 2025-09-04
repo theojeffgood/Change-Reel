@@ -5,6 +5,7 @@ import { getServiceRoleSupabaseService } from '@/lib/supabase/client';
 
 interface ConfigRequest {
   repositoryFullName: string;
+  installationId?: number;
   emailRecipients?: string[]; // Made optional
 }
 
@@ -38,7 +39,7 @@ export async function POST(request: NextRequest): Promise<NextResponse<ConfigRes
 
     // Parse request body
     const body: ConfigRequest = await request.json();
-    const { repositoryFullName, emailRecipients = [] } = body; // Default to empty array
+    const { repositoryFullName, installationId, emailRecipients = [] } = body; // Default to empty array
 
     if (!repositoryFullName) {
       return NextResponse.json(
@@ -113,6 +114,7 @@ export async function POST(request: NextRequest): Promise<NextResponse<ConfigRes
       name: `${owner}/${repoName}`,
       repo_name: repositoryFullName,
       provider: 'github' as const,
+      installation_id: installationId,
       webhook_secret: webhookSecret,
       email_distribution_list: emailRecipients,
     };
@@ -250,8 +252,11 @@ export async function GET(): Promise<NextResponse> {
       });
     }
 
-    // Get user's projects (now supports multiple repositories per user)
-    const projectsResult = await supabaseService.projects.getProjectsByUser(user.id);
+    // Get user's projects ordered by last update to reflect most recent selection
+    const projectsResult = await supabaseService.projects.listProjects(
+      { user_id: user.id },
+      { orderBy: 'updated_at', ascending: false, page: 1, limit: 50 }
+    );
     const projects = projectsResult.data;
     
     if (!projects || projects.length === 0) {

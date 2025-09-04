@@ -183,24 +183,12 @@ export class WebhookProcessingService {
         };
       }
 
-      // Find the project by repository name
-      const projectResult = await this.findProjectByRepository(parseResult.repository.full_name);
-      if (projectResult.error || !projectResult.data) {
+      // Verify webhook signature with app-level secret (GitHub App model)
+      const appSecret = process.env.GITHUB_APP_WEBHOOK_SECRET;
+      if (!appSecret) {
         return {
           success: false,
-          message: `No project found for repository: ${parseResult.repository.full_name}`,
-          error: `repository not configured: ${parseResult.repository.full_name}`,
-          statusCode: 404
-        };
-      }
-
-      const project = projectResult.data;
-
-      // Verify webhook signature with project secret
-      if (!project.webhook_secret) {
-        return {
-          success: false,
-          message: 'Project webhook secret not configured',
+          message: 'Server misconfiguration: missing GITHUB_APP_WEBHOOK_SECRET',
           statusCode: 500
         };
       }
@@ -208,7 +196,7 @@ export class WebhookProcessingService {
       const isValidSignature = this.verifySignature(
         request.rawBody,
         request.signature,
-        project.webhook_secret
+        appSecret
       );
 
       if (!isValidSignature) {
@@ -219,6 +207,18 @@ export class WebhookProcessingService {
           statusCode: 401
         };
       }
+
+      // Find the project by repository name (mapping only; no longer used for secrets)
+      const projectResult = await this.findProjectByRepository(parseResult.repository.full_name);
+      if (projectResult.error || !projectResult.data) {
+        return {
+          success: false,
+          message: `No project found for repository: ${parseResult.repository.full_name}`,
+          error: `repository not configured: ${parseResult.repository.full_name}`,
+          statusCode: 404
+        };
+      }
+      const project = projectResult.data;
 
       // Process commits if any were parsed
       let processedCount = 0;

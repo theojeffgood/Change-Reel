@@ -23,14 +23,16 @@ export async function GET(request: Request) {
       return NextResponse.json({ error: 'User not found' }, { status: 404 });
     }
 
-    // Get all projects for the user and use the first one for commits
-    // TODO: Add repository selection to choose which project's commits to view
-    const { data: projects, error: projectsError } = await supabaseService.projects.getProjectsByUser(user.id);
+    // Use most recently updated project to match latest selection in Config
+    const { data: projects, error: projectsError } = await supabaseService.projects.listProjects(
+      { user_id: user.id },
+      { orderBy: 'updated_at', ascending: false, page: 1, limit: 25 }
+    );
     if (projectsError || !projects || projects.length === 0) {
       return NextResponse.json({ error: 'Project not found' }, { status: 404 });
     }
 
-    const project = projects[0]; // Use first project for now
+    const project = projects[0];
 
     // Then, get the commits for that project
     const { data, error: commitsError } = await supabaseService.commits.getCommitsByProjectId(

@@ -252,7 +252,7 @@ Write integration tests using Stripe test mode. Document Stripe CLI setup for lo
 ### Details:
 
 
-## 14. Populate Credits Remaining metric with real data [pending]
+## 14. Populate Credits Remaining metric with real data [done]
 ### Dependencies: None
 ### Description: Fetch and display the authenticated user’s real credit balance in the Admin dashboard MetricsBar fourth card.
 ### Details:
@@ -263,19 +263,19 @@ Implement a client-safe fetch for the current user’s credit balance and show i
 - Add simple unit test(s) for the data formatting and error handling.
 - Avoid introducing new dependencies.
 
-## 15. Reconcile credits post-summary with actual token usage [pending]
+## 15. Reconcile credits post-summary with actual token usage [done]
 ### Dependencies: None
 ### Description: After OpenAI returns, compute actual USD from tokens used (input/output) using pricing_config, convert to credits with markup, and reconcile against the pre-deducted estimate (refund or additionally charge). Ensure atomic updates, idempotency (keyed by job/commit), and ledger entries for adjustments.
 ### Details:
 
 
-## 16. Use real diffs in queued summary jobs (remove placeholders) [pending]
+## 16. Use real diffs in queued summary jobs (remove placeholders) [done]
 ### Dependencies: None
 ### Description: Update /api/commits/[id]/queue-summary to enqueue a fetch_diff job (or fetch diffs directly) and make generate_summary depend on it. Ensure generate_summary reads real diff_content from dependency context, removing placeholder strings.
 ### Details:
 
 
-## 17. Replace BillingClient x-user-id header with authenticated user id [pending]
+## 17. Replace BillingClient x-user-id header with authenticated user id [done]
 ### Dependencies: None
 ### Description: In src/app/billing/ui/BillingClient.tsx, remove the hardcoded x-user-id. Use NextAuth session (or a small server endpoint) to resolve the authenticated user id, and send that with API calls. Remove the TODO.
 ### Details:

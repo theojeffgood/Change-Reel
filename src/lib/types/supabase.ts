@@ -17,6 +17,7 @@ export interface Project {
   name: string
   repo_name?: string // GitHub repository name
   provider: string // 'github', 'gitlab', 'bitbucket'
+  installation_id?: number // GitHub App installation context
   webhook_url?: string
   webhook_secret?: string // Secret for webhook signature verification
   email_distribution_list: string[] // Array of email addresses
@@ -91,6 +92,7 @@ export interface CreateProjectData {
   name: string
   repo_name?: string
   provider: string
+  installation_id?: number
   webhook_url?: string
   webhook_secret?: string
   email_distribution_list?: string[]
@@ -102,6 +104,7 @@ export interface UpdateProjectData {
   name?: string
   repo_name?: string
   provider?: string
+  installation_id?: number
   webhook_url?: string
   webhook_secret?: string
   email_distribution_list?: string[]

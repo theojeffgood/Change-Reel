@@ -3,10 +3,11 @@ export const runtime = 'nodejs'
 import { NextRequest, NextResponse } from 'next/server';
 import { getServerSession } from 'next-auth';
 import { authConfig } from '@/lib/auth/config';
-import { getOAuthToken } from '@/lib/auth/token-storage';
+import { createInstallationAccessToken } from '@/lib/github/app-auth';
 
 interface TestConnectionRequest {
   repositoryName: string;
+  installationId: number;
 }
 
 interface TestConnectionResponse {
@@ -45,28 +46,22 @@ export async function POST(request: NextRequest): Promise<NextResponse<TestConne
 
     // Parse request body
     const body: TestConnectionRequest = await request.json();
-    if (!body.repositoryName) {
+    if (!body.repositoryName || !body.installationId) {
       return NextResponse.json(
-        { success: false, message: 'Repository name is required', error: 'Missing repository name' },
+        { success: false, message: 'Repository name and installationId are required', error: 'Missing repository name or installationId' },
         { status: 400 }
       );
     }
 
-    // Get OAuth token for the user
-    const tokenResult = await getOAuthToken(session.user.id, 'github');
-    if (!tokenResult.token || tokenResult.error) {
-      return NextResponse.json(
-        { success: false, message: 'GitHub not connected', error: tokenResult.error || 'No OAuth token found' },
-        { status: 401 }
-      );
-    }
+    // Get installation access token for the GitHub App
+    const { token } = await createInstallationAccessToken(body.installationId);
 
     // Test repository access
     const repoResponse = await fetch(
       `https://api.github.com/repos/${body.repositoryName}`,
       {
         headers: {
-          'Authorization': `Bearer ${tokenResult.token}`,
+          'Authorization': `token ${token}`,
           'Accept': 'application/vnd.github.v3+json',
           'User-Agent': 'Change-Reel/1.0'
         }
@@ -101,30 +96,12 @@ export async function POST(request: NextRequest): Promise<NextResponse<TestConne
     const repoData = await repoResponse.json();
 
     // Test webhook creation permissions
-    const hooksResponse = await fetch(
-      `https://api.github.com/repos/${body.repositoryName}/hooks`,
-      {
-        headers: {
-          'Authorization': `Bearer ${tokenResult.token}`,
-          'Accept': 'application/vnd.github.v3+json',
-          'User-Agent': 'Change-Reel/1.0'
-        }
-      }
-    );
-
-    const canCreateWebhooks = hooksResponse.ok;
-    const hasWebhooks = canCreateWebhooks;
-    let webhookUrl: string | undefined;
-
-    if (hasWebhooks) {
-      const hooksData = await hooksResponse.json();
-      // Look for existing Change Reel webhook
-      const existingWebhook = hooksData.find((hook: any) => 
-        hook.config?.url?.includes('change-reel') || 
-        hook.config?.url?.includes('webhooks/github')
-      );
-      webhookUrl = existingWebhook?.config?.url;
-    }
+    // Under GitHub App model, webhooks are app-level; skip repo hook checks
+    const hasWebhooks = true;
+    const canCreateWebhooks = true;
+    let webhookUrl: string | undefined = process.env.NEXTAUTH_URL
+      ? `${process.env.NEXTAUTH_URL.replace(/\/$/, '')}/api/webhooks/github`
+      : undefined;
 
     // Build successful response
     const response: TestConnectionResponse = {
@@ -143,10 +120,7 @@ export async function POST(request: NextRequest): Promise<NextResponse<TestConne
         },
         hasWebhooks
       },
-      webhookPermissions: {
-        canCreateWebhooks,
-        webhookUrl
-      }
+      webhookPermissions: { canCreateWebhooks, webhookUrl }
     };
 
     return NextResponse.json(response);

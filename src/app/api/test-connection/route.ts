@@ -99,7 +99,7 @@ export async function POST(request: NextRequest): Promise<NextResponse<TestConne
     // Under GitHub App model, webhooks are app-level; skip repo hook checks
     const hasWebhooks = true;
     const canCreateWebhooks = true;
-    let webhookUrl: string | undefined = process.env.NEXTAUTH_URL
+    const webhookUrl: string | undefined = process.env.NEXTAUTH_URL
       ? `${process.env.NEXTAUTH_URL.replace(/\/$/, '')}/api/webhooks/github`
       : undefined;
 

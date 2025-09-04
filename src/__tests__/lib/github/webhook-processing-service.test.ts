@@ -5,6 +5,13 @@ import {
 } from '@/lib/github/webhook-processing-service';
 import { pushEventPayload } from '../../fixtures/webhookFixtures';
 
+// Mock the validateWebhookSignature function
+jest.mock('@/lib/github/webhook-signature', () => ({
+  validateWebhookSignature: jest.fn()
+}));
+
+import { validateWebhookSignature } from '@/lib/github/webhook-signature';
+
 // Mock dependencies
 const mockSupabaseServices = {
   projects: {
@@ -27,9 +34,8 @@ const mockWebhookParser = {
   parseWebhookPayload: jest.fn()
 };
 
-const mockWebhookService = {
-  validateWebhookSignature: jest.fn()
-};
+// Note: validateWebhookSignature is now imported directly from webhook-signature.ts
+// No need for a service mock
 
 describe('WebhookProcessingService', () => {
   let service: WebhookProcessingService;
@@ -39,13 +45,20 @@ describe('WebhookProcessingService', () => {
     // Reset all mocks
     jest.clearAllMocks();
     
+    // Mock environment variable for GitHub App webhook secret
+    process.env.GITHUB_APP_WEBHOOK_SECRET = 'test-webhook-secret';
+    
     dependencies = {
       supabaseServices: mockSupabaseServices as any,
-      webhookParser: mockWebhookParser as any,
-      webhookService: mockWebhookService as any
+      webhookParser: mockWebhookParser as any
     };
 
     service = new WebhookProcessingService(dependencies);
+  });
+
+  afterEach(() => {
+    // Clean up environment variable
+    delete process.env.GITHUB_APP_WEBHOOK_SECRET;
   });
 
   describe('validateWebhookRequest', () => {
@@ -135,10 +148,10 @@ describe('WebhookProcessingService', () => {
         ]
       });
       mockSupabaseServices.projects.getProjectByRepository.mockResolvedValue({
-        data: { id: 'project-1', repository_name: 'testuser/test-repo', webhook_secret: 'secret' },
+        data: { id: 'project-1', repository_name: 'testuser/test-repo' },
         error: null
       });
-      mockWebhookService.validateWebhookSignature.mockReturnValue(true);
+      (validateWebhookSignature as jest.Mock).mockReturnValue(true);
       mockSupabaseServices.commits.createCommit.mockResolvedValue({ data: { id: 'commit-1' }, error: null });
     });
 
@@ -177,7 +190,7 @@ describe('WebhookProcessingService', () => {
     });
 
     it('should return error for invalid signature', async () => {
-      mockWebhookService.validateWebhookSignature.mockReturnValue(false);
+      (validateWebhookSignature as jest.Mock).mockReturnValue(false);
 
       const result = await service.processWebhook(validRequest);
 

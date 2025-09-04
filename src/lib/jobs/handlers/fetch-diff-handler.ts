@@ -9,13 +9,13 @@ import { IDiffService, DiffReference, createDiffService } from '../../github/dif
 import { ICommitService } from '../../supabase/services/commits'
 import { IProjectService } from '../../supabase/services/projects'
 import { createGitHubClient } from '@/lib/github/api-client'
-import { getOAuthToken } from '@/lib/auth/token-storage'
+import { createInstallationAccessToken } from '@/lib/github/app-auth'
 
 /**
  * Handler for fetching commit diffs from GitHub API
  * 
  * This handler:
- * 1. Retrieves the OAuth token for GitHub API access
+ * 1. Creates an installation access token for GitHub API access
  * 2. Fetches the commit diff using the GitHub API
  * 3. Stores the diff content in the commit record
  * 4. Updates commit metadata if available
@@ -40,11 +40,11 @@ export class FetchDiffHandler implements JobHandler<FetchDiffJobData> {
         }
       }
 
-      // Get project to retrieve user information
+      // Get project to retrieve installation information
       if (!job.project_id) {
         return {
           success: false,
-          error: 'Project ID is required for OAuth token retrieval',
+          error: 'Project ID is required for GitHub API access',
           metadata: { reason: 'missing_project_id' },
         }
       }
@@ -60,32 +60,27 @@ export class FetchDiffHandler implements JobHandler<FetchDiffJobData> {
 
       const project = projectResult.data
 
-             // Check if project has user_id
-       if (!project.user_id) {
-         return {
-           success: false,
-           error: 'Project does not have an associated user',
-           metadata: { reason: 'missing_user_id', projectId: job.project_id },
-         }
-       }
+      // Check if project has installation_id for GitHub App access
+      if (!project.installation_id) {
+        return {
+          success: false,
+          error: 'Project does not have a GitHub App installation configured',
+          metadata: { reason: 'missing_installation_id', projectId: job.project_id },
+        }
+      }
 
-       // Retrieve user-scoped GitHub OAuth token (bridge internal UUID -> GitHub ID)
-       let tokenLookup = await getOAuthToken(project.user_id, 'github')
-       if (!tokenLookup.token) {
-         // Try mapping internal user UUID to github_id
-         const userResult = await this.userService.getUser(project.user_id)
-         const githubId = userResult?.data?.github_id ? String(userResult.data.github_id) : undefined
-         if (githubId) {
-           tokenLookup = await getOAuthToken(githubId, 'github')
-         }
-       }
-       if (!tokenLookup.token) {
-         return {
-           success: false,
-           error: 'Failed to retrieve GitHub OAuth token',
-           metadata: { reason: 'oauth_token_missing', userId: project.user_id },
-         }
-       }
+      // Create installation access token for GitHub API access
+      let installationToken: string
+      try {
+        const tokenResult = await createInstallationAccessToken(project.installation_id)
+        installationToken = tokenResult.token
+      } catch (error) {
+        return {
+          success: false,
+          error: 'Failed to create GitHub installation access token',
+          metadata: { reason: 'installation_token_failed', installationId: project.installation_id, error: error instanceof Error ? error.message : 'Unknown error' },
+        }
+      }
 
       // Validate repo/ref inputs and prepare diff reference
       const diffReference: DiffReference = {
@@ -110,10 +105,10 @@ export class FetchDiffHandler implements JobHandler<FetchDiffJobData> {
         }
       }
 
-      // Use injected diff service if present; otherwise create per-user service
+      // Use injected diff service if present; otherwise create per-installation service
       let diffService = this.diffService
       if (!diffService) {
-        const apiClient = createGitHubClient({ auth: tokenLookup.token })
+        const apiClient = createGitHubClient({ auth: installationToken })
         diffService = createDiffService(apiClient)
       }
 

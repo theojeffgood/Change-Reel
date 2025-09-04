@@ -1,5 +1,5 @@
 import { GitHubWebhookParser } from './webhook-parser';
-import { GitHubWebhookService } from './webhook-service';
+import { validateWebhookSignature } from './webhook-signature';
 import { createSupabaseServices, ISupabaseServices } from '../supabase/services';
 import { SupabaseClient } from '@supabase/supabase-js';
 
@@ -29,7 +29,6 @@ export interface WebhookProcessingRequest {
 export interface WebhookProcessingDependencies {
   supabaseServices: ISupabaseServices;
   webhookParser: typeof GitHubWebhookParser;
-  webhookService: typeof GitHubWebhookService;
 }
 
 /**
@@ -48,8 +47,7 @@ export class WebhookProcessingService {
   static createWithDefaults(supabaseClient: SupabaseClient): WebhookProcessingService {
     return new WebhookProcessingService({
       supabaseServices: createSupabaseServices(supabaseClient),
-      webhookParser: GitHubWebhookParser,
-      webhookService: GitHubWebhookService
+      webhookParser: GitHubWebhookParser
     });
   }
 
@@ -104,7 +102,7 @@ export class WebhookProcessingService {
    * Verify webhook signature
    */
   verifySignature(rawBody: string, signature: string, secret: string): boolean {
-    return this.dependencies.webhookService.validateWebhookSignature(rawBody, signature, secret);
+    return validateWebhookSignature(rawBody, signature, secret);
   }
 
   /**

@@ -175,7 +175,6 @@ export default function ConfigurationPage() {
       if (response.ok && result.configuration) {
         // Set the selected repository without triggering auto-save
         setSelectedRepository(result.configuration.repositoryFullName || '');
-        setSaveMessage(`✅ Loaded existing configuration for repository "${result.configuration.repositoryFullName}"`);
       }
     } catch (error) {
       console.error('Error loading existing configuration:', error);
@@ -183,8 +182,6 @@ export default function ConfigurationPage() {
       setIsLoadingConfiguration(false);
     }
   };
-
-  
 
   const handleGitHubDisconnect = async () => {
     if (!showDisconnectConfirm) {
@@ -445,31 +442,32 @@ export default function ConfigurationPage() {
                     )}
 
                     {/* Change repository */}
-                    <div className="flex items-center justify-between">
-                      <div className="text-sm text-gray-700">
-                        Current repository: <span className="font-medium">{selectedRepository || 'None selected'}</span>
-                      </div>
-                      <button
-                        onClick={async () => {
-                          if (!selectedInstallationId) {
-                            if (installations.length > 1) {
-                              setShowInstallPicker(true);
+                    <div className="bg-white border border-gray-200 rounded-xl overflow-hidden">
+                      <div className="flex items-center justify-between p-6">
+                        <div className="text-md text-gray-700">
+                          Repository: <span className="font-medium">{selectedRepository || 'None selected'}</span>
+                        </div>
+                        <button
+                          onClick={async () => {
+                            if (!selectedInstallationId) {
+                              if (installations.length > 1) {
+                                setShowInstallPicker(true);
                               return;
+                              }
                             }
-                          }
-                          if (!repositories.length && selectedInstallationId) {
-                            await fetchRepositories(selectedInstallationId);
-                          }
-                          setShowRepoPicker(!showRepoPicker);
-                        }}
-                        className="ml-4 inline-flex items-center px-4 py-2 text-sm font-medium text-gray-700 border border-gray-300 rounded-lg hover:bg-gray-50"
-                      >
-                        {showRepoPicker ? 'Hide repositories' : 'Change my repository'}
-                      </button>
-                    </div>
+                            if (!repositories.length && selectedInstallationId) {
+                              await fetchRepositories(selectedInstallationId);
+                            }
+                            setShowRepoPicker(!showRepoPicker);
+                          }}
+                          className="ml-4 inline-flex items-center px-4 py-2 text-sm font-medium text-gray-700 border border-gray-300 rounded-lg hover:bg-gray-50"
+                        >
+                          {showRepoPicker ? 'Hide repositories' : 'Change my repository'}
+                        </button>
+                      </div>
 
-                    {showRepoPicker && (
-                      <div className="mt-4">
+                      {showRepoPicker && (
+                      <div className="p-4">
                         {loadingRepos ? (
                           <div className="flex items-center space-x-3 p-4 border border-gray-200 rounded-xl">
                             <div className="w-5 h-5 border-2 border-black border-t-transparent rounded-full animate-spin"></div>
@@ -492,6 +490,7 @@ export default function ConfigurationPage() {
                         )}
                       </div>
                     )}
+                    </div>
 
                     {selectedRepository && (
                       <div className="mt-4">

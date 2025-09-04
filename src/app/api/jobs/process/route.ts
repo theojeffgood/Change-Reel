@@ -124,7 +124,8 @@ export async function POST() {
                 status: 'pending', // Reset to pending for retry
                 attempts: currentAttempts,
                 error_message: `Attempt ${currentAttempts}/${maxRetries}: ${result.error}`,
-                retry_after: retryAt.toISOString()
+                retry_after: retryAt.toISOString(),
+                started_at: null // Clear started_at when resetting to pending
               });
               
               console.log(`🔄 Job ${job.id} scheduled for retry ${currentAttempts}/${maxRetries} in ${retryDelay}ms: ${result.error}`);

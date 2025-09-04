@@ -134,8 +134,8 @@ export class JobQueueService implements IJobService {
         return { data: null, error: new Error('Priority must be between 0 and 100') }
       }
 
-      // Validate date formats
-      if (updates.started_at) {
+      // Validate date formats (skip validation for null values)
+      if (updates.started_at && updates.started_at !== null) {
         try {
           new Date(updates.started_at)
         } catch {
@@ -143,7 +143,7 @@ export class JobQueueService implements IJobService {
         }
       }
 
-      if (updates.completed_at) {
+      if (updates.completed_at && updates.completed_at !== null) {
         try {
           new Date(updates.completed_at)
         } catch {
@@ -151,13 +151,16 @@ export class JobQueueService implements IJobService {
         }
       }
 
-      if (updates.retry_after) {
+      if (updates.retry_after && updates.retry_after !== null) {
         try {
           new Date(updates.retry_after)
         } catch {
           return { data: null, error: new Error('Invalid retry_after date format') }
         }
       }
+
+      // Log the update payload for debugging
+      console.log('[JobService] Updating job:', { jobId, updates });
 
       const { data, error } = await this.supabaseClient
         .from('jobs')
@@ -167,6 +170,7 @@ export class JobQueueService implements IJobService {
         .single()
 
       if (error) {
+        console.error('[JobService] Update job error:', { jobId, error, updates });
         if (error.code === 'PGRST116') {
           return { data: null, error: new Error('Job not found') }
         }
@@ -525,6 +529,8 @@ export class JobQueueService implements IJobService {
         attempts: newAttempts,
         error_message: error,
         error_details: details || null,
+        // Clear started_at if resetting to pending, keep it for failed jobs
+        started_at: newAttempts >= job.max_attempts ? undefined : null,
       }
 
       // Set retry delay if not max attempts reached
@@ -552,6 +558,7 @@ export class JobQueueService implements IJobService {
     const updates: UpdateJobData = {
       status: 'pending',
       retry_after: retryAfter.toISOString(),
+      started_at: null, // Clear started_at when resetting to pending
     }
     for (let attempt = 0; attempt < 3; attempt++) {
       const res = await this.updateJob(jobId, updates)

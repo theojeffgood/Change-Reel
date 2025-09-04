@@ -9,7 +9,6 @@ import {
 import { IJobService } from '../../supabase/services/jobs'
 import { ICommitService } from '../../supabase/services/commits'
 import { IProjectService } from '../../supabase/services/projects'
-import { GitHubWebhookService } from '../../github/webhook-service'
 
 /**
  * Handler for processing GitHub webhook events
@@ -25,7 +24,6 @@ export class WebhookProcessingHandler implements JobHandler<WebhookProcessingJob
   type = 'webhook_processing' as const
 
   constructor(
-    private webhookService: GitHubWebhookService,
     private jobQueueService: IJobService,
     private commitService: ICommitService,
     private projectService: IProjectService
@@ -270,13 +268,11 @@ export class WebhookProcessingHandler implements JobHandler<WebhookProcessingJob
 
 // Factory function for dependency injection
 export function createWebhookProcessingHandler(
-  webhookService: GitHubWebhookService,
   jobQueueService: IJobService,
   commitService: ICommitService,
   projectService: IProjectService
 ): WebhookProcessingHandler {
   return new WebhookProcessingHandler(
-    webhookService,
     jobQueueService,
     commitService,
     projectService

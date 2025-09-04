@@ -188,7 +188,7 @@ class JobSystemStartup {
     dependencies.githubApiClient = null
     startupLogger.debug('✅ GitHub services set to null (handlers will create per-user using OAuth)')
 
-    // Token storage unified via lib/auth/token-storage.ts; no separate DI needed
+    // GitHub App installation tokens used directly; no token storage needed
 
     try {
       // Create webhook service with Supabase client

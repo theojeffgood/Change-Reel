@@ -73,12 +73,12 @@ export const authConfig: NextAuthOptions = {
   },
   events: {
     async signIn({ user, account, profile, isNewUser }) {
-      // Create user record on first sign-in; do not store repository OAuth tokens
+      // Create user record on first sign-in (OAuth used for identity only)
       if (account?.provider === 'github' && profile?.id) {
         try {
-          // Import Supabase service
-          const { getSupabaseService, getServiceRoleSupabaseService } = await import('@/lib/supabase/client');
-          const supabaseService = getSupabaseService();
+          // Import Supabase service (use service role for server-side operations)
+          const { getServiceRoleSupabaseService } = await import('@/lib/supabase/client');
+          const supabaseService = getServiceRoleSupabaseService();
 
           // Create or update user record in database
           const { data: existingUser } = await supabaseService.users.getUserByGithubId(String(profile.id));

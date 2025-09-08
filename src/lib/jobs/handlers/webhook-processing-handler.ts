@@ -125,7 +125,9 @@ export class WebhookProcessingHandler implements JobHandler<WebhookProcessingJob
              repository_owner: data.payload.repository?.owner?.login || 'unknown',
              repository_name: data.payload.repository?.name || 'unknown',
              branch: data.payload.ref?.replace('refs/heads/', '') || 'main',
-            base_sha: data.payload.before || undefined,
+            base_sha: (data.payload.before && data.payload.before !== '0000000000000000000000000000000000000000') 
+              ? data.payload.before 
+              : undefined,
            },
            commit_id: commit.id,
            project_id: project.id,

@@ -61,7 +61,6 @@ describe('OpenAIClient', () => {
       apiKey: 'test-api-key',
       model: 'gpt-4-turbo-preview',
       maxTokens: 150,
-      temperature: 0.1,
       rateLimiter: mockRateLimiter,
       errorHandler: mockErrorHandler,
     };
@@ -134,8 +133,7 @@ describe('OpenAIClient', () => {
             content: expect.stringContaining('You are a changelog assistant'),
           },
         ],
-        max_tokens: 150,
-        temperature: 0.1,
+        max_completion_tokens: 150,
       });
     });
 
@@ -307,8 +305,7 @@ describe('OpenAIClient', () => {
             content: expect.stringContaining('Analyze the following code diff and summary to determine the type of change'),
           },
         ],
-        max_tokens: 10,
-        temperature: 0,
+        max_completion_tokens: 10,
       });
     });
 

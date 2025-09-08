@@ -112,9 +112,77 @@ export class FetchDiffHandler implements JobHandler<FetchDiffJobData> {
         diffService = createDiffService(apiClient)
       }
 
-      // Fetch the commit diff from GitHub
-      const diffData = await diffService.getDiff(diffReference)
-      const diffRaw = await diffService.getDiffRaw(diffReference)
+      // Fetch the commit diff from GitHub with intelligent fallback
+      let diffData: any = null;
+      let diffRaw: string = '';
+      
+      const fetchDiffWithReference = async (ref: any) => {
+        const data = await diffService.getDiff(ref);
+        const raw = await diffService.getDiffRaw(ref);
+        return { data, raw };
+      };
+
+      try {
+        const result = await fetchDiffWithReference(diffReference);
+        diffData = result.data;
+        diffRaw = result.raw;
+      } catch (error) {
+        // If the base reference doesn't exist, try progressive fallbacks
+        if (error instanceof Error && error.message.includes('Not Found')) {
+          console.log(`[FetchDiffHandler] Base reference "${diffReference.base}" not found, trying fallbacks for ${diffReference.head}`);
+          
+          let fallbackWorked = false;
+          
+          // Try fallbacks in order of preference
+          const fallbacks = [
+            'HEAD~1',           // Previous commit (different from default if base_sha was provided)
+            'HEAD~2',           // Two commits back
+            'main',             // Compare against main branch
+            'master',           // Compare against master branch
+          ];
+          
+          for (const fallbackBase of fallbacks) {
+            // Skip if this is already what we tried
+            if (fallbackBase === diffReference.base) continue;
+            
+            try {
+              const fallbackReference = { ...diffReference, base: fallbackBase };
+              const result = await fetchDiffWithReference(fallbackReference);
+              diffData = result.data;
+              diffRaw = result.raw;
+              console.log(`[FetchDiffHandler] Successfully used fallback "${fallbackBase}" for ${diffReference.head}`);
+              fallbackWorked = true;
+              break;
+            } catch (fallbackError) {
+              console.log(`[FetchDiffHandler] Fallback "${fallbackBase}" also failed, trying next...`);
+              continue;
+            }
+          }
+          
+          // If all reasonable fallbacks failed, try empty tree as last resort
+          if (!fallbackWorked) {
+            try {
+              const emptyTreeReference = {
+                ...diffReference,
+                base: '4b825dc642cb6eb9a060e54bf8d69288fbee4904' // Git empty tree
+              };
+              const result = await fetchDiffWithReference(emptyTreeReference);
+              diffData = result.data;
+              diffRaw = result.raw;
+              console.log(`[FetchDiffHandler] Used empty tree as last resort for ${diffReference.head}`);
+            } catch (lastResortError) {
+              throw new Error(`Failed to fetch diff for ${diffReference.base}..${diffReference.head}: All fallbacks failed`);
+            }
+          }
+        } else {
+          throw new Error(`Failed to fetch diff for ${diffReference.base}..${diffReference.head}: ${error instanceof Error ? error.message : 'Unknown error'}`);
+        }
+      }
+
+      // Ensure we have valid diff data before proceeding
+      if (!diffData || !diffRaw) {
+        throw new Error(`Failed to fetch diff data for ${diffReference.base}..${diffReference.head} - no data received`);
+      }
 
       // Do not update commit with an empty payload; return diff in result instead
 

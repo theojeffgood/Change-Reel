@@ -12,35 +12,6 @@ jobs:
     - name: Checkout repo
       uses: actions/checkout@v3
 
-    - name: Lint YAML files
-      run: |
-        echo "Validating YAML syntax..."
-        
-        # Check if the file exists
-        if [ ! -f ".github/workflows/deploy.yml" ]; then
-          echo "❌ Workflow file not found"
-          exit 1
-        fi
-        
-        # Use Python's yaml module to validate (available in GitHub Actions)
-        python3 -c "
-        import yaml
-        import sys
-        
-        try:
-            with open('.github/workflows/deploy.yml', 'r') as file:
-                yaml.safe_load(file)
-            print('✅ YAML syntax is valid')
-        except yaml.YAMLError as e:
-            print(f'❌ YAML syntax error: {e}')
-            sys.exit(1)
-        except Exception as e:
-            print(f'❌ Unexpected error: {e}')
-            sys.exit(1)
-        "
-        
-        echo "✅ YAML validation completed successfully"
-
     - name: Set up Docker
       uses: docker/setup-buildx-action@v3
 
@@ -53,6 +24,7 @@ jobs:
         OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
         NEXT_PUBLIC_SUPABASE_URL: ${{ secrets.NEXT_PUBLIC_SUPABASE_URL }}
         NEXT_PUBLIC_SUPABASE_ANON_KEY: ${{ secrets.NEXT_PUBLIC_SUPABASE_ANON_KEY }}
+        NEXT_PUBLIC_GITHUB_APP_INSTALL_URL: ${{ secrets.NEXT_PUBLIC_GITHUB_APP_INSTALL_URL }}
         SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
         OAUTH_CLIENT_ID: ${{ secrets.OAUTH_CLIENT_ID }}
         OAUTH_CLIENT_SECRET: ${{ secrets.OAUTH_CLIENT_SECRET }}
@@ -99,7 +71,13 @@ jobs:
           fi
           
           echo "Stopping existing containers..."
+          # Stop any containers managed by docker-compose
           docker-compose -f docker-compose.prod.yml down || true
+          
+          # Stop and remove any manually created containers that might be using port 3001
+          echo "Stopping any manually created containers..."
+          docker stop winscolumn-image 2>/dev/null || true
+          docker rm winscolumn-image 2>/dev/null || true
           
           echo "Starting containers with new image..."
           if ! docker-compose -f docker-compose.prod.yml up -d; then

@@ -9,13 +9,13 @@ import { IDiffService, DiffReference, createDiffService } from '../../github/dif
 import { ICommitService } from '../../supabase/services/commits'
 import { IProjectService } from '../../supabase/services/projects'
 import { createGitHubClient } from '@/lib/github/api-client'
-import { getOAuthToken } from '@/lib/auth/token-storage'
+import { createInstallationAccessToken } from '@/lib/github/app-auth'
 
 /**
  * Handler for fetching commit diffs from GitHub API
  * 
  * This handler:
- * 1. Retrieves the OAuth token for GitHub API access
+ * 1. Creates an installation access token for GitHub API access
  * 2. Fetches the commit diff using the GitHub API
  * 3. Stores the diff content in the commit record
  * 4. Updates commit metadata if available
@@ -40,11 +40,11 @@ export class FetchDiffHandler implements JobHandler<FetchDiffJobData> {
         }
       }
 
-      // Get project to retrieve user information
+      // Get project to retrieve installation information
       if (!job.project_id) {
         return {
           success: false,
-          error: 'Project ID is required for OAuth token retrieval',
+          error: 'Project ID is required for GitHub API access',
           metadata: { reason: 'missing_project_id' },
         }
       }
@@ -60,32 +60,27 @@ export class FetchDiffHandler implements JobHandler<FetchDiffJobData> {
 
       const project = projectResult.data
 
-             // Check if project has user_id
-       if (!project.user_id) {
-         return {
-           success: false,
-           error: 'Project does not have an associated user',
-           metadata: { reason: 'missing_user_id', projectId: job.project_id },
-         }
-       }
+      // Check if project has installation_id for GitHub App access
+      if (!project.installation_id) {
+        return {
+          success: false,
+          error: 'Project does not have a GitHub App installation configured',
+          metadata: { reason: 'missing_installation_id', projectId: job.project_id },
+        }
+      }
 
-       // Retrieve user-scoped GitHub OAuth token (bridge internal UUID -> GitHub ID)
-       let tokenLookup = await getOAuthToken(project.user_id, 'github')
-       if (!tokenLookup.token) {
-         // Try mapping internal user UUID to github_id
-         const userResult = await this.userService.getUser(project.user_id)
-         const githubId = userResult?.data?.github_id ? String(userResult.data.github_id) : undefined
-         if (githubId) {
-           tokenLookup = await getOAuthToken(githubId, 'github')
-         }
-       }
-       if (!tokenLookup.token) {
-         return {
-           success: false,
-           error: 'Failed to retrieve GitHub OAuth token',
-           metadata: { reason: 'oauth_token_missing', userId: project.user_id },
-         }
-       }
+      // Create installation access token for GitHub API access
+      let installationToken: string
+      try {
+        const tokenResult = await createInstallationAccessToken(project.installation_id)
+        installationToken = tokenResult.token
+      } catch (error) {
+        return {
+          success: false,
+          error: 'Failed to create GitHub installation access token',
+          metadata: { reason: 'installation_token_failed', installationId: project.installation_id, error: error instanceof Error ? error.message : 'Unknown error' },
+        }
+      }
 
       // Validate repo/ref inputs and prepare diff reference
       const diffReference: DiffReference = {
@@ -110,16 +105,84 @@ export class FetchDiffHandler implements JobHandler<FetchDiffJobData> {
         }
       }
 
-      // Use injected diff service if present; otherwise create per-user service
+      // Use injected diff service if present; otherwise create per-installation service
       let diffService = this.diffService
       if (!diffService) {
-        const apiClient = createGitHubClient({ auth: tokenLookup.token })
+        const apiClient = createGitHubClient({ auth: installationToken })
         diffService = createDiffService(apiClient)
       }
 
-      // Fetch the commit diff from GitHub
-      const diffData = await diffService.getDiff(diffReference)
-      const diffRaw = await diffService.getDiffRaw(diffReference)
+      // Fetch the commit diff from GitHub with intelligent fallback
+      let diffData: any = null;
+      let diffRaw: string = '';
+      
+      const fetchDiffWithReference = async (ref: any) => {
+        const data = await diffService.getDiff(ref);
+        const raw = await diffService.getDiffRaw(ref);
+        return { data, raw };
+      };
+
+      try {
+        const result = await fetchDiffWithReference(diffReference);
+        diffData = result.data;
+        diffRaw = result.raw;
+      } catch (error) {
+        // If the base reference doesn't exist, try progressive fallbacks
+        if (error instanceof Error && error.message.includes('Not Found')) {
+          console.log(`[FetchDiffHandler] Base reference "${diffReference.base}" not found, trying fallbacks for ${diffReference.head}`);
+          
+          let fallbackWorked = false;
+          
+          // Try fallbacks in order of preference
+          const fallbacks = [
+            'HEAD~1',           // Previous commit (different from default if base_sha was provided)
+            'HEAD~2',           // Two commits back
+            'main',             // Compare against main branch
+            'master',           // Compare against master branch
+          ];
+          
+          for (const fallbackBase of fallbacks) {
+            // Skip if this is already what we tried
+            if (fallbackBase === diffReference.base) continue;
+            
+            try {
+              const fallbackReference = { ...diffReference, base: fallbackBase };
+              const result = await fetchDiffWithReference(fallbackReference);
+              diffData = result.data;
+              diffRaw = result.raw;
+              console.log(`[FetchDiffHandler] Successfully used fallback "${fallbackBase}" for ${diffReference.head}`);
+              fallbackWorked = true;
+              break;
+            } catch (fallbackError) {
+              console.log(`[FetchDiffHandler] Fallback "${fallbackBase}" also failed, trying next...`);
+              continue;
+            }
+          }
+          
+          // If all reasonable fallbacks failed, try empty tree as last resort
+          if (!fallbackWorked) {
+            try {
+              const emptyTreeReference = {
+                ...diffReference,
+                base: '4b825dc642cb6eb9a060e54bf8d69288fbee4904' // Git empty tree
+              };
+              const result = await fetchDiffWithReference(emptyTreeReference);
+              diffData = result.data;
+              diffRaw = result.raw;
+              console.log(`[FetchDiffHandler] Used empty tree as last resort for ${diffReference.head}`);
+            } catch (lastResortError) {
+              throw new Error(`Failed to fetch diff for ${diffReference.base}..${diffReference.head}: All fallbacks failed`);
+            }
+          }
+        } else {
+          throw new Error(`Failed to fetch diff for ${diffReference.base}..${diffReference.head}: ${error instanceof Error ? error.message : 'Unknown error'}`);
+        }
+      }
+
+      // Ensure we have valid diff data before proceeding
+      if (!diffData || !diffRaw) {
+        throw new Error(`Failed to fetch diff data for ${diffReference.base}..${diffReference.head} - no data received`);
+      }
 
       // Do not update commit with an empty payload; return diff in result instead
 

@@ -1,5 +1,5 @@
 import { GitHubWebhookParser } from './webhook-parser';
-import { GitHubWebhookService } from './webhook-service';
+import { validateWebhookSignature } from './webhook-signature';
 import { createSupabaseServices, ISupabaseServices } from '../supabase/services';
 import { SupabaseClient } from '@supabase/supabase-js';
 
@@ -29,7 +29,6 @@ export interface WebhookProcessingRequest {
 export interface WebhookProcessingDependencies {
   supabaseServices: ISupabaseServices;
   webhookParser: typeof GitHubWebhookParser;
-  webhookService: typeof GitHubWebhookService;
 }
 
 /**
@@ -48,8 +47,7 @@ export class WebhookProcessingService {
   static createWithDefaults(supabaseClient: SupabaseClient): WebhookProcessingService {
     return new WebhookProcessingService({
       supabaseServices: createSupabaseServices(supabaseClient),
-      webhookParser: GitHubWebhookParser,
-      webhookService: GitHubWebhookService
+      webhookParser: GitHubWebhookParser
     });
   }
 
@@ -104,7 +102,7 @@ export class WebhookProcessingService {
    * Verify webhook signature
    */
   verifySignature(rawBody: string, signature: string, secret: string): boolean {
-    return this.dependencies.webhookService.validateWebhookSignature(rawBody, signature, secret);
+    return validateWebhookSignature(rawBody, signature, secret);
   }
 
   /**
@@ -183,24 +181,12 @@ export class WebhookProcessingService {
         };
       }
 
-      // Find the project by repository name
-      const projectResult = await this.findProjectByRepository(parseResult.repository.full_name);
-      if (projectResult.error || !projectResult.data) {
+      // Verify webhook signature with app-level secret (GitHub App model)
+      const appSecret = process.env.GITHUB_APP_WEBHOOK_SECRET;
+      if (!appSecret) {
         return {
           success: false,
-          message: `No project found for repository: ${parseResult.repository.full_name}`,
-          error: `repository not configured: ${parseResult.repository.full_name}`,
-          statusCode: 404
-        };
-      }
-
-      const project = projectResult.data;
-
-      // Verify webhook signature with project secret
-      if (!project.webhook_secret) {
-        return {
-          success: false,
-          message: 'Project webhook secret not configured',
+          message: 'Server misconfiguration: missing GITHUB_APP_WEBHOOK_SECRET',
           statusCode: 500
         };
       }
@@ -208,7 +194,7 @@ export class WebhookProcessingService {
       const isValidSignature = this.verifySignature(
         request.rawBody,
         request.signature,
-        project.webhook_secret
+        appSecret
       );
 
       if (!isValidSignature) {
@@ -219,6 +205,18 @@ export class WebhookProcessingService {
           statusCode: 401
         };
       }
+
+      // Find the project by repository name (mapping only; no longer used for secrets)
+      const projectResult = await this.findProjectByRepository(parseResult.repository.full_name);
+      if (projectResult.error || !projectResult.data) {
+        return {
+          success: false,
+          message: `No project found for repository: ${parseResult.repository.full_name}`,
+          error: `repository not configured: ${parseResult.repository.full_name}`,
+          statusCode: 404
+        };
+      }
+      const project = projectResult.data;
 
       // Process commits if any were parsed
       let processedCount = 0;

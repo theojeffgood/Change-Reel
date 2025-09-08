@@ -1,0 +1,239 @@
+# Task ID: 22
+# Title: Migrate from OAuth to GitHub App Authentication
+# Status: done
+# Dependencies: 5, 6, 17
+# Priority: high
+# Description: Replace the existing GitHub OAuth implementation with a GitHub App using read-only, least-privilege permissions, converting all backend APIs, frontend flows, data models, and documentation while preserving NextAuth for user identity only.
+# Details:
+1. **GitHub App Setup & Configuration**
+   - Create a new GitHub App with minimal read-only permissions:
+     - Repository contents: Read
+     - Repository metadata: Read
+     - Commit statuses: Read (if needed)
+     - Pull requests: Read (if needed)
+   - Generate and securely store App private key
+   - Configure environment variables:
+     ```
+     GITHUB_APP_ID=123456
+     GITHUB_APP_PRIVATE_KEY="-----BEGIN RSA PRIVATE KEY-----..."
+     GITHUB_APP_WEBHOOK_SECRET=whsec_...
+     GITHUB_APP_CLIENT_ID=Iv1...
+     GITHUB_APP_CLIENT_SECRET=...
+     ```
+   - Remove all OAuth token storage and legacy environment variables
+
+2. **Backend Migration**
+   - Replace Octokit OAuth authentication with App authentication:
+     ```typescript
+     import { App, Octokit } from '@octokit/app';
+     
+     const app = new App({
+       appId: process.env.GITHUB_APP_ID,
+       privateKey: process.env.GITHUB_APP_PRIVATE_KEY,
+       webhooks: { secret: process.env.GITHUB_APP_WEBHOOK_SECRET }
+     });
+     ```
+   - Update GitHub API client to use installation access tokens
+   - Implement installation token caching with TTL (1 hour)
+   - Convert all repository access to use App installation tokens
+   - Remove all code that uses user OAuth tokens for repo access
+   - Update webhook registration to use App webhooks instead of programmatic creation
+
+3. **Data Model Updates**
+   - Add new Supabase tables/columns:
+     ```sql
+     -- Store GitHub App installations
+     CREATE TABLE github_app_installations (
+       id SERIAL PRIMARY KEY,
+       installation_id BIGINT UNIQUE NOT NULL,
+       account_type VARCHAR(50),
+       account_name VARCHAR(255),
+       account_id BIGINT,
+       user_id UUID REFERENCES auth.users(id),
+       created_at TIMESTAMPTZ DEFAULT NOW(),
+       updated_at TIMESTAMPTZ DEFAULT NOW()
+     );
+     
+     -- Update repositories table
+     ALTER TABLE repositories 
+     ADD COLUMN installation_id BIGINT REFERENCES github_app_installations(installation_id),
+     ADD COLUMN app_webhook_id BIGINT;
+     
+     -- Migration to populate installation_id from existing repos
+     ```
+   - Create migration scripts to transition existing data
+   - Remove OAuth token columns after migration
+
+4. **Frontend Flow Implementation**
+   - Create new installation selection UI:
+     ```typescript
+     // components/GitHubAppInstallation.tsx
+     interface Installation {
+       id: number;
+       account: { login: string; type: string };
+       repository_selection: 'all' | 'selected';
+       repositories?: Repository[];
+     }
+     ```
+   - Build repository picker component for selected installations
+   - Update onboarding flow:
+     1. User signs in with NextAuth (GitHub OAuth for identity only)
+     2. Check for existing installations
+     3. If none, redirect to GitHub App installation flow
+     4. After installation, show installation & repository selector
+     5. Save selected repository with installation context
+   - Remove all UI elements related to OAuth token management
+
+5. **NextAuth Configuration**
+   - Preserve existing NextAuth setup for user authentication
+   - Remove any repo/write scope requests:
+     ```typescript
+     // [...nextauth].ts
+     providers: [
+       GitHubProvider({
+         clientId: process.env.GITHUB_ID,
+         clientSecret: process.env.GITHUB_SECRET,
+         authorization: {
+           params: {
+             scope: 'read:user user:email' // Identity only, no repo access
+           }
+         }
+       })
+     ]
+     ```
+   - Ensure session only contains user identity, no access tokens
+
+6. **API Endpoint Updates**
+   - Update `/api/github/repositories` to list repos from installations
+   - Modify `/api/github/commits` to use App installation tokens
+   - Update webhook endpoints to handle App webhook format
+   - Create `/api/github/installations` endpoint for listing user's installations
+   - Add `/api/github/installations/[id]/repositories` for repo listing
+   - Remove all endpoints that use OAuth tokens for repo access
+
+7. **Error Handling & Edge Cases**
+   - Handle installation suspension/removal gracefully
+   - Implement fallback for expired installation tokens
+   - Add user-friendly errors for permission issues
+   - Create installation health check endpoint
+   - Handle App rate limits (5000 requests/hour per installation)
+
+8. **Documentation Updates**
+   - Update README with GitHub App setup instructions
+   - Create installation guide for users
+   - Document permission model and security benefits
+   - Update API documentation to reflect new auth model
+   - Create troubleshooting guide for common issues
+
+9. **Cleanup & Verification**
+   - Remove all OAuth token-related code
+   - Delete unused OAuth scope configurations
+   - Verify no programmatic webhook creation remains
+   - Audit codebase for any remaining OAuth token usage
+   - Update all error messages to reflect new auth model
+
+# Test Strategy:
+1. **Unit Tests**
+   - Test GitHub App authentication with mocked private key
+   - Verify installation token generation and caching
+   - Test token refresh on expiration
+   - Mock App API responses for various scenarios
+   - Test error handling for suspended/removed installations
+   - Verify NextAuth preserves identity-only functionality
+
+2. **Integration Tests**
+   - Test full installation flow from UI to database
+   - Verify repository selection and persistence
+   - Test webhook delivery with App webhook format
+   - Validate API endpoints work with installation tokens
+   - Test migration scripts on sample data
+   - Verify no OAuth tokens are stored or used
+
+3. **E2E Tests**
+   - Complete user journey from sign-in to repository selection
+   - Test installation management UI flows
+   - Verify webhook processing with real App webhooks
+   - Test permission errors are handled gracefully
+   - Validate clean uninstall/reinstall flow
+
+4. **Security Audit**
+   - Verify all OAuth tokens are removed from codebase
+   - Confirm App private key is securely stored
+   - Test that users can only access their installations
+   - Verify webhook signatures with App secret
+   - Ensure no privilege escalation paths exist
+
+5. **Performance Tests**
+   - Measure installation token caching effectiveness
+   - Test concurrent requests with shared installations
+   - Verify webhook processing maintains <10s latency
+   - Load test installation/repository listing endpoints
+
+6. **Manual Testing**
+   - Install App on test organization and personal account
+   - Test with various repository configurations
+   - Verify permissions are read-only in GitHub UI
+   - Test App suspension and reactivation flow
+   - Validate webhook delivery for all event types
+
+# Subtasks:
+## 1. Create GitHub App and configure minimal read-only permissions [done]
+### Dependencies: None
+### Description: Create a GitHub App with webhook URL set to existing API endpoint, select read-only repo permissions (Metadata, Contents, Pull requests if needed), set events (push, pull_request, release, create, delete). Capture App ID, Private Key, and Webhook Secret.
+### Details:
+
+
+## 2. Add environment variables and secrets [done]
+### Dependencies: None
+### Description: Add `GITHUB_APP_ID`, `GITHUB_APP_PRIVATE_KEY`, `GITHUB_APP_WEBHOOK_SECRET`, optional `GITHUB_APP_CLIENT_ID/SECRET`, and `NEXTAUTH_URL`. Document where to place them locally (.env) and in deployment. Rotate/remove legacy OAuth client secrets.
+### Details:
+
+
+## 3. Implement server auth for GitHub App (JWT + installation tokens) [done]
+### Dependencies: None
+### Description: Add utility to sign app JWT and exchange for installation access tokens; implement backend client/auth layer for GitHub REST calls using installation tokens; no new deps unless approved.
+### Details:
+
+
+## 4. Replace repo listing with installation-based flow [done]
+### Dependencies: None
+### Description: On backend, add endpoints to list user installations and repositories within an installation via installation token. On frontend `src/app/config/page.tsx`, change to select an installation (if multiple) and then a repository. Remove usage of `session.accessToken`.
+### Details:
+
+
+## 5. Switch NextAuth GitHub provider to identity-only scopes [done]
+### Dependencies: None
+### Description: Reduce scopes to `read:user user:email` and stop persisting OAuth repo tokens. Ensure session carries only identity metadata (login, id). Update tests and docs.
+### Details:
+
+
+## 6. Migrate webhook handling to GitHub App model [done]
+### Dependencies: None
+### Description: Remove programmatic repo-hook creation and the `/api/webhooks/setup` path. Ensure webhook endpoint validates App signature, handles installation context, and processes events selected in App settings.
+### Details:
+
+
+## 7. Total cleanup of legacy OAuth repo access [done]
+### Dependencies: None
+### Description: Search and remove all references to `session.accessToken`, `repo`/`write:repo_hook` scopes, direct calls to `/user/repos`, and code that creates/updates repo hooks via REST. Update docs, fixtures, and tests accordingly.
+### Details:
+
+
+## 8. Persist installation context in data model and APIs [done]
+### Dependencies: None
+### Description: Add `installation_id` (and account type/login) to project records; update Supabase schema/services and API routes to store and use installation context for all GitHub operations.
+### Details:
+
+
+## 9. GitHub UI walkthrough for setup [done]
+### Dependencies: None
+### Description: Write a concise step-by-step guide: create GitHub App, set permissions/events, set webhook URL, generate private key, install on user/org with selected repos, locate `App ID`, `Client ID`, `Client Secret` (if enabled), and add webhook secret. Include screenshots/placeholders and common pitfalls.
+### Details:
+
+
+## 10. Replace tests for OAuth/webhook-setup with GitHub App tests [pending]
+### Dependencies: None
+### Description: Remove or rewrite tests tied to old OAuth repo-token and repo webhook setup. Add tests for app-auth (JWT, installation tokens), new API routes, and webhook signature verification using GITHUB_APP_WEBHOOK_SECRET. Update fixtures and docs.
+### Details:
+
+

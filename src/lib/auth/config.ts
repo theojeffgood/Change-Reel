@@ -1,6 +1,5 @@
 import { NextAuthOptions } from 'next-auth';
 import GitHubProvider from 'next-auth/providers/github';
-import { storeOAuthToken } from '@/lib/auth/token-storage';
 
 if (!process.env.OAUTH_CLIENT_ID) {
   throw new Error('Missing OAUTH_CLIENT_ID environment variable');
@@ -20,20 +19,36 @@ export const authConfig: NextAuthOptions = {
       clientId: process.env.OAUTH_CLIENT_ID,
       clientSecret: process.env.OAUTH_CLIENT_SECRET,
       authorization: {
+        url: 'https://github.com/login/oauth/authorize',
         params: {
-          scope: 'repo write:repo_hook user:email',
+          scope: 'read:user user:email',
         },
       },
+      token: 'https://github.com/login/oauth/access_token',
+      userinfo: 'https://api.github.com/user',
+      checks: [],
     }),
   ],
   session: {
     strategy: 'jwt',
   },
+  cookies: {
+    state: {
+      name: `next-auth.state-token`,
+      options: {
+        httpOnly: true,
+        sameSite: 'lax',
+        path: '/',
+        secure: process.env.NODE_ENV === 'production',
+        maxAge: 900,
+      },
+    },
+  },
+  debug: process.env.NODE_ENV === 'development',
   callbacks: {
     async jwt({ token, account, profile }) {
       // Persist the OAuth access_token to the token right after signin
       if (account) {
-        token.accessToken = account.access_token;
         token.githubId = profile?.id;
         token.login = profile?.login;
       }
@@ -42,7 +57,6 @@ export const authConfig: NextAuthOptions = {
     async session({ session, token }) {
       // Send properties to the client
       if (session.user) {
-        session.accessToken = token.accessToken;
         session.user.githubId = token.githubId;
         session.user.login = token.login;
         // Ensure we have a proper user ID for token storage
@@ -59,12 +73,12 @@ export const authConfig: NextAuthOptions = {
   },
   events: {
     async signIn({ user, account, profile, isNewUser }) {
-      // Store GitHub access token securely after successful sign-in
-      if (account?.provider === 'github' && account.access_token && profile?.id) {
+      // Create user record on first sign-in (OAuth used for identity only)
+      if (account?.provider === 'github' && profile?.id) {
         try {
-          // Import Supabase service
-          const { getSupabaseService, getServiceRoleSupabaseService } = await import('@/lib/supabase/client');
-          const supabaseService = getSupabaseService();
+          // Import Supabase service (use service role for server-side operations)
+          const { getServiceRoleSupabaseService } = await import('@/lib/supabase/client');
+          const supabaseService = getServiceRoleSupabaseService();
 
           // Create or update user record in database
           const { data: existingUser } = await supabaseService.users.getUserByGithubId(String(profile.id));
@@ -95,21 +109,8 @@ export const authConfig: NextAuthOptions = {
               }
             }
           }
-
-          // Store OAuth token
-          const scopes = account.scope ? account.scope.split(' ') : [];
-          await storeOAuthToken(
-            String(profile.id), // Use GitHub ID as user identifier
-            'github',
-            {
-              accessToken: account.access_token,
-              scopes,
-              expiresAt: account.expires_at ? new Date(account.expires_at * 1000) : undefined
-            }
-          );
-          console.log('GitHub OAuth token stored successfully for user:', user.email);
         } catch (error) {
-          console.error('Failed to store GitHub OAuth token or create user:', error);
+          console.error('Failed to create user on sign-in:', error);
         }
       }
     },

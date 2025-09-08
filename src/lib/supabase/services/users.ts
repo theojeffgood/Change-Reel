@@ -89,15 +89,12 @@ export class UserService implements IUserService {
 
   async createUser(userData: CreateUserData): Promise<DatabaseResult<User>> {
     try {
-      // Validate required fields
-      if (!userData.email) {
-        return { data: null, error: new Error('Email is required') }
-      }
-
-      // Basic email validation
-      const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
-      if (!emailRegex.test(userData.email)) {
-        return { data: null, error: new Error('Invalid email format') }
+      // Validate email format if provided
+      if (userData.email) {
+        const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
+        if (!emailRegex.test(userData.email)) {
+          return { data: null, error: new Error('Invalid email format') }
+        }
       }
 
       const { data, error } = await this.supabaseClient

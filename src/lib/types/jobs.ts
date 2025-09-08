@@ -74,11 +74,11 @@ export interface UpdateJobData {
   data?: Record<string, any>;
   context?: Record<string, any>;
   attempts?: number;
-  started_at?: string;
-  completed_at?: string;
+  started_at?: string | null;
+  completed_at?: string | null;
   error_message?: string;
   error_details?: Record<string, any>;
-  retry_after?: string;
+  retry_after?: string | null;
 }
 
 // Job processing result

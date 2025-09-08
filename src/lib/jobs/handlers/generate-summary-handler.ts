@@ -57,16 +57,16 @@ export class GenerateSummaryHandler implements JobHandler<GenerateSummaryJobData
 
       // Use diff content from job data if provided; otherwise from previous job result
       let diffContent = data.diff_content
-      if (!diffContent && job.context?.result?.diff_content) {
-        diffContent = job.context.result.diff_content
+      if (!diffContent && job.context?.result?.data?.diff_content) {
+        diffContent = job.context.result.data.diff_content
       }
-      // If still missing, load dependency job and read its context.result.diff_content
+      // If still missing, load dependency job and read its context.result.data.diff_content
       if (!diffContent) {
         const deps = await this.jobQueueService.getJobDependencies(job.id)
         const depId = deps.data && deps.data[0]?.depends_on_job_id
         if (depId) {
           const dep = await this.jobQueueService.getJob(depId)
-          const fromDep = (dep.data as any)?.context?.result?.diff_content
+          const fromDep = (dep.data as any)?.context?.result?.data?.diff_content
           if (fromDep) diffContent = fromDep
         }
       }

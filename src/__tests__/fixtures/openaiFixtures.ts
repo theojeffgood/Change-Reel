@@ -1183,14 +1183,12 @@ export const CONFIGS = {
       apiKey: 'test-api-key',
       model: 'gpt-4-turbo-preview',
       maxTokens: 150,
-      temperature: 0.1,
     } as OpenAIClientConfig,
 
     CUSTOM: {
       apiKey: 'custom-test-key',
       model: 'gpt-3.5-turbo',
       maxTokens: 200,
-      temperature: 0.3,
     } as OpenAIClientConfig,
 
     MINIMAL: {

@@ -18,7 +18,6 @@ export interface OpenAIClientConfig {
   apiKey: string;
   model?: string;
   maxTokens?: number;
-  temperature?: number;
   templateEngine?: PromptTemplateEngine;
   rateLimiter?: OpenAIRateLimiter;
   errorHandler?: OpenAIErrorHandler;
@@ -31,7 +30,6 @@ export class OpenAIClient implements IOpenAIClient {
   private openai: OpenAI;
   private model: string;
   private maxTokens: number;
-  private temperature: number;
   private templateEngine: PromptTemplateEngine;
   private rateLimiter: OpenAIRateLimiter;
   private errorHandler: OpenAIErrorHandler;
@@ -47,7 +45,6 @@ export class OpenAIClient implements IOpenAIClient {
 
     this.model = config.model || process.env.OPENAI_MODEL || 'gpt-5';
     this.maxTokens = config.maxTokens || 150;
-    this.temperature = config.temperature || 0.1;
     this.templateEngine = config.templateEngine || new PromptTemplateEngine();
     this.rateLimiter = config.rateLimiter || defaultRateLimiter;
     this.errorHandler = config.errorHandler || defaultErrorHandler;
@@ -89,8 +86,7 @@ export class OpenAIClient implements IOpenAIClient {
             content: prompt
           }
         ],
-        max_tokens: this.maxTokens,
-        temperature: this.temperature,
+        max_completion_tokens: this.maxTokens,
       });
 
       const summary = response.choices[0]?.message?.content?.trim();
@@ -133,8 +129,7 @@ export class OpenAIClient implements IOpenAIClient {
             content: prompt
           }
         ],
-        max_tokens: 10,
-        temperature: 0,
+        max_completion_tokens: 10,
       });
 
       const category = response.choices[0]?.message?.content?.trim().toLowerCase();
@@ -171,7 +166,6 @@ export function createOpenAIClient(config?: Partial<OpenAIClientConfig>): OpenAI
     apiKey,
     model: config?.model,
     maxTokens: config?.maxTokens,
-    temperature: config?.temperature,
     templateEngine: config?.templateEngine,
     rateLimiter: config?.rateLimiter,
     errorHandler: config?.errorHandler,

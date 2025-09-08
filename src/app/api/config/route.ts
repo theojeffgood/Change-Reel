@@ -5,6 +5,7 @@ import { getServiceRoleSupabaseService } from '@/lib/supabase/client';
 
 interface ConfigRequest {
   repositoryFullName: string;
+  installationId?: number;
   emailRecipients?: string[]; // Made optional
 }
 
@@ -12,10 +13,6 @@ interface ConfigResponse {
   success: boolean;
   message: string;
   project?: any;
-  webhook?: {
-    id: number;
-    url: string;
-  };
   error?: string;
 }
 
@@ -38,7 +35,7 @@ export async function POST(request: NextRequest): Promise<NextResponse<ConfigRes
 
     // Parse request body
     const body: ConfigRequest = await request.json();
-    const { repositoryFullName, emailRecipients = [] } = body; // Default to empty array
+    const { repositoryFullName, installationId, emailRecipients = [] } = body; // Default to empty array
 
     if (!repositoryFullName) {
       return NextResponse.json(
@@ -102,21 +99,16 @@ export async function POST(request: NextRequest): Promise<NextResponse<ConfigRes
     }
     console.log('Repository parsed successfully:', { owner, repoName });
 
-    // Generate webhook secret
-    const crypto = await import('crypto');
-    const webhookSecret = crypto.randomBytes(32).toString('hex');
-    console.log('Generated webhook secret length:', webhookSecret.length);
-
-    // Create or update project
+    // Create or update project (webhook secrets handled at app level in GitHub App model)
     const projectData = {
       user_id: user.id,
       name: `${owner}/${repoName}`,
       repo_name: repositoryFullName,
       provider: 'github' as const,
-      webhook_secret: webhookSecret,
+      installation_id: installationId,
       email_distribution_list: emailRecipients,
     };
-    console.log('Project data prepared:', { ...projectData, webhook_secret: '[REDACTED]' });
+    console.log('Project data prepared:', projectData);
 
     // Check if project already exists for this user and repository
     console.log('Checking for existing project for user:', user.id, 'and repository:', repositoryFullName);
@@ -158,58 +150,15 @@ export async function POST(request: NextRequest): Promise<NextResponse<ConfigRes
       console.log('Project created successfully:', project?.id);
     }
 
-    // Now create the webhook automatically
-    console.log('Starting webhook creation...');
-    try {
-      const webhookUrl = `${process.env.NEXTAUTH_URL}/api/webhooks/setup`;
-      console.log('Webhook setup URL:', webhookUrl);
-      console.log('Sending webhook request with repository:', repositoryFullName);
-      
-      const webhookResponse = await fetch(webhookUrl, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Cookie': request.headers.get('Cookie') || '', // Forward session cookies
-        },
-        body: JSON.stringify({
-          repositoryFullName,
-        }),
-      });
-
-      console.log('Webhook response status:', webhookResponse.status);
-      const webhookResult = await webhookResponse.json();
-      console.log('Webhook result:', { success: webhookResult.success, error: webhookResult.error });
-
-      if (!webhookResponse.ok || !webhookResult.success) {
-        // Project was saved but webhook creation failed
-        return NextResponse.json({
-          success: true,
-          message: 'Configuration saved successfully, but webhook creation failed. You may need to create the webhook manually.',
-          project,
-          error: webhookResult.error || 'Webhook creation failed',
-        });
-      }
-
-      // Both project and webhook created successfully
-      return NextResponse.json({
-        success: true,
-        message: 'Configuration saved and webhook created successfully!',
-        project,
-        webhook: {
-          id: webhookResult.webhookId,
-          url: webhookResult.webhookUrl,
-        },
-      });
-
-    } catch (webhookError) {
-      // Project was saved but webhook creation failed
-      return NextResponse.json({
-        success: true,
-        message: 'Configuration saved successfully, but webhook creation failed. You may need to create the webhook manually.',
-        project,
-        error: webhookError instanceof Error ? webhookError.message : 'Webhook creation failed',
-      });
-    }
+    // In GitHub App model, webhooks are automatically delivered to the app-level webhook URL
+    // No need for repository-specific webhook creation
+    console.log('Configuration saved successfully. Webhooks handled at app level.');
+    
+    return NextResponse.json({
+      success: true,
+      message: 'Configuration saved successfully! Webhooks are automatically handled by the GitHub App.',
+      project,
+    });
 
   } catch (error) {
     console.error('Config save error:', error);
@@ -250,8 +199,11 @@ export async function GET(): Promise<NextResponse> {
       });
     }
 
-    // Get user's projects (now supports multiple repositories per user)
-    const projectsResult = await supabaseService.projects.getProjectsByUser(user.id);
+    // Get user's projects ordered by last update to reflect most recent selection
+    const projectsResult = await supabaseService.projects.listProjects(
+      { user_id: user.id },
+      { orderBy: 'updated_at', ascending: false, page: 1, limit: 50 }
+    );
     const projects = projectsResult.data;
     
     if (!projects || projects.length === 0) {

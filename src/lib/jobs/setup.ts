@@ -61,7 +61,6 @@ export function createJobProcessingSystem(dependencies: JobSystemDependencies) {
       dependencies.projectService
     ),
     webhookProcessing: new WebhookProcessingHandler(
-      dependencies.webhookService,
       jobQueueService,
       dependencies.commitService,
       dependencies.projectService

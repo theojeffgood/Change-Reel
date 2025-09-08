@@ -64,6 +64,9 @@ export class JobProcessor implements IJobProcessor {
     this.logger.info('Starting job processor')
     this.isActive = true
     
+    // Reconcile state on startup - reset orphaned running jobs
+    await this.reconcileJobState()
+    
     // Start the main processing loop
     this.processingInterval = setInterval(
       () => this.processAvailableJobs(),
@@ -218,8 +221,11 @@ export class JobProcessor implements IJobProcessor {
     try {
       this.logger.info(`Starting job ${job.id} (type: ${job.type})`)
 
-      // Mark job as running
-      await this.jobQueueService.markJobAsRunning(job.id)
+      // Mark job as running - critical step, must succeed
+      const markRunningResult = await this.jobQueueService.markJobAsRunning(job.id)
+      if (markRunningResult.error) {
+        throw new Error(`Failed to mark job as running: ${markRunningResult.error.message}`)
+      }
 
       // Get the appropriate handler
       const handler = this.handlers.get(job.type)
@@ -306,6 +312,65 @@ export class JobProcessor implements IJobProcessor {
     return Math.min(delay, this.config.max_retry_delay_ms!)
   }
 
+  /**
+   * Reconcile job state on startup - reset orphaned running jobs
+   * This fixes sync issues between database and in-memory tracking
+   */
+  private async reconcileJobState(): Promise<void> {
+    try {
+      this.logger.info('Reconciling job state on startup...')
+      
+      // Find all jobs marked as 'running' in database
+      const runningJobs = await this.jobQueueService.getStaleRunningJobs(0) // 0ms = get ALL running jobs
+      
+      if (runningJobs.data && runningJobs.data.length > 0) {
+        this.logger.warn(`Found ${runningJobs.data.length} orphaned running jobs from previous session`)
+        
+        for (const job of runningJobs.data) {
+          // Reset to pending with retry logic
+          await this.handleJobFailure(job as any, 'Job orphaned on processor restart')
+        }
+        
+        this.logger.info(`Reconciled ${runningJobs.data.length} orphaned jobs`)
+      } else {
+        this.logger.info('No orphaned jobs found - state is clean')
+      }
+      
+    } catch (error) {
+      this.logger.error('Error during job state reconciliation', error)
+      // Don't throw - processor should still start
+    }
+  }
+
+  /**
+   * Sync activeJobs set with database to catch any drift
+   */
+  private async syncActiveJobsWithDatabase(): Promise<void> {
+    try {
+      // Get all currently running jobs from database
+      const dbRunningJobs = await this.jobQueueService.getStaleRunningJobs(0)
+      const dbRunningIds = new Set(dbRunningJobs.data?.map(job => job.id) || [])
+      
+      // Check for jobs in activeJobs that aren't running in DB
+      for (const activeId of this.activeJobs) {
+        if (!dbRunningIds.has(activeId)) {
+          this.logger.warn(`Removing orphaned active job ${activeId} - not running in database`)
+          this.activeJobs.delete(activeId)
+        }
+      }
+      
+      // Check for jobs running in DB that aren't in activeJobs
+      // These should be handled by the main stale job logic, but log for visibility
+      const orphanedDbJobs = dbRunningJobs.data?.filter(job => !this.activeJobs.has(job.id)) || []
+      if (orphanedDbJobs.length > 0) {
+        this.logger.warn(`Found ${orphanedDbJobs.length} jobs running in DB but not tracked in memory`)
+      }
+      
+    } catch (error) {
+      this.logger.error('Error during activeJobs sync', error)
+    }
+  }
+
   private async performMaintenance(): Promise<void> {
     if (!this.isActive) return
 
@@ -336,6 +401,9 @@ export class JobProcessor implements IJobProcessor {
         }
         this.logger.warn(`Reconciled ${stale.data.length} stale running jobs`)
       }
+
+      // Sync activeJobs with database to catch any drift
+      await this.syncActiveJobsWithDatabase()
 
     } catch (error) {
       this.logger.error('Error during maintenance', error)

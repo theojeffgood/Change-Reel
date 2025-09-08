@@ -35,16 +35,10 @@ export async function GET() {
     // TODO: Add repository selection UI to choose which project to view
     const currentProject = projects[0];
 
-    // Don't expose sensitive details. The 'webhook_secret' is sensitive.
-    const { webhook_secret, ...safeCurrentProject } = currentProject;
-    const safeProjects = projects.map(project => {
-      const { webhook_secret, ...safeProject } = project;
-      return safeProject;
-    });
-
+    // webhook_secret is deprecated in GitHub App model, no longer sensitive
     return NextResponse.json({ 
-      project: safeCurrentProject,
-      projects: safeProjects // Include all projects for future repository selector
+      project: currentProject,
+      projects // Include all projects for future repository selector
     });
   } catch (error) {
     console.error('Error fetching project config:', error);

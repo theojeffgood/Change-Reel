@@ -300,7 +300,7 @@ export class JobProcessor implements IJobProcessor {
         : undefined
       logDetails.model = errorDetails.model
     }
-    this.logger.error(`[JobProcessor] Job ${job.id} failed`, logDetails)
+    this.logger.error(`Job ${job.id} failed`, logDetails)
 
     const msg = (errorMessage || '').toLowerCase()
     const nonRetryable =
@@ -310,7 +310,7 @@ export class JobProcessor implements IJobProcessor {
 
     if (nonRetryable) {
       await this.jobQueueService.markJobAsFailed(job.id, errorMessage, { attempts: job.attempts, nonRetryable: true, ...(errorDetails || {}) })
-      this.logger.error(`[JobProcessor] Job ${job.id} marked failed (non-retryable)`, logDetails)
+      this.logger.error(`Job ${job.id} marked failed (non-retryable)`, logDetails)
       return
     }
 
@@ -328,7 +328,7 @@ export class JobProcessor implements IJobProcessor {
     } else {
       // Mark as permanently failed
       await this.jobQueueService.markJobAsFailed(job.id, errorMessage, { attempts: job.attempts, ...(errorDetails || {}) })
-      this.logger.error(`[JobProcessor] Job ${job.id} permanently failed after ${job.attempts} attempts`, logDetails)
+      this.logger.error(`Job ${job.id} permanently failed after ${job.attempts} attempts`, logDetails)
     }
   }
 

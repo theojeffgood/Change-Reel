@@ -178,7 +178,7 @@ export class OpenAIClient implements IOpenAIClient {
   /**
    * Detect the type of change based on diff and summary
    */
-  async detectChangeType(diff: string, summary: string): Promise<'feature' | 'fix' | 'refactor' | 'chore'> {
+  async detectChangeType(diff: string, summary: string): Promise<'Feature' | 'Bug fix'> {
     return this.errorHandler.executeWithRetry(async () => {
       // Use template engine for change type detection prompt
       const prompt = this.templateEngine.createChangeTypePrompt(diff, summary);
@@ -204,14 +204,14 @@ export class OpenAIClient implements IOpenAIClient {
         messages: [
           {
             role: 'system',
-            content: 'You are a code change categorization assistant. Respond with only one word: feature, fix, refactor, or chore.'
+            content: 'You are a code change categorization assistant. Respond with exactly one of: Feature, Bug fix.'
           },
           {
             role: 'user',
             content: prompt
           }
         ],
-        max_completion_tokens: 10,
+        max_tokens: 10,
       });
       const choice = response.choices?.[0];
       console.debug('[OpenAIClient] detectChangeType response', {
@@ -221,13 +221,12 @@ export class OpenAIClient implements IOpenAIClient {
         usage: (response as any)?.usage || undefined,
       });
 
-      const category = choice?.message?.content?.trim().toLowerCase();
-      
-      if (!category || !['feature', 'fix', 'refactor', 'chore'].includes(category)) {
-        throw new Error(`Invalid change type returned by OpenAI: "${category}". Expected one of: feature, fix, refactor, chore`);
+      const raw = choice?.message?.content?.trim();
+      const category = raw === 'Feature' || raw === 'Bug fix' ? raw : undefined;
+      if (!category) {
+        throw new Error(`Invalid change type returned by OpenAI: "${raw ?? ''}". Expected one of: Feature, Bug fix`);
       }
-
-      return category as 'feature' | 'fix' | 'refactor' | 'chore';
+      return category as 'Feature' | 'Bug fix';
     }, 'change_detection');
   }
 

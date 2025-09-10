@@ -69,7 +69,7 @@ Input:
   change_type_detection: {
     id: 'change_type_detection',
     name: 'Change Type Detection',
-    description: 'Detects the type of change (feature, fix, refactor, chore)',
+    description: 'Detects the type of change (Feature or Bug fix)',
     template: `Analyze the following code diff and summary to determine the type of change.
 
 Diff:
@@ -78,12 +78,11 @@ Diff:
 Summary:
 {summary}
 
-Respond with exactly one of these types:
-- feature: New functionality or enhancements
-- fix: Bug fixes or error corrections
-- refactor: Code restructuring without functional changes
-- chore: Maintenance tasks, dependency updates, or tooling changes
+Respond with exactly one of these types (case-sensitive):
+- Feature: New functionality or enhancements
+- Bug fix: Bug fixes or error corrections
 
+Answer with exactly one of: Feature, Bug fix
 Type:`,
     requiredVariables: ['diff', 'summary'],
     optionalVariables: [],

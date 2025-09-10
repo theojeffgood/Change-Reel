@@ -22,7 +22,7 @@ export interface DiffProcessingConfig {
  */
 export interface SummaryResult {
   summary: string;
-  changeType: 'feature' | 'fix' | 'refactor' | 'chore';
+  changeType: string;
   confidence: number;
   metadata: {
     diffLength: number;
@@ -112,8 +112,17 @@ export class SummarizationService implements ISummarizationService {
         mergedConfig.customContext
       );
 
-      // Detect change type
-      const changeType = await this.openaiClient.detectChangeType(processedDiff, summary);
+      // Detect change type; if model doesn't return a valid type, default to 'chore'
+      let changeType: string = 'Feature';
+      try {
+        changeType = await this.openaiClient.detectChangeType(processedDiff, summary);
+      } catch (classificationError) {
+        // Don't fail the whole operation if classification is missing; log and continue
+        // eslint-disable-next-line no-console
+        console.warn('[SummarizationService] Change type detection failed, defaulting to "Feature"', {
+          error: classificationError instanceof Error ? classificationError.message : String(classificationError),
+        });
+      }
 
       // Calculate confidence based on diff characteristics
       const confidence = this.calculateConfidence(processedDiff, summary);

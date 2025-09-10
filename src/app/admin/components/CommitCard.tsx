@@ -7,7 +7,8 @@ interface CommitCardProps {
 }
 
 const getUpdateTypeColor = (type: string) => {
-  const t = type.toLowerCase();
+  let t = type.toLowerCase();
+  if (t === 'fix') t = 'bug fix';
   if (t === 'feature') return 'bg-green-100 text-green-800 border-green-200';
   if (t === 'bug fix') return 'bg-red-100 text-red-800 border-red-200';
   return 'bg-purple-100 text-purple-800 border-purple-200';
@@ -15,7 +16,8 @@ const getUpdateTypeColor = (type: string) => {
 
 
 const getUpdateTypeLabel = (type: string) => {
-  const t = type.toLowerCase();
+  let t = type.toLowerCase();
+  if (t === 'fix') t = 'bug fix';
   if (t === 'feature') return 'Feature';
   if (t === 'bug fix') return 'Bug fix';
   return 'Update';

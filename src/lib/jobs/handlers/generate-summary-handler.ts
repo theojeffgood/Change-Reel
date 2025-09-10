@@ -154,9 +154,15 @@ export class GenerateSummaryHandler implements JobHandler<GenerateSummaryJobData
       }
 
       // Update the commit record with the generated summary
+      // Map display classification to storage enum used by DB service
+      const storedType: 'feature' | 'fix' | 'refactor' | 'chore' | undefined =
+        summaryResult.changeType === 'Bug fix' ? 'fix'
+        : summaryResult.changeType === 'Feature' ? 'feature'
+        : undefined
+
       const updateResult = await this.commitService.updateCommit(data.commit_id, {
         summary: summaryResult.summary,
-        type: summaryResult.changeType, // Use detected change type
+        type: storedType,
       })
 
       if (updateResult.error) {

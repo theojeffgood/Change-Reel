@@ -177,8 +177,9 @@ export class OpenAIClient implements IOpenAIClient {
 
   /**
    * Detect the type of change based on diff and summary
+   * Returns a DB-safe enum value: 'feature' | 'fix' (subset of allowed types)
    */
-  async detectChangeType(diff: string, summary: string): Promise<'Feature' | 'Bug fix'> {
+  async detectChangeType(diff: string, summary: string): Promise<'feature' | 'fix' | 'refactor' | 'chore'> {
     return this.errorHandler.executeWithRetry(async () => {
       // Use template engine for change type detection prompt
       const prompt = this.templateEngine.createChangeTypePrompt(diff, summary);
@@ -211,7 +212,7 @@ export class OpenAIClient implements IOpenAIClient {
             content: prompt
           }
         ],
-        max_tokens: 10,
+        max_completion_tokens: 10,
       });
       const choice = response.choices?.[0];
       console.debug('[OpenAIClient] detectChangeType response', {
@@ -222,11 +223,13 @@ export class OpenAIClient implements IOpenAIClient {
       });
 
       const raw = choice?.message?.content?.trim();
-      const category = raw === 'Feature' || raw === 'Bug fix' ? raw : undefined;
+      const category = raw === 'Feature' ? 'feature'
+        : raw === 'Bug fix' ? 'fix'
+        : undefined;
       if (!category) {
         throw new Error(`Invalid change type returned by OpenAI: "${raw ?? ''}". Expected one of: Feature, Bug fix`);
       }
-      return category as 'Feature' | 'Bug fix';
+      return category;
     }, 'change_detection');
   }
 

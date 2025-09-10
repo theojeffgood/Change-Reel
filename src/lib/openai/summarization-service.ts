@@ -4,6 +4,7 @@
  */
 
 import { IOpenAIClient } from './client';
+import { OpenAIError } from './error-handler';
 import { PromptTemplateEngine } from './prompt-templates';
 
 /**
@@ -91,6 +92,18 @@ export class SummarizationService implements ISummarizationService {
     }
 
     const processedDiff = this.preProcessDiff(diff, mergedConfig);
+    // Debug: log diff stats only (avoid content)
+    console.debug('[SummarizationService] processDiff', {
+      rawDiffChars: diff?.length || 0,
+      processedDiffChars: processedDiff.length,
+      hasMarkers: {
+        atAt: processedDiff.includes('@@'),
+        pluses: processedDiff.includes('+++'),
+        dashes: processedDiff.includes('---'),
+        gitHeader: processedDiff.includes('diff --git'),
+      },
+      maxDiffLength: mergedConfig.maxDiffLength,
+    });
     
     try {
       // Generate summary using OpenAI client
@@ -119,6 +132,10 @@ export class SummarizationService implements ISummarizationService {
         }
       };
     } catch (error) {
+      // Preserve OpenAIError so caller can inspect code/details
+      if (error instanceof OpenAIError) {
+        throw error;
+      }
       throw new Error(`Failed to process diff: ${error instanceof Error ? error.message : 'Unknown error'}`);
     }
   }

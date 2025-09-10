@@ -55,19 +55,26 @@ export class GenerateSummaryHandler implements JobHandler<GenerateSummaryJobData
 
       const commit = commitResult.data
 
-      // Use diff content from job data if provided; otherwise from previous job result
+      // Use diff content from job data if provided; otherwise from previous/completed job context
       let diffContent = data.diff_content
-      if (!diffContent && job.context?.result?.data?.diff_content) {
-        diffContent = job.context.result.data.diff_content
+
+      // Check current job's context (supports both {result:{diff_content}} and {result:{data:{diff_content}}})
+      if (!diffContent) {
+        const fromContextDirect = job.context && (job.context as any).result && (job.context as any).result.diff_content
+        const fromContextNested = job.context && (job.context as any).result && (job.context as any).result.data && (job.context as any).result.data.diff_content
+        diffContent = fromContextDirect || fromContextNested
       }
-      // If still missing, load dependency job and read its context.result.data.diff_content
+
+      // If still missing, load dependency job and read its context (supports both shapes)
       if (!diffContent) {
         const deps = await this.jobQueueService.getJobDependencies(job.id)
         const depId = deps.data && deps.data[0]?.depends_on_job_id
         if (depId) {
           const dep = await this.jobQueueService.getJob(depId)
-          const fromDep = (dep.data as any)?.context?.result?.data?.diff_content
-          if (fromDep) diffContent = fromDep
+          const depCtx = (dep.data as any)?.context?.result
+          const fromDepDirect = depCtx?.diff_content
+          const fromDepNested = depCtx?.data?.diff_content
+          diffContent = fromDepDirect || fromDepNested
         }
       }
 
@@ -111,6 +118,13 @@ export class GenerateSummaryHandler implements JobHandler<GenerateSummaryJobData
       }
 
       // Generate the summary using OpenAI
+      try {
+        console.log('[GenerateSummary] Calling summarization service', {
+          jobId: job.id,
+          commitId: data.commit_id,
+          diffChars: diffContent.length,
+        })
+      } catch {}
       const summaryResult = await this.summarizationService.processDiff(
         diffContent,
         {
@@ -118,6 +132,15 @@ export class GenerateSummaryHandler implements JobHandler<GenerateSummaryJobData
           includeMetadata: true,
         }
       )
+      try {
+        console.log('[GenerateSummary] Summarization complete', {
+          jobId: job.id,
+          commitId: data.commit_id,
+          summaryChars: summaryResult.summary?.length || 0,
+          tokensUsed: summaryResult.metadata?.tokensUsed,
+          timeMs: summaryResult.metadata?.processingTimeMs,
+        })
+      } catch {}
 
       if (!summaryResult.summary) {
         return {
@@ -180,13 +203,26 @@ export class GenerateSummaryHandler implements JobHandler<GenerateSummaryJobData
         },
       }
     } catch (error) {
+      const meta: any = {
+        jobId: job.id,
+        commitId: data.commit_id,
+      }
+      const anyErr = error as any
+      if (anyErr && (anyErr.code || anyErr.details)) {
+        meta.error_code = anyErr.code || undefined
+        if (anyErr.details) {
+          meta.finish_reason = anyErr.details.finish_reason
+          meta.completion_tokens = anyErr.details.completion_tokens
+          meta.total_tokens = anyErr.details.total_tokens
+          meta.max_tokens = anyErr.details.max_tokens
+          meta.model = anyErr.details.model
+          meta.operation = anyErr.details.operation
+        }
+      }
       return {
         success: false,
         error: error instanceof Error ? error.message : 'Unknown error in generate_summary handler',
-        metadata: {
-          jobId: job.id,
-          commitId: data.commit_id,
-        },
+        metadata: meta,
       }
     }
   }

@@ -250,7 +250,7 @@ export class JobProcessor implements IJobProcessor {
         this.logger.info(`Job ${job.id} completed successfully`)
       } else {
         // Handle job failure
-        await this.handleJobFailure(job, result.error || 'Unknown error')
+        await this.handleJobFailure(job, result.error || 'Unknown error', result.metadata)
       }
 
     } catch (error) {
@@ -283,8 +283,36 @@ export class JobProcessor implements IJobProcessor {
     })
   }
 
-  private async handleJobFailure(job: Job, errorMessage: string): Promise<void> {
-    this.logger.error(`Job ${job.id} failed: ${errorMessage}`)
+  private async handleJobFailure(job: Job, errorMessage: string, errorDetails?: any): Promise<void> {
+    // Enrich logs with structured OpenAI details when available
+    const logDetails: any = {
+      message: errorMessage,
+    }
+    if (errorDetails) {
+      logDetails.code = errorDetails.error_code || errorDetails.code
+      logDetails.finish_reason = errorDetails.finish_reason
+      logDetails.tokens = errorDetails.completion_tokens || errorDetails.total_tokens || errorDetails.max_tokens
+        ? {
+            completion: errorDetails.completion_tokens,
+            total: errorDetails.total_tokens,
+            max: errorDetails.max_tokens,
+          }
+        : undefined
+      logDetails.model = errorDetails.model
+    }
+    this.logger.error(`[JobProcessor] Job ${job.id} failed`, logDetails)
+
+    const msg = (errorMessage || '').toLowerCase()
+    const nonRetryable =
+      msg.includes('output_token_limit') ||
+      msg.includes('finish_reason=length') ||
+      msg.includes('no summary generated from openai response')
+
+    if (nonRetryable) {
+      await this.jobQueueService.markJobAsFailed(job.id, errorMessage, { attempts: job.attempts, nonRetryable: true, ...(errorDetails || {}) })
+      this.logger.error(`[JobProcessor] Job ${job.id} marked failed (non-retryable)`, logDetails)
+      return
+    }
 
     // Check if we should retry
     if (job.attempts < job.max_attempts) {
@@ -294,11 +322,13 @@ export class JobProcessor implements IJobProcessor {
 
       // Schedule retry
       await this.jobQueueService.scheduleRetry(job.id, retryAfter)
-      this.logger.info(`Job ${job.id} scheduled for retry in ${retryDelay}ms (attempt ${job.attempts + 1}/${job.max_attempts})`)
+      // Attach error info for visibility on pending job
+      await this.jobQueueService.updateJob(job.id, { error_message: errorMessage, error_details: errorDetails || null })
+      this.logger.info(`Job ${job.id} scheduled for retry in ${retryDelay}ms (attempt ${job.attempts + 1}/${job.max_attempts})`, logDetails)
     } else {
       // Mark as permanently failed
-      await this.jobQueueService.markJobAsFailed(job.id, errorMessage, { attempts: job.attempts })
-      this.logger.error(`Job ${job.id} permanently failed after ${job.attempts} attempts`)
+      await this.jobQueueService.markJobAsFailed(job.id, errorMessage, { attempts: job.attempts, ...(errorDetails || {}) })
+      this.logger.error(`[JobProcessor] Job ${job.id} permanently failed after ${job.attempts} attempts`, logDetails)
     }
   }
 

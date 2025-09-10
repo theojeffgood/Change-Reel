@@ -1,13 +1,39 @@
 import OpenAI from 'openai';
 import { createDiffSummaryPrompt, createChangeTypePrompt, PromptTemplateEngine } from './prompt-templates';
 import { OpenAIRateLimiter, defaultRateLimiter, OperationType } from './rate-limiter';
-import { OpenAIErrorHandler, defaultErrorHandler } from './error-handler';
+import { OpenAIErrorHandler, defaultErrorHandler, OpenAIError } from './error-handler';
+
+// Safe JSON stringify helper to avoid huge logs and circular refs
+function safeStringify(obj: any, maxLen: number = 20000): string {
+  try {
+    const seen = new WeakSet<any>();
+    const json = JSON.stringify(
+      obj,
+      (key, value) => {
+        if (typeof value === 'string') {
+          if (value.length > 4000) return value.slice(0, 4000) + '...<truncated>'; // cap long strings
+          return value;
+        }
+        if (typeof value === 'object' && value !== null) {
+          if (seen.has(value)) return '[Circular]';
+          seen.add(value);
+        }
+        return value;
+      },
+      2
+    );
+    return json.length > maxLen ? json.slice(0, maxLen) + '...<truncated>' : json;
+  } catch (e) {
+    return String(obj);
+  }
+}
 
 /**
  * Interface for OpenAI client to enable dependency injection and testing
  */
 export interface IOpenAIClient {
-  generateSummary(diff: string, promptTemplate?: string): Promise<string>;
+  // customContext is optional additional guidance appended to the prompt; NOT a template
+  generateSummary(diff: string, customContext?: string): Promise<string>;
   detectChangeType(diff: string, summary: string): Promise<'feature' | 'fix' | 'refactor' | 'chore'>;
 }
 
@@ -44,7 +70,8 @@ export class OpenAIClient implements IOpenAIClient {
     });
 
     this.model = config.model || process.env.OPENAI_MODEL || 'gpt-5';
-    this.maxTokens = config.maxTokens || 150;
+    const envMax = parseInt(process.env.OPENAI_MAX_TOKENS || '', 10);
+    this.maxTokens = config.maxTokens || (Number.isFinite(envMax) ? envMax : 1000);
     this.templateEngine = config.templateEngine || new PromptTemplateEngine();
     this.rateLimiter = config.rateLimiter || defaultRateLimiter;
     this.errorHandler = config.errorHandler || defaultErrorHandler;
@@ -53,16 +80,14 @@ export class OpenAIClient implements IOpenAIClient {
   /**
    * Generate a summary for the given diff using OpenAI
    */
-  async generateSummary(diff: string, promptTemplate?: string): Promise<string> {
+  async generateSummary(diff: string, customContext?: string): Promise<string> {
     if (!diff.trim()) {
       throw new Error('Diff content is required');
     }
 
     return this.errorHandler.executeWithRetry(async () => {
-      // Use template engine for prompt generation
-      const prompt = promptTemplate 
-        ? this.templateEngine.createCustomPrompt(promptTemplate, { diff })
-        : this.templateEngine.createDiffSummaryPrompt(diff);
+      // Use template engine for prompt generation, including optional context
+      const prompt = this.templateEngine.createDiffSummaryPrompt(diff, customContext);
 
       // Estimate tokens for rate limiting (rough estimate)
       const estimatedTokens = Math.ceil((prompt.length + this.maxTokens) / 3);
@@ -73,26 +98,77 @@ export class OpenAIClient implements IOpenAIClient {
         const waitTime = rateLimitResult.retryAfterMs || 1000;
         throw new Error(`Rate limit exceeded. Retry after ${waitTime}ms. Remaining tokens: ${rateLimitResult.remainingTokens}`);
       }
-
-      const response = await this.openai.chat.completions.create({
+      // Debug: log request meta (no sensitive content)
+      console.debug('[OpenAIClient] generateSummary request', {
         model: this.model,
-        messages: [
-          {
-            role: 'system',
-            content: 'You are a changelog assistant that creates concise, clear summaries of code changes.'
-          },
-          {
-            role: 'user',
-            content: prompt
-          }
-        ],
-        max_completion_tokens: this.maxTokens,
+        promptChars: prompt.length,
+        maxTokens: this.maxTokens,
+        estTokens: estimatedTokens,
       });
 
-      const summary = response.choices[0]?.message?.content?.trim();
-      
+      let chatResponse: any;
+      try {
+        chatResponse = await this.openai.chat.completions.create({
+          model: this.model,
+          messages: [
+            { role: 'system', content: 'You are a changelog assistant that creates concise, clear summaries of code changes.' },
+            { role: 'user', content: prompt }
+          ],
+          max_completion_tokens: this.maxTokens,
+        });
+        try {
+          console.log('[OpenAIClient] chat.completions raw response:', safeStringify(chatResponse));
+        } catch {}
+      } catch (e) {
+        const err = e as any;
+        console.error('[OpenAIClient] chat.completions failed', {
+          message: err?.message,
+          status: err?.status,
+          name: err?.name,
+          code: err?.code,
+        });
+        throw err;
+      }
+
+      // Debug: log response meta (no content text)
+      const choice = chatResponse.choices?.[0];
+      const usageMeta = (chatResponse as any)?.usage || undefined;
+      console.debug('[OpenAIClient] generateSummary response', {
+        choices: chatResponse.choices?.length ?? 0,
+        finishReason: (choice as any)?.finish_reason,
+        contentChars: choice?.message?.content ? choice.message.content.length : 0,
+        usage: usageMeta,
+      });
+
+      let summary = choice?.message?.content?.trim();
+
+      // If empty, log once; no alternate API fallback
       if (!summary) {
-        throw new Error('No summary generated from OpenAI response');
+        try {
+          console.warn('[OpenAIClient] Empty assistant content from chat completion', {
+            finishReason: (choice as any)?.finish_reason,
+            completion_tokens: usageMeta?.completion_tokens,
+            maxTokens: this.maxTokens,
+          });
+        } catch {}
+      }
+
+      if (!summary) {
+        const fr = (choice as any)?.finish_reason;
+        const compTok = usageMeta?.completion_tokens;
+        const totTok = usageMeta?.total_tokens;
+        const msg = `No summary generated from OpenAI response. finish_reason=${fr ?? 'unknown'}; completion_tokens=${compTok ?? 'n/a'}; total_tokens=${totTok ?? 'n/a'}; maxTokens=${this.maxTokens}`;
+        const err = new OpenAIError(msg, 'OUTPUT_TOKEN_LIMIT', false, 400);
+        ;(err as any).details = {
+          finish_reason: fr,
+          completion_tokens: compTok,
+          total_tokens: totTok,
+          max_tokens: this.maxTokens,
+          operation: 'summarization',
+          model: this.model,
+        };
+        // Mark as non-retryable in processor logic using a clear code
+        throw err;
       }
 
       return summary;
@@ -117,6 +193,12 @@ export class OpenAIClient implements IOpenAIClient {
         throw new Error(`Rate limit exceeded for change type detection. Retry after ${waitTime}ms. Remaining tokens: ${rateLimitResult.remainingTokens}`);
       }
 
+      // Debug: log request meta (no sensitive content)
+      console.debug('[OpenAIClient] detectChangeType request', {
+        model: this.model,
+        maxTokens: 10,
+      });
+
       const response = await this.openai.chat.completions.create({
         model: this.model,
         messages: [
@@ -131,8 +213,15 @@ export class OpenAIClient implements IOpenAIClient {
         ],
         max_completion_tokens: 10,
       });
+      const choice = response.choices?.[0];
+      console.debug('[OpenAIClient] detectChangeType response', {
+        choices: response.choices?.length ?? 0,
+        finishReason: (choice as any)?.finish_reason,
+        contentChars: choice?.message?.content ? choice.message.content.length : 0,
+        usage: (response as any)?.usage || undefined,
+      });
 
-      const category = response.choices[0]?.message?.content?.trim().toLowerCase();
+      const category = choice?.message?.content?.trim().toLowerCase();
       
       if (!category || !['feature', 'fix', 'refactor', 'chore'].includes(category)) {
         throw new Error(`Invalid change type returned by OpenAI: "${category}". Expected one of: feature, fix, refactor, chore`);

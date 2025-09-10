@@ -32,6 +32,20 @@ export async function GET() {
         ? 'Job processing system is running automatically' 
         : 'Job processing system is stopped',
       running: isRunning,
+      known_failure_reasons: {
+        finish_reasons: ['stop', 'length', 'content_filter', 'tool_calls'],
+        error_codes: [
+          'OUTPUT_TOKEN_LIMIT',
+          'RATE_LIMIT_EXCEEDED',
+          'SERVICE_UNAVAILABLE',
+          'TOKEN_LIMIT_EXCEEDED',
+          'QUOTA_EXCEEDED',
+          'INVALID_REQUEST',
+          'AUTHENTICATION_ERROR',
+          'API_ERROR',
+          'UNKNOWN_ERROR'
+        ]
+      },
       queue_stats: stats,
       active_jobs: activeJobs,
       active_job_count: activeJobs.length,

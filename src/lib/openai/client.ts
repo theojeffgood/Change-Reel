@@ -140,7 +140,7 @@ export class OpenAIClient implements IOpenAIClient {
         usage: usageMeta,
       });
 
-      let summary = choice?.message?.content?.trim();
+      const summary = choice?.message?.content?.trim();
 
       // If empty, log once; no alternate API fallback
       if (!summary) {

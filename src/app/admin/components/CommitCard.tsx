@@ -7,34 +7,18 @@ interface CommitCardProps {
 }
 
 const getUpdateTypeColor = (type: string) => {
-  switch (type.toLowerCase()) {
-    case 'feature':
-      return 'bg-green-100 text-green-800 border-green-200';
-    case 'fix':
-      return 'bg-red-100 text-red-800 border-red-200';
-    case 'refactor':
-      return 'bg-blue-100 text-blue-800 border-blue-200';
-    case 'chore':
-      return 'bg-gray-100 text-gray-800 border-gray-200';
-    default:
-      return 'bg-purple-100 text-purple-800 border-purple-200';
-  }
+  const t = type.toLowerCase();
+  if (t === 'feature') return 'bg-green-100 text-green-800 border-green-200';
+  if (t === 'bug fix') return 'bg-red-100 text-red-800 border-red-200';
+  return 'bg-purple-100 text-purple-800 border-purple-200';
 };
 
 
 const getUpdateTypeLabel = (type: string) => {
-  switch (type.toLowerCase()) {
-    case 'feature':
-      return 'New Feature';
-    case 'fix':
-      return 'Bug Fix';
-    case 'refactor':
-      return 'Improvement';
-    case 'chore':
-      return 'Maintenance';
-    default:
-      return 'Update';
-  }
+  const t = type.toLowerCase();
+  if (t === 'feature') return 'Feature';
+  if (t === 'bug fix') return 'Bug fix';
+  return 'Update';
 };
 
 export default function CommitCard({ commit, hasCredits = false }: CommitCardProps) {

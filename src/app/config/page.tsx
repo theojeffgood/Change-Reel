@@ -83,30 +83,12 @@ export default function ConfigurationPage() {
   const GITHUB_APP_INSTALL_URL = process.env.NEXT_PUBLIC_GITHUB_APP_INSTALL_URL;
 
   const handleGitHubConnect = async () => {
+    if (!GITHUB_APP_INSTALL_URL) return;
+
     setLoading(true);
     try {
-      if (!GITHUB_APP_INSTALL_URL) {
-        console.error('Missing NEXT_PUBLIC_GITHUB_APP_INSTALL_URL');
-        setLoading(false);
-        return;
-      }
-
-      // Pre-seed NextAuth OAuth state so callback validation passes when GitHub App
-      // performs OAuth during installation. We don't change the visible flow.
-      try { sessionStorage.setItem('installIntent', '1'); } catch {}
-      const cbUrl = `${window.location.origin}/config`;
-      const result = (await signIn('github', { callbackUrl: cbUrl, redirect: false })) as unknown as { url?: string } | undefined;
-      let stateParam = '';
-      if (result && typeof result === 'object' && result.url) {
-        try {
-          const authUrl = new URL(result.url);
-          stateParam = authUrl.searchParams.get('state') || '';
-        } catch {}
-      }
-
-      const sep = GITHUB_APP_INSTALL_URL.includes('?') ? '&' : '?';
-      const installUrl = stateParam ? `${GITHUB_APP_INSTALL_URL}${sep}state=${encodeURIComponent(stateParam)}` : GITHUB_APP_INSTALL_URL;
-      window.location.href = installUrl;
+      // Direct redirect to GitHub App installation URL
+      window.location.href = GITHUB_APP_INSTALL_URL;
     } catch (error) {
       console.error('Error connecting to GitHub:', error);
       setLoading(false);
@@ -123,14 +105,7 @@ export default function ConfigurationPage() {
     }
   }, [session]);
 
-  // After returning from GitHub (either OAuth or installation), clear intent marker
-  useEffect(() => {
-    try {
-      if (session?.user) {
-        sessionStorage.removeItem('installIntent');
-      }
-    } catch {}
-  }, [session]);
+  // No-op cleanup; flow handled entirely by GitHub App + NextAuth callback
 
   // Auto-save repository when selected (but not when loading existing config)
   useEffect(() => {

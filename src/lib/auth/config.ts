@@ -26,24 +26,13 @@ export const authConfig: NextAuthOptions = {
       },
       token: 'https://github.com/login/oauth/access_token',
       userinfo: 'https://api.github.com/user',
-      checks: [],
+      // Use default state check to support GitHub App OAuth during installation
     }),
   ],
   session: {
     strategy: 'jwt',
   },
-  cookies: {
-    state: {
-      name: `next-auth.state-token`,
-      options: {
-        httpOnly: true,
-        sameSite: 'lax',
-        path: '/',
-        secure: process.env.NODE_ENV === 'production',
-        maxAge: 900,
-      },
-    },
-  },
+  // Use NextAuth defaults for cookies/state handling
   debug: process.env.NODE_ENV === 'development',
   callbacks: {
     async jwt({ token, account, profile }) {

@@ -26,7 +26,9 @@ export const authConfig: NextAuthOptions = {
       },
       token: 'https://github.com/login/oauth/access_token',
       userinfo: 'https://api.github.com/user',
-      // Use default state check to support GitHub App OAuth during installation
+      // Disable state/PKCE checks to support GitHub App-initiated OAuth during installation
+      // (GitHub provides the state, not NextAuth; this prevents state mismatch)
+      checks: [],
     }),
   ],
   session: {

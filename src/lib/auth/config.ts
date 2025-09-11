@@ -105,10 +105,5 @@ export const authConfig: NextAuthOptions = {
         }
       }
     },
-    async error(message) {
-      try {
-        console.error('[next-auth] error event:', message);
-      } catch {}
-    },
   },
 };

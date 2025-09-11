@@ -1,6 +1,22 @@
 import { NextAuthOptions } from 'next-auth';
 import GitHubProvider from 'next-auth/providers/github';
 
+// Lightweight masking for safe env logging
+function mask(val?: string) {
+  if (!val) return 'undefined'
+  if (val.length <= 8) return `${val[0]}***${val[val.length - 1]}`
+  return `${val.slice(0, 4)}***${val.slice(-4)}`
+}
+
+// Emit a one-time server-side log of critical OAuth envs (masked)
+try {
+  console.log('[auth:init]', {
+    NEXTAUTH_URL: process.env.NEXTAUTH_URL,
+    OAUTH_CLIENT_ID: mask(process.env.OAUTH_CLIENT_ID),
+    OAUTH_CLIENT_SECRET_PRESENT: !!process.env.OAUTH_CLIENT_SECRET,
+  })
+} catch {}
+
 if (!process.env.OAUTH_CLIENT_ID) {
   throw new Error('Missing OAUTH_CLIENT_ID environment variable');
 }
@@ -18,14 +34,6 @@ export const authConfig: NextAuthOptions = {
     GitHubProvider({
       clientId: process.env.OAUTH_CLIENT_ID,
       clientSecret: process.env.OAUTH_CLIENT_SECRET,
-      authorization: {
-        url: 'https://github.com/login/oauth/authorize',
-        params: {
-          scope: 'read:user user:email',
-        },
-      },
-      token: 'https://github.com/login/oauth/access_token',
-      userinfo: 'https://api.github.com/user',
       // Disable state/PKCE checks to support GitHub App-initiated OAuth during installation
       // (GitHub provides the state, not NextAuth; this prevents state mismatch)
       checks: [],
@@ -36,6 +44,23 @@ export const authConfig: NextAuthOptions = {
   },
   // Use NextAuth defaults for cookies/state handling
   debug: process.env.NODE_ENV === 'development',
+  logger: {
+    error(code, ...metadata) {
+      try {
+        console.error('[next-auth][error]', code, ...metadata)
+      } catch {}
+    },
+    warn(code, ...metadata) {
+      try {
+        console.warn('[next-auth][warn]', code, ...metadata)
+      } catch {}
+    },
+    debug(code, ...metadata) {
+      try {
+        console.debug('[next-auth][debug]', code, ...metadata)
+      } catch {}
+    },
+  },
   callbacks: {
     async jwt({ token, account, profile }) {
       // Persist the OAuth access_token to the token right after signin

@@ -179,7 +179,25 @@ export class FetchDiffHandler implements JobHandler<FetchDiffJobData> {
         }
       }
 
-      // Ensure we have valid diff data before proceeding
+      // Ensure we have valid diff data before proceeding. If raw diff is empty but
+      // structured diff has patches, synthesize a minimal unified diff as fallback.
+      if (!diffRaw && diffData && Array.isArray(diffData.files) && diffData.files.length > 0) {
+        const parts: string[] = []
+        for (const f of diffData.files) {
+          const filename = f.filename || 'unknown'
+          parts.push(`diff --git a/${filename} b/${filename}`)
+          parts.push(`--- a/${filename}`)
+          parts.push(`+++ b/${filename}`)
+          if (f.patch) {
+            parts.push(f.patch)
+          }
+        }
+        const synthetic = parts.join('\n')
+        if (synthetic.trim().length > 0) {
+          diffRaw = synthetic
+        }
+      }
+
       if (!diffData || !diffRaw) {
         throw new Error(`Failed to fetch diff data for ${diffReference.base}..${diffReference.head} - no data received`);
       }

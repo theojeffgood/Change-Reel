@@ -89,9 +89,6 @@ export class GitHubApiClient implements IGitHubApiClient {
         repo,
         base,
         head,
-        mediaType: {
-          format: 'diff',
-        },
       });
       return response.data;
     } catch (error) {

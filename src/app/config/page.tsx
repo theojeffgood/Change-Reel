@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { useSession, signIn, signOut } from 'next-auth/react';
+import { useSession } from 'next-auth/react';
 import Link from 'next/link';
 import SiteHeader from '@/components/layout/SiteHeader'
 import SiteFooter from '@/components/layout/SiteFooter'
@@ -29,40 +29,7 @@ interface Repository {
   default_branch: string;
 }
 
-interface ConfirmDialogProps {
-  show: boolean;
-  onConfirm: () => void;
-  onCancel: () => void;
-}
-
-function ConfirmDialog({ show, onConfirm, onCancel }: ConfirmDialogProps) {
-  if (!show) return null;
-
-  return (
-    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-      <div className="bg-white rounded-xl p-6 max-w-md w-full mx-4 shadow-xl">
-        <h3 className="text-lg font-semibold text-gray-900 mb-4">Disconnect GitHub Account</h3>
-        <p className="text-gray-600 mb-6">
-          Are you sure you want to disconnect your GitHub account? This will remove access to your repositories and disable changelog generation.
-        </p>
-        <div className="flex space-x-3">
-          <button
-            onClick={onCancel}
-            className="flex-1 px-4 py-2 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition-colors"
-          >
-            Cancel
-          </button>
-          <button
-            onClick={onConfirm}
-            className="flex-1 px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors"
-          >
-            Disconnect
-          </button>
-        </div>
-      </div>
-    </div>
-  );
-}
+// Removed Disconnect flow and dialog
 
 export default function ConfigurationPage() {
   const { data: session } = useSession();
@@ -74,11 +41,10 @@ export default function ConfigurationPage() {
   const [loadingRepos, setLoadingRepos] = useState(false);
   const [savingRepo, setSavingRepo] = useState(false);
   const [loading, setLoading] = useState(false);
-  const [showDisconnectConfirm, setShowDisconnectConfirm] = useState(false);
+  // Removed disconnect flow
   const [saveMessage, setSaveMessage] = useState('');
   const [saveError, setSaveError] = useState('');
   const [isLoadingConfiguration, setIsLoadingConfiguration] = useState(false);
-  const [showRepoPicker, setShowRepoPicker] = useState(false);
   const [showInstallPicker, setShowInstallPicker] = useState(false);
   const GITHUB_APP_INSTALL_URL = process.env.NEXT_PUBLIC_GITHUB_APP_INSTALL_URL;
 
@@ -184,25 +150,7 @@ export default function ConfigurationPage() {
     }
   };
 
-  const handleGitHubDisconnect = async () => {
-    if (!showDisconnectConfirm) {
-      setShowDisconnectConfirm(true);
-      return;
-    }
-
-    setLoading(true);
-    setShowDisconnectConfirm(false);
-    try {
-      await signOut({ callbackUrl: '/config' });
-      setGithubStatus({ connected: false });
-      setRepositories([]);
-      setSelectedRepository('');
-    } catch (error) {
-      console.error('Error disconnecting from GitHub:', error);
-    } finally {
-      setLoading(false);
-    }
-  };
+  // Removed disconnect handler
 
   const handleAutoSaveRepository = async () => {
     setSavingRepo(true);
@@ -279,12 +227,7 @@ export default function ConfigurationPage() {
     <div className="min-h-screen bg-gray-100">
       <SiteHeader />
       
-      {/* Confirmation Dialog */}
-      <ConfirmDialog 
-        show={showDisconnectConfirm} 
-        onConfirm={handleGitHubDisconnect}
-        onCancel={() => setShowDisconnectConfirm(false)}
-      />
+      {/* Disconnect dialog removed */}
 
       {/* Header */}
       <div className="px-4 sm:px-6 lg:px-8 py-12">
@@ -329,11 +272,11 @@ export default function ConfigurationPage() {
                            
                          </div>
                          <button
-                           onClick={() => setShowDisconnectConfirm(true)}
-                           disabled={loading}
+                           onClick={() => setShowInstallPicker((v) => !v)}
+                           disabled={loading || installations.length <= 1}
                            className="px-4 py-2 text-sm font-medium text-gray-700 border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors disabled:opacity-50"
                          >
-                           Disconnect
+                           Change
                          </button>
                        </div>
                      </div>
@@ -371,8 +314,7 @@ export default function ConfigurationPage() {
               </div>
 
               {githubStatus?.connected && (
-                <>
-                  {/* If connected but no installation yet, prompt to install first */}
+                <div>
                   {installations.length === 0 ? (
                     <div className="px-6 pb-6">
                       <div className="p-4 border border-gray-200 rounded-xl bg-white flex items-center justify-between">
@@ -396,129 +338,82 @@ export default function ConfigurationPage() {
                       </div>
                     </div>
                   ) : (
-                  /* Simplified connected controls */
-                  <div className="mb-8">
-                    {/* Change product (installation) */}
-                    {installations.length > 1 && (
-                      <div className="mb-6">
-                        {GITHUB_APP_INSTALL_URL ? (
-                          <a
-                            href={GITHUB_APP_INSTALL_URL}
-                            target="_blank"
-                            rel="noopener noreferrer"
-                            className="inline-flex items-center px-4 py-2 text-sm font-medium text-gray-700 border border-gray-300 rounded-lg hover:bg-gray-50"
-                          >
-                            Change my product
-                          </a>
-                        ) : (
-                          <button
-                            onClick={() => setShowInstallPicker(!showInstallPicker)}
-                            className="inline-flex items-center px-4 py-2 text-sm font-medium text-gray-700 border border-gray-300 rounded-lg hover:bg-gray-50"
-                          >
-                            {showInstallPicker ? 'Hide product chooser' : 'Change my product'}
-                          </button>
-                        )}
-                      </div>
-                    )}
-
-                    {showInstallPicker && installations.length > 1 && (
-                      <select
-                        value={selectedInstallationId}
-                        onChange={(e) => {
-                          const id = e.target.value;
-                          setSelectedInstallationId(id);
-                          setSelectedRepository('');
-                          if (id) fetchRepositories(id);
-                          setShowInstallPicker(false);
-                        }}
-                        className="w-full rounded-xl border-gray-300 focus:border-black focus:ring-black text-gray-900 shadow-sm mb-6"
-                      >
-                        <option value="">Select an installation...</option>
-                        {installations.map((inst) => (
-                          <option key={inst.id} value={String(inst.id)}>
-                            {inst.account?.login || 'installation'} (ID {inst.id})
-                          </option>
-                        ))}
-                      </select>
-                    )}
-
-                    {/* Change repository */}
-                    <div className="bg-white border border-gray-200 rounded-xl overflow-hidden">
-                      <div className="flex items-center justify-between p-6">
-                        <div className="text-md text-gray-700">
-                          Repository: <span className="font-medium">{selectedRepository || 'None selected'}</span>
-                        </div>
-                        <button
-                          onClick={async () => {
-                            if (!selectedInstallationId) {
-                              if (installations.length > 1) {
-                                setShowInstallPicker(true);
-                              return;
-                              }
-                            }
-                            if (!repositories.length && selectedInstallationId) {
-                              await fetchRepositories(selectedInstallationId);
-                            }
-                            setShowRepoPicker(!showRepoPicker);
+                    <div className="mb-8">
+                      {showInstallPicker && installations.length > 1 && (
+                        <select
+                          value={selectedInstallationId}
+                          onChange={(e) => {
+                            const id = e.target.value;
+                            setSelectedInstallationId(id);
+                            setSelectedRepository('');
+                            if (id) fetchRepositories(id);
+                            setShowInstallPicker(false);
                           }}
-                          className="ml-4 inline-flex items-center px-4 py-2 text-sm font-medium text-gray-700 border border-gray-300 rounded-lg hover:bg-gray-50"
+                          className="w-full rounded-xl border-gray-300 focus:border-black focus:ring-black text-gray-900 shadow-sm mb-6"
                         >
-                          {showRepoPicker ? 'Hide repositories' : 'Change my repository'}
-                        </button>
+                          <option value="">Select an installation...</option>
+                          {installations.map((inst) => (
+                            <option key={inst.id} value={String(inst.id)}>
+                              {inst.account?.login || 'installation'} (ID {inst.id})
+                            </option>
+                          ))}
+                        </select>
+                      )}
+
+                      <div className="bg-white border border-gray-200 rounded-xl overflow-hidden">
+                        <div className="p-6">
+                          <label htmlFor="repository" className="block text-sm font-medium text-gray-700 mb-2">Repository</label>
+                          {loadingRepos ? (
+                            <div className="flex items-center space-x-3 p-4 border border-gray-200 rounded-xl">
+                              <div className="w-5 h-5 border-2 border-black border-t-transparent rounded-full animate-spin"></div>
+                              <span className="text-gray-600">Loading repositories...</span>
+                            </div>
+                          ) : (
+                            <select
+                              id="repository"
+                              value={selectedRepository}
+                              onChange={(e) => setSelectedRepository(e.target.value)}
+                              className="w-full rounded-lg border-gray-200 focus:border-black focus:ring-2 focus:ring-black text-gray-900 shadow-sm"
+                            >
+                              <option value="">Select a repository...</option>
+                              {repositories.map((repo) => (
+                                <option key={repo.id} value={repo.full_name}>
+                                  {repo.full_name} {repo.private ? '(Private)' : '(Public)'}
+                                </option>
+                              ))}
+                            </select>
+                          )}
+                          <p className="mt-2 text-sm text-gray-500">
+                            {selectedRepository ? `Selected: ${selectedRepository}` : 'Choose a repository to connect'}
+                          </p>
+                        </div>
                       </div>
 
-                      {showRepoPicker && (
-                      <div className="p-4">
-                        {loadingRepos ? (
-                          <div className="flex items-center space-x-3 p-4 border border-gray-200 rounded-xl">
-                            <div className="w-5 h-5 border-2 border-black border-t-transparent rounded-full animate-spin"></div>
-                            <span className="text-gray-600">Loading repositories...</span>
-                          </div>
-                        ) : (
-                          <select
-                            id="repository"
-                            value={selectedRepository}
-                            onChange={(e) => setSelectedRepository(e.target.value)}
-                            className="w-full rounded-xl border-gray-300 focus:border-black focus:ring-black text-gray-900 shadow-sm"
+                      {selectedRepository && (
+                        <div className="mt-4">
+                          <Link 
+                            href="/admin" 
+                            className="inline-flex items-center px-6 py-4 text-md font-medium text-white bg-black rounded-lg hover:bg-gray-800 transition-colors"
                           >
-                            <option value="">Select a repository...</option>
-                            {repositories.map((repo) => (
-                              <option key={repo.id} value={repo.full_name}>
-                                {repo.full_name} {repo.private ? '(Private)' : '(Public)'}
-                              </option>
-                            ))}
-                          </select>
-                        )}
-                      </div>
-                    )}
+                            See Dashboard →
+                          </Link>
+                        </div>
+                      )}
                     </div>
-
-                    {selectedRepository && (
-                      <div className="mt-4">
-                        <Link 
-                          href="/admin" 
-                          className="inline-flex items-center px-6 py-4 text-md font-medium text-white bg-black rounded-lg hover:bg-gray-800 transition-colors"
-                        >
-                          See Dashboard →
-                        </Link>
-                      </div>
-                    )}
-                  </div>
                   )}
 
-                  {/* Status Messages */}
                   {saveMessage && !saveMessage.includes('connected successfully') && (
                     <div className="mt-6 p-4 border border-gray-200 rounded-xl bg-white">
                       <p className="text-gray-800">{saveMessage}</p>
                     </div>
                   )}
-                  
+
                   {saveError && (
                     <div className="mt-6 p-4 border border-gray-200 rounded-xl bg-white">
                       <p className="text-red-700">{saveError}</p>
                     </div>
                   )}
-                </>
+                </div>
               )}
           </div>
         </div>

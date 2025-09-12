@@ -8,7 +8,7 @@ The Change Reel application now features an **automatic job processing system** 
 
 ### Automatic Startup
 
-1. **App Starts** → Next.js `instrumentation.ts` runs
+1. **App Starts** → Next.js `instrumentation.ts` runs (if enabled)
 2. **Job System Initializes** → All dependencies and handlers are created
 3. **Processor Starts** → Background polling begins every 2 seconds  
 4. **Webhooks Create Jobs** → GitHub webhooks create jobs in the database
@@ -42,7 +42,19 @@ The Change Reel application now features an **automatic job processing system** 
 
 ### Configuration
 
-The system uses different configurations based on environment:
+The system uses different configurations based on environment and is opt-in via an env flag:
+
+Enable or disable the background job processor with:
+```bash
+# Do NOT run background polling by default
+JOB_SYSTEM_ENABLED=false
+
+# Enable only in environments where you want workers active
+# e.g. production or a dedicated worker dyno/process
+JOB_SYSTEM_ENABLED=true
+```
+
+The processor uses different runtime configs by `NODE_ENV` when enabled:
 
 #### Production Config
 ```typescript
@@ -86,10 +98,13 @@ The system uses different configurations based on environment:
 ## Usage
 
 ### Starting the System
-The system starts automatically when you run:
+The system starts only when `JOB_SYSTEM_ENABLED=true` is set:
 ```bash
-npm run dev        # Development
-npm run build && npm start  # Production
+# Development (typically keep disabled)
+JOB_SYSTEM_ENABLED=false npm run dev
+
+# Production (enable on web or dedicated worker)
+JOB_SYSTEM_ENABLED=true npm run build && npm start
 ```
 
 ### Monitoring the System
@@ -152,8 +167,9 @@ If the status shows `not_initialized` or `stopped`:
 ### Jobs Not Being Processed
 If jobs remain in `pending` status:
 
-1. **Verify System is Running**:
+1. **Verify System is Running and Enabled**:
    ```bash
+   echo $JOB_SYSTEM_ENABLED   # should be 'true'
    curl http://localhost:3000/api/jobs/status
    ```
 

@@ -87,6 +87,10 @@ Use the management script for common operations:
 - `OPENAI_API_KEY`: OpenAI API key
 - `WEBHOOK_SECRET`: GitHub webhook secret
 
+### Optional/Recommended Variables
+
+- `JOB_SYSTEM_ENABLED`: Set to `true` only in environments where you want the background job processor polling the database. Keep `false` (or unset) for dev or preview to avoid unintended workers.
+
 ### OAuth Configuration
 
 Make sure your GitHub OAuth app is configured with:
@@ -102,7 +106,8 @@ For local development, use the standard docker-compose:
 cp docker.env.template .env.local
 # Edit .env.local with local values (NEXTAUTH_URL=http://localhost:3001)
 
-# Start local development
+# Start local development (job system typically disabled)
+export JOB_SYSTEM_ENABLED=false
 docker-compose up
 ```
 

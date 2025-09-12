@@ -34,7 +34,20 @@ export default async function AdminPage() {
 
       {/* Main Content */}
       <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        <div className="flex gap-6">
+        {/* Page Header placed above the two-column layout so metrics align with commit list top */}
+        <div className="py-4">
+          <div className="flex items-center justify-between">
+            <h2 className="text-3xl font-bold text-gray-900 mb-2">
+              Product Timeline
+            </h2>
+            <div className="flex items-center space-x-2">
+              <div className="w-3 h-3 bg-green-500 rounded-full"></div>
+              <span className="text-sm text-gray-600">Live Monitoring</span>
+            </div>
+          </div>
+        </div>
+
+        <div className="flex gap-6 items-start">
           {/* Left Sidebar: Metrics */}
           <aside className="w-72 shrink-0">
             <MetricsBar />
@@ -42,19 +55,6 @@ export default async function AdminPage() {
 
           {/* Main Content: Product Timeline */}
           <section className="flex-1">
-            {/* Page Header - emphasize summaries */}
-            <div className="py-4">
-              <div className="flex items-center justify-between">
-                <h2 className="text-3xl font-bold text-gray-900 mb-2">
-                  Product Timeline
-                </h2>
-                <div className="flex items-center space-x-2">
-                  <div className="w-3 h-3 bg-green-500 rounded-full"></div>
-                  <span className="text-sm text-gray-600">Live Monitoring</span>
-                </div>
-              </div>
-            </div>
-
             {/* Timeline Panel */}
             <div className="space-y-6">
               <ErrorBoundary>

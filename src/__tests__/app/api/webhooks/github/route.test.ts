@@ -44,7 +44,10 @@ describe('/api/webhooks/github', () => {
   });
 
   describe('POST method', () => {
-    it('queues a job successfully and returns 200', async () => {
+    it('queues a job successfully and returns 200 when JOB_SYSTEM_ENABLED=true', async () => {
+      const originalFlag = process.env.JOB_SYSTEM_ENABLED
+      process.env.JOB_SYSTEM_ENABLED = 'true'
+
       const payloadString = JSON.stringify(pushEventPayload);
       const headers = createWebhookHeaders('push', payloadString, 'test-secret');
 
@@ -55,6 +58,8 @@ describe('/api/webhooks/github', () => {
       expect(response.status).toBe(200);
       expect(result.success).toBe(true);
       expect(result.jobId).toBe('job-123');
+
+      process.env.JOB_SYSTEM_ENABLED = originalFlag
     });
 
     it('returns 400 when required headers are missing', async () => {
@@ -84,7 +89,10 @@ describe('/api/webhooks/github', () => {
       expect(result.error).toContain('invalid JSON');
     });
 
-    it('returns 500 when job queueing fails', async () => {
+    it('returns 500 when job queueing fails and JOB_SYSTEM_ENABLED=true', async () => {
+      const originalFlag = process.env.JOB_SYSTEM_ENABLED
+      process.env.JOB_SYSTEM_ENABLED = 'true'
+
       const { JobQueueService } = require('@/lib/supabase/services/jobs');
       (JobQueueService as jest.Mock).mockImplementation(() => ({
         createJob: jest.fn().mockResolvedValue({ data: null, error: { message: 'Queue down' } }),
@@ -100,6 +108,26 @@ describe('/api/webhooks/github', () => {
       expect(response.status).toBe(500);
       expect(result.success).toBe(false);
       expect(result.error).toContain('Queue down');
+
+      process.env.JOB_SYSTEM_ENABLED = originalFlag
+    });
+
+    it('when JOB_SYSTEM_ENABLED!=true, does not queue and returns success', async () => {
+      const originalFlag = process.env.JOB_SYSTEM_ENABLED
+      process.env.JOB_SYSTEM_ENABLED = 'false'
+      const payloadString = JSON.stringify(pushEventPayload);
+      const headers = createWebhookHeaders('push', payloadString, 'test-secret');
+
+      const request = createMockRequest({ headers, body: payloadString });
+      const response = await POST(request as any);
+      const result = await response.json();
+
+      expect(response.status).toBe(200);
+      expect(result.success).toBe(true);
+      expect(result.jobId).toBeUndefined();
+      expect(result.message).toMatch(/Job creation disabled/i);
+
+      process.env.JOB_SYSTEM_ENABLED = originalFlag
     });
   });
 });

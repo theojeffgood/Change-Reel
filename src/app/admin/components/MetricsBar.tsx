@@ -89,13 +89,15 @@ export default function MetricsBar() {
   return (
     <div className="flex flex-col gap-4">
       <div className="bg-white border border-gray-200 rounded-xl p-6">
-        <div className="text-md text-gray-500 mb-1">Features this week</div>
-        <div className="text-2xl font-semibold text-gray-900">{featuresThisWeek}</div>
-      </div>
-      <div className="bg-white border border-gray-200 rounded-xl p-6">
         <div className="text-md text-gray-500 mb-1">App name</div>
         <div className="text-base font-medium text-gray-900 truncate">{repoName || '—'}</div>
       </div>
+
+      <div className="bg-white border border-gray-200 rounded-xl p-6">
+        <div className="text-md text-gray-500 mb-1">Features this week</div>
+        <div className="text-2xl font-semibold text-gray-900">{featuresThisWeek}</div>
+      </div>
+
       <div className="bg-white border border-gray-200 rounded-xl p-6">
         <div className="text-md text-gray-500 mb-1">Credits Remaining</div>
         {session ? (

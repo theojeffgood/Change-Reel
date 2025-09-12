@@ -68,12 +68,38 @@ export async function POST(request: NextRequest): Promise<NextResponse<WebhookRe
       );
     }
 
+    // Build compact metadata for logs
+    const meta = {
+      event: githubEvent,
+      deliveryId: githubDelivery,
+      repository: payload?.repository?.full_name,
+      ref: payload?.ref,
+      commits: Array.isArray(payload?.commits) ? payload.commits.length : 0,
+      head: payload?.head_commit?.id,
+      pusher: payload?.pusher?.name || payload?.sender?.login,
+    }
+
+    // If the job system is disabled, don't enqueue jobs; just log metadata
+    const jobSystemEnabled = process.env.JOB_SYSTEM_ENABLED === 'true'
+    if (!jobSystemEnabled) {
+      console.log('[webhook] received (job system disabled)', meta)
+      return NextResponse.json(
+        {
+          success: true,
+          message: 'Webhook received. Job creation disabled (JOB_SYSTEM_ENABLED!=true).',
+        },
+        { status: 200 }
+      )
+    }
+
+    // Log receipt when enabled (without dumping payload)
+    console.log('[webhook] received', meta)
+
     // Create Supabase client and job service for job creation
     const supabase = createSupabaseClient(
       process.env.NEXT_PUBLIC_SUPABASE_URL!,
       process.env.SUPABASE_SERVICE_ROLE_KEY!
     );
-    
     // Import and use job service directly
     const { JobQueueService } = await import('@/lib/supabase/services/jobs');
     const jobService = new JobQueueService(supabase);

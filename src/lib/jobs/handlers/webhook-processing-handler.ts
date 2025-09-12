@@ -41,9 +41,16 @@ export class WebhookProcessingHandler implements JobHandler<WebhookProcessingJob
 
       // MVP: Simple webhook processing without full parsing
       // In production, this would use the webhook service for proper validation
-      console.log('🔗 Processing webhook:', data.webhook_event)
-      console.log('🔗 Delivery ID:', data.delivery_id)
-      console.log('🔗 Payload:', JSON.stringify(data.payload, null, 2))
+      // Log only relevant metadata (avoid dumping full payload)
+      console.log('[webhook] received', {
+        event: data.webhook_event,
+        deliveryId: data.delivery_id,
+        repository: data.payload?.repository?.full_name,
+        ref: data.payload?.ref,
+        commits: Array.isArray(data.payload?.commits) ? data.payload.commits.length : 0,
+        head: data.payload?.head_commit?.id,
+        pusher: data.payload?.pusher?.name || data.payload?.sender?.login,
+      })
 
       // Only process push events for MVP
       if (data.webhook_event !== 'push') {

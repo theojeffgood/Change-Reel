@@ -34,6 +34,12 @@ export const authConfig: NextAuthOptions = {
       if (account) {
         token.githubId = profile?.id;
         token.login = profile?.login;
+        // Store the GitHub user OAuth access token on the server-side JWT
+        // Used by server routes to call user-scoped GitHub APIs (e.g., /user/installations)
+        // Do NOT expose this on the client session.
+        // account.access_token is provided by next-auth for OAuth providers
+        // Typing cast to any to avoid NextAuth type limitations.
+        (token as any).accessToken = (account as any)?.access_token;
       }
       return token;
     },
@@ -47,6 +53,7 @@ export const authConfig: NextAuthOptions = {
           session.user.id = String(token.githubId);
         }
       }
+      // Intentionally DO NOT add accessToken to the session object to avoid exposing it to the client.
       return session;
     },
     async redirect({ url, baseUrl }) {

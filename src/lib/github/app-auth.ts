@@ -117,4 +117,21 @@ export async function listInstallationRepositories(installationId: number): Prom
   return data.repositories || [];
 }
 
+// List installations visible to a specific GitHub user (OAuth token required)
+export async function listUserInstallations(userAccessToken: string): Promise<AppInstallation[]> {
+  const res = await fetch('https://api.github.com/user/installations?per_page=100', {
+    headers: {
+      Authorization: `Bearer ${userAccessToken}`,
+      Accept: 'application/vnd.github.v3+json',
+      'User-Agent': 'wins-column/1.0.0'
+    },
+  });
+  if (!res.ok) {
+    const text = await res.text();
+    throw new Error(`Failed to list user installations: ${res.status} ${text}`);
+  }
+  const data = await res.json();
+  // /user/installations returns { total_count, installations: [...] }
+  return (data?.installations || []) as AppInstallation[];
+}
 

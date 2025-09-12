@@ -87,7 +87,7 @@ export default function MetricsBar() {
   const contributors = new Set(commits.map(c => c.author)).size
 
   return (
-    <div className="grid grid-cols-3 md:grid-cols-3 gap-4 mb-6">
+    <div className="flex flex-col gap-4">
       <div className="bg-white border border-gray-200 rounded-xl p-6">
         <div className="text-md text-gray-500 mb-1">Features this week</div>
         <div className="text-2xl font-semibold text-gray-900">{featuresThisWeek}</div>
@@ -115,5 +115,3 @@ export default function MetricsBar() {
     </div>
   )
 }
-
-

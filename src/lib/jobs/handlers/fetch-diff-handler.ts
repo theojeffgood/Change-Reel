@@ -60,6 +60,15 @@ export class FetchDiffHandler implements JobHandler<FetchDiffJobData> {
 
       const project = projectResult.data
 
+      // Enforce that project is linked to a user (required for auth/billing policy)
+      if (!(project as any).user_id) {
+        return {
+          success: false,
+          error: 'Project is not linked to a user (billing required)',
+          metadata: { reason: 'project_missing_user', projectId: job.project_id },
+        }
+      }
+
       // Check if project has installation_id for GitHub App access
       if (!project.installation_id) {
         return {
@@ -86,7 +95,8 @@ export class FetchDiffHandler implements JobHandler<FetchDiffJobData> {
       const diffReference: DiffReference = {
         owner: data.repository_owner,
         repo: data.repository_name,
-        base: data.base_sha || job.context?.base_sha || 'HEAD~1',
+        // If no explicit base is provided, use a clean starting point (empty tree)
+        base: data.base_sha || job.context?.base_sha || '4b825dc642cb6eb9a060e54bf8d69288fbee4904',
         head: data.commit_sha,
       }
 
@@ -127,52 +137,20 @@ export class FetchDiffHandler implements JobHandler<FetchDiffJobData> {
         diffData = result.data;
         diffRaw = result.raw;
       } catch (error) {
-        // If the base reference doesn't exist, try progressive fallbacks
+        // If the base reference doesn't exist, fall back directly to a clean starting point
         if (error instanceof Error && error.message.includes('Not Found')) {
-          console.log(`[FetchDiffHandler] Base reference "${diffReference.base}" not found, trying fallbacks for ${diffReference.head}`);
-          
-          let fallbackWorked = false;
-          
-          // Try fallbacks in order of preference
-          const fallbacks = [
-            'HEAD~1',           // Previous commit (different from default if base_sha was provided)
-            'HEAD~2',           // Two commits back
-            'main',             // Compare against main branch
-            'master',           // Compare against master branch
-          ];
-          
-          for (const fallbackBase of fallbacks) {
-            // Skip if this is already what we tried
-            if (fallbackBase === diffReference.base) continue;
-            
-            try {
-              const fallbackReference = { ...diffReference, base: fallbackBase };
-              const result = await fetchDiffWithReference(fallbackReference);
-              diffData = result.data;
-              diffRaw = result.raw;
-              console.log(`[FetchDiffHandler] Successfully used fallback "${fallbackBase}" for ${diffReference.head}`);
-              fallbackWorked = true;
-              break;
-            } catch (fallbackError) {
-              console.log(`[FetchDiffHandler] Fallback "${fallbackBase}" also failed, trying next...`);
-              continue;
-            }
-          }
-          
-          // If all reasonable fallbacks failed, try empty tree as last resort
-          if (!fallbackWorked) {
-            try {
-              const emptyTreeReference = {
-                ...diffReference,
-                base: '4b825dc642cb6eb9a060e54bf8d69288fbee4904' // Git empty tree
-              };
-              const result = await fetchDiffWithReference(emptyTreeReference);
-              diffData = result.data;
-              diffRaw = result.raw;
-              console.log(`[FetchDiffHandler] Used empty tree as last resort for ${diffReference.head}`);
-            } catch (lastResortError) {
-              throw new Error(`Failed to fetch diff for ${diffReference.base}..${diffReference.head}: All fallbacks failed`);
-            }
+          console.log(`[FetchDiffHandler] Base reference "${diffReference.base}" not found, using clean start for ${diffReference.head}`);
+          try {
+            const emptyTreeReference = {
+              ...diffReference,
+              base: '4b825dc642cb6eb9a060e54bf8d69288fbee4904' // Git empty tree
+            };
+            const result = await fetchDiffWithReference(emptyTreeReference);
+            diffData = result.data;
+            diffRaw = result.raw;
+            console.log(`[FetchDiffHandler] Used clean start (empty tree) for ${diffReference.head}`);
+          } catch (lastResortError) {
+            throw new Error(`Failed to fetch diff for ${diffReference.base}..${diffReference.head}: Clean start fallback failed`);
           }
         } else {
           throw new Error(`Failed to fetch diff for ${diffReference.base}..${diffReference.head}: ${error instanceof Error ? error.message : 'Unknown error'}`);

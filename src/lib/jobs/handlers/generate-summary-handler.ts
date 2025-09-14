@@ -97,7 +97,7 @@ export class GenerateSummaryHandler implements JobHandler<GenerateSummaryJobData
         repository: '', // Not available in current Commit interface
       }
 
-      // Billing: resolve user from project_id (projects.user_id)
+      // Billing: resolve user from project_id (projects.user_id) and enforce presence
       let userId: string | undefined
       if (this.supabaseClient && job.project_id) {
         const { data: proj } = await this.supabaseClient
@@ -107,7 +107,10 @@ export class GenerateSummaryHandler implements JobHandler<GenerateSummaryJobData
           .maybeSingle()
         userId = (proj as any)?.user_id || undefined
       }
-      if (userId && this.supabaseClient) {
+      if (!userId) {
+        return { success: false, error: 'Project is not linked to a user (billing required)', metadata: { reason: 'project_missing_user', commitId: data.commit_id, projectId: job.project_id } }
+      }
+      if (this.supabaseClient) {
         const billing = createBillingService(this.supabaseClient)
         // Pre-check only: ensure user has at least 1 credit per summary
         const requiredCredits = await billing.estimateSummaryCredits(diffContent)

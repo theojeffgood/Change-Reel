@@ -9,6 +9,7 @@ import {
 import { IJobService } from '../../supabase/services/jobs'
 import { ICommitService } from '../../supabase/services/commits'
 import { IProjectService } from '../../supabase/services/projects'
+import { IUserService } from '../../supabase/services/users'
 
 /**
  * Handler for processing GitHub webhook events
@@ -26,7 +27,8 @@ export class WebhookProcessingHandler implements JobHandler<WebhookProcessingJob
   constructor(
     private jobQueueService: IJobService,
     private commitService: ICommitService,
-    private projectService: IProjectService
+    private projectService: IProjectService,
+    private userService: IUserService
   ) {}
 
   async handle(job: Job, data: WebhookProcessingJobData): Promise<JobResult> {
@@ -73,21 +75,64 @@ export class WebhookProcessingHandler implements JobHandler<WebhookProcessingJob
       const commits = data.payload.commits || []
       
       // Get the actual project from the database
-      const projectResult = await this.projectService.getProjectByRepository(repository)
-      
-      if (projectResult.error || !projectResult.data) {
-        return {
-          success: false,
-          error: `No project found for repository: ${repository}. Please configure the project first.`,
-          metadata: {
-            reason: 'project_not_found',
-            repository,
-            projectError: projectResult.error?.message,
-          },
+      let projectResult = await this.projectService.getProjectByRepository(repository)
+
+      // Auto-create project only if a matching user exists; otherwise require user to sign in first
+      if (!projectResult.data) {
+        const installationId = Number(data.payload?.installation?.id)
+        const senderGithubId = data.payload?.sender?.id ? String(data.payload.sender.id) : undefined
+
+        if (!installationId || !senderGithubId) {
+          return {
+            success: false,
+            error: `No project found for repository: ${repository}. Please configure the project first.`,
+            metadata: { reason: 'project_not_found', repository, projectError: projectResult.error?.message },
+          }
         }
+
+        // Find the user by GitHub ID
+        const userLookup = await this.userService.getUserByGithubId(senderGithubId)
+        const user = userLookup.data
+
+        if (!user) {
+          return {
+            success: false,
+            error: `No user found for GitHub ID ${senderGithubId}. User must sign in before processing can begin.`,
+            metadata: { reason: 'user_not_found', repository, senderGithubId },
+          }
+        }
+
+        // Create the project now that we have a user
+        const createResult = await this.projectService.createProject({
+          user_id: user.id,
+          name: repository,
+          repo_name: repository,
+          provider: 'github',
+          installation_id: installationId,
+          email_distribution_list: [],
+        })
+
+        if (createResult.error || !createResult.data) {
+          return {
+            success: false,
+            error: `Failed to auto-create project for ${repository}: ${createResult.error?.message || 'unknown error'}`,
+            metadata: { reason: 'project_creation_failed', repository },
+          }
+        }
+
+        projectResult = { data: createResult.data, error: null }
       }
 
-      const project = projectResult.data
+      const project = projectResult.data!
+
+      // Enforce that project is linked to a user
+      if (!(project as any).user_id) {
+        return {
+          success: false,
+          error: 'Project is not linked to a user (billing required)',
+          metadata: { reason: 'project_missing_user', repository, projectId: (project as any).id },
+        }
+      }
       const createdCommits: string[] = []
       const createdJobs: string[] = []
 
@@ -279,11 +324,13 @@ export class WebhookProcessingHandler implements JobHandler<WebhookProcessingJob
 export function createWebhookProcessingHandler(
   jobQueueService: IJobService,
   commitService: ICommitService,
-  projectService: IProjectService
+  projectService: IProjectService,
+  userService: IUserService
 ): WebhookProcessingHandler {
   return new WebhookProcessingHandler(
     jobQueueService,
     commitService,
-    projectService
+    projectService,
+    userService
   )
 } 

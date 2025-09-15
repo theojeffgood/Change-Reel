@@ -77,12 +77,16 @@ export class WebhookProcessingHandler implements JobHandler<WebhookProcessingJob
       // Get the actual project from the database
       let projectResult = await this.projectService.getProjectByRepository(repository)
 
-      // Auto-create project only if a matching user exists; otherwise require user to sign in first
+      // Auto-create project only if a matching user exists; otherwise require owner to sign in first
       if (!projectResult.data) {
         const installationId = Number(data.payload?.installation?.id)
         const senderGithubId = data.payload?.sender?.id ? String(data.payload.sender.id) : undefined
+        const repoOwnerGithubId = data.payload?.repository?.owner?.id ? String(data.payload.repository.owner.id) : undefined
+        const installationAccountGithubId = (data.payload?.installation?.account?.id != null)
+          ? String(data.payload.installation.account.id)
+          : undefined
 
-        if (!installationId || !senderGithubId) {
+        if (!installationId) {
           return {
             success: false,
             error: `No project found for repository: ${repository}. Please configure the project first.`,
@@ -90,15 +94,31 @@ export class WebhookProcessingHandler implements JobHandler<WebhookProcessingJob
           }
         }
 
-        // Find the user by GitHub ID
-        const userLookup = await this.userService.getUserByGithubId(senderGithubId)
-        const user = userLookup.data
+        // Prefer linking the project to the repository owner (or installation account), not the pusher
+        const candidateIds = Array.from(new Set([
+          repoOwnerGithubId,
+          installationAccountGithubId,
+          senderGithubId,
+        ].filter((v): v is string => !!v)))
+
+        let user: any = null
+        for (const gid of candidateIds) {
+          const lookup = await this.userService.getUserByGithubId(gid)
+          if (lookup.data) {
+            user = lookup.data
+            break
+          }
+        }
 
         if (!user) {
           return {
             success: false,
-            error: `No user found for GitHub ID ${senderGithubId}. User must sign in before processing can begin.`,
-            metadata: { reason: 'user_not_found', repository, senderGithubId },
+            error: `No user found for repository owner or installation account. Owner must sign in before processing can begin.`,
+            metadata: { 
+              reason: 'owner_user_not_found', 
+              repository, 
+              candidates: candidateIds 
+            },
           }
         }
 

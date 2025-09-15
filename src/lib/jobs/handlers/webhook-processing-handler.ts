@@ -74,73 +74,15 @@ export class WebhookProcessingHandler implements JobHandler<WebhookProcessingJob
       const repository = data.payload.repository?.full_name || 'unknown/repo'
       const commits = data.payload.commits || []
       
-      // Get the actual project from the database
-      let projectResult = await this.projectService.getProjectByRepository(repository)
-
-      // Auto-create project only if a matching user exists; otherwise require owner to sign in first
+      // Get the actual project from the database (must already exist; no auto-create here)
+      const projectResult = await this.projectService.getProjectByRepository(repository)
       if (!projectResult.data) {
         const installationId = Number(data.payload?.installation?.id)
-        const senderGithubId = data.payload?.sender?.id ? String(data.payload.sender.id) : undefined
-        const repoOwnerGithubId = data.payload?.repository?.owner?.id ? String(data.payload.repository.owner.id) : undefined
-        const installationAccountGithubId = (data.payload?.installation?.account?.id != null)
-          ? String(data.payload.installation.account.id)
-          : undefined
-
-        if (!installationId) {
-          return {
-            success: false,
-            error: `No project found for repository: ${repository}. Please configure the project first.`,
-            metadata: { reason: 'project_not_found', repository, projectError: projectResult.error?.message },
-          }
+        return {
+          success: false,
+          error: `No project found for repository: ${repository}. Please sync your installation repositories to register this repo.`,
+          metadata: { reason: 'project_not_found', repository, installationId, projectError: projectResult.error?.message },
         }
-
-        // Prefer linking the project to the repository owner (or installation account), not the pusher
-        const candidateIds = Array.from(new Set([
-          repoOwnerGithubId,
-          installationAccountGithubId,
-          senderGithubId,
-        ].filter((v): v is string => !!v)))
-
-        let user: any = null
-        for (const gid of candidateIds) {
-          const lookup = await this.userService.getUserByGithubId(gid)
-          if (lookup.data) {
-            user = lookup.data
-            break
-          }
-        }
-
-        if (!user) {
-          return {
-            success: false,
-            error: `No user found for repository owner or installation account. Owner must sign in before processing can begin.`,
-            metadata: { 
-              reason: 'owner_user_not_found', 
-              repository, 
-              candidates: candidateIds 
-            },
-          }
-        }
-
-        // Create the project now that we have a user
-        const createResult = await this.projectService.createProject({
-          user_id: user.id,
-          name: repository,
-          repo_name: repository,
-          provider: 'github',
-          installation_id: installationId,
-          email_distribution_list: [],
-        })
-
-        if (createResult.error || !createResult.data) {
-          return {
-            success: false,
-            error: `Failed to auto-create project for ${repository}: ${createResult.error?.message || 'unknown error'}`,
-            metadata: { reason: 'project_creation_failed', repository },
-          }
-        }
-
-        projectResult = { data: createResult.data, error: null }
       }
 
       const project = projectResult.data!

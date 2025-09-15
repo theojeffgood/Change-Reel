@@ -12,6 +12,8 @@ import { JobQueueService, createJobQueueService } from './jobs'
 import type { IJobService } from './jobs'
 import { BillingService, createBillingService } from './billing'
 import type { IBillingService } from './billing'
+import { InstallationService, createInstallationService } from './installations'
+import type { IInstallationService } from './installations'
 
 // Re-export types for convenience
 export * from '../../types/supabase'
@@ -30,6 +32,8 @@ export { JobQueueService, createJobQueueService }
 export type { IJobService }
 export { BillingService, createBillingService }
 export type { IBillingService }
+export { InstallationService, createInstallationService }
+export type { IInstallationService }
 
 // Service container interface
 export interface ISupabaseServices {
@@ -39,6 +43,7 @@ export interface ISupabaseServices {
   backup: IBackupService
   jobs: IJobService
   billing: IBillingService
+  installations: IInstallationService
 }
 
 // Factory function to create all services with dependency injection
@@ -50,6 +55,7 @@ export function createSupabaseServices(supabaseClient: ISupabaseClient): ISupaba
     backup: createBackupService(supabaseClient),
     jobs: createJobQueueService(supabaseClient),
     billing: createBillingService(supabaseClient),
+    installations: createInstallationService(supabaseClient),
   }
 }
 

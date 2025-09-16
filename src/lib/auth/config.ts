@@ -114,6 +114,51 @@ export const authConfig: NextAuthOptions = {
               }
             }
           }
+
+          // Auto-register installations and repos on sign-in (no UI change)
+          try {
+            const userId = (existingUser?.id) || (await supabaseService.users.getUserByGithubId(String(profile.id))).data?.id
+            const accessToken = (account as any)?.access_token as string | undefined
+            if (userId && accessToken) {
+              const { listUserInstallations, listInstallationRepositories } = await import('@/lib/github/app-auth')
+              const { createInstallationService } = await import('@/lib/supabase/services/installations')
+              const installationsSvc = createInstallationService(supabaseService.getClient())
+              const installs = await listUserInstallations(accessToken)
+              for (const inst of installs) {
+                // Upsert installation mapping via service
+                await installationsSvc.upsertInstallation({
+                  installation_id: inst.id,
+                  provider: 'github',
+                  user_id: userId,
+                  account_login: inst.account?.login,
+                  account_id: undefined,
+                  account_type: inst.account?.type,
+                })
+
+                // Upsert all repos as projects
+                try {
+                  const repos = await listInstallationRepositories(inst.id)
+                  for (const r of repos) {
+                    const existing = await supabaseService.projects.getProjectByRepository(r.full_name)
+                    if (!existing.data) {
+                      await supabaseService.projects.createProject({
+                        user_id: userId,
+                        name: r.full_name,
+                        repo_name: r.full_name,
+                        provider: 'github',
+                        installation_id: inst.id,
+                        email_distribution_list: [],
+                      })
+                    }
+                  }
+                } catch (e) {
+                  console.warn('[auth] repo sync failed for installation', inst.id, (e as any)?.message)
+                }
+              }
+            }
+          } catch (e) {
+            console.warn('[auth] installation auto-registration skipped', (e as any)?.message)
+          }
         } catch (error) {
           console.error('Failed to create user on sign-in:', error);
         }

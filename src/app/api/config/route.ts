@@ -150,6 +150,39 @@ export async function POST(request: NextRequest): Promise<NextResponse<ConfigRes
       console.log('Project created successfully:', project?.id);
     }
 
+    // Automatically upsert installation mapping and register all repos for this installation
+    if (installationId) {
+      try {
+        // Upsert installations row using service
+        const { createInstallationService } = await import('@/lib/supabase/services/installations');
+        const installationsSvc = createInstallationService(supabaseService.getClient());
+        await installationsSvc.upsertInstallation({
+          installation_id: installationId,
+          provider: 'github',
+          user_id: user.id,
+        });
+
+        // Sync all repos for installation
+        const { listInstallationRepositories } = await import('@/lib/github/app-auth');
+        const repos = await listInstallationRepositories(installationId);
+        for (const r of repos) {
+          const existing = await supabaseService.projects.getProjectByRepository(r.full_name)
+          if (!existing.data) {
+            await supabaseService.projects.createProject({
+              user_id: user.id,
+              name: r.full_name,
+              repo_name: r.full_name,
+              provider: 'github',
+              installation_id: installationId,
+              email_distribution_list: [],
+            })
+          }
+        }
+      } catch (e) {
+        console.warn('[config] installation auto-sync skipped', (e as any)?.message)
+      }
+    }
+
     // In GitHub App model, webhooks are automatically delivered to the app-level webhook URL
     // No need for repository-specific webhook creation
     console.log('Configuration saved successfully. Webhooks handled at app level.');

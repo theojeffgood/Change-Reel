@@ -3,6 +3,7 @@
 import { useState, useEffect } from 'react';
 import { useSession } from 'next-auth/react';
 import Link from 'next/link';
+import { useRouter } from 'next/navigation';
 import SiteHeader from '@/components/layout/SiteHeader'
 import SiteFooter from '@/components/layout/SiteFooter'
 
@@ -33,6 +34,7 @@ interface Repository {
 
 export default function ConfigurationPage() {
   const { data: session } = useSession();
+  const router = useRouter();
   const [githubStatus, setGithubStatus] = useState<GitHubStatus | null>(null);
   const [repositories, setRepositories] = useState<Repository[]>([]);
   const [installations, setInstallations] = useState<Array<{ id: number; account?: { login: string } }>>([]);
@@ -389,16 +391,20 @@ export default function ConfigurationPage() {
                         </div>
                       </div>
 
-                      {selectedRepository && (
-                        <div className="mt-4">
-                          <Link 
-                            href="/admin" 
-                            className="inline-flex items-center px-6 py-4 text-md font-medium text-white bg-black rounded-lg hover:bg-gray-800 transition-colors"
-                          >
-                            See Dashboard →
-                          </Link>
-                        </div>
-                      )}
+                      <div className="mt-4">
+                        <button
+                          onClick={() => {
+                            if (!selectedRepository) {
+                              setSaveError('Please select a repository first.');
+                              return;
+                            }
+                            router.push('/admin');
+                          }}
+                          className="inline-flex items-center px-6 py-4 text-md font-medium text-white bg-black rounded-lg hover:bg-gray-800 transition-colors"
+                        >
+                          See Dashboard →
+                        </button>
+                      </div>
                     </div>
                   )}
 

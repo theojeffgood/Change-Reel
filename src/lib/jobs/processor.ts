@@ -303,32 +303,62 @@ export class JobProcessor implements IJobProcessor {
     this.logger.error(`Job ${job.id} failed`, logDetails)
 
     const msg = (errorMessage || '').toLowerCase()
+    const nextAttempts = Math.min(job.attempts + 1, job.max_attempts)
     const nonRetryable =
       msg.includes('output_token_limit') ||
       msg.includes('finish_reason=length') ||
       msg.includes('no summary generated from openai response')
 
     if (nonRetryable) {
-      await this.jobQueueService.markJobAsFailed(job.id, errorMessage, { attempts: job.attempts, nonRetryable: true, ...(errorDetails || {}) })
-      this.logger.error(`Job ${job.id} marked failed (non-retryable)`, logDetails)
+      await this.jobQueueService.markJobAsFailed(job.id, errorMessage, { attempts: nextAttempts, nonRetryable: true, ...(errorDetails || {}) })
+      this.logger.error(`Job ${job.id} marked failed (non-retryable)`, {
+        ...logDetails,
+        attempts: nextAttempts,
+      })
       return
     }
 
     // Check if we should retry
-    if (job.attempts < job.max_attempts) {
+    if (nextAttempts < job.max_attempts) {
       // Calculate retry delay
-      const retryDelay = this.calculateRetryDelay(job.attempts)
+      let retryDelay = this.calculateRetryDelay(job.attempts)
+
+      const rateLimitResetMs = this.extractRateLimitReset(errorMessage, errorDetails)
+      if (rateLimitResetMs) {
+        const now = Date.now()
+        const bufferMs = 5000
+        const waitUntilReset = Math.max(rateLimitResetMs - now + bufferMs, this.config.retry_delay_ms!)
+        if (waitUntilReset > retryDelay) {
+          retryDelay = waitUntilReset
+        }
+        logDetails.rate_limit_reset = rateLimitResetMs
+        logDetails.retry_after_ms = retryDelay
+      } else {
+        logDetails.retry_after_ms = retryDelay
+      }
+
       const retryAfter = new Date(Date.now() + retryDelay)
 
       // Schedule retry
       await this.jobQueueService.scheduleRetry(job.id, retryAfter)
       // Attach error info for visibility on pending job
-      await this.jobQueueService.updateJob(job.id, { error_message: errorMessage, error_details: errorDetails || null })
-      this.logger.info(`Job ${job.id} scheduled for retry in ${retryDelay}ms (attempt ${job.attempts + 1}/${job.max_attempts})`, logDetails)
+      await this.jobQueueService.updateJob(job.id, {
+        attempts: nextAttempts,
+        error_message: errorMessage,
+        error_details: errorDetails || null,
+      })
+      const upcomingAttempt = Math.min(nextAttempts + 1, job.max_attempts)
+      this.logger.info(`Job ${job.id} scheduled for retry in ${retryDelay}ms (attempt ${upcomingAttempt}/${job.max_attempts})`, {
+        ...logDetails,
+        attempts: nextAttempts,
+      })
     } else {
       // Mark as permanently failed
-      await this.jobQueueService.markJobAsFailed(job.id, errorMessage, { attempts: job.attempts, ...(errorDetails || {}) })
-      this.logger.error(`Job ${job.id} permanently failed after ${job.attempts} attempts`, logDetails)
+      await this.jobQueueService.markJobAsFailed(job.id, errorMessage, { attempts: nextAttempts, ...(errorDetails || {}) })
+      this.logger.error(`Job ${job.id} permanently failed after ${nextAttempts} attempts`, {
+        ...logDetails,
+        attempts: nextAttempts,
+      })
     }
   }
 
@@ -340,6 +370,30 @@ export class JobProcessor implements IJobProcessor {
     // Exponential backoff: base_delay * 2^attempt
     const delay = this.config.retry_delay_ms! * Math.pow(2, attemptNumber)
     return Math.min(delay, this.config.max_retry_delay_ms!)
+  }
+
+  private extractRateLimitReset(errorMessage: string, errorDetails?: any): number | undefined {
+    const headerReset = errorDetails?.response?.headers?.['x-ratelimit-reset'] ??
+      errorDetails?.rateLimitReset ??
+      errorDetails?.rate_limit_reset
+
+    const parsedHeader = typeof headerReset === 'string' || typeof headerReset === 'number'
+      ? Number(headerReset)
+      : undefined
+
+    if (parsedHeader && !Number.isNaN(parsedHeader)) {
+      return parsedHeader > 1_000_000_000_000 ? parsedHeader : parsedHeader * 1000
+    }
+
+    const match = /resets at:\s*(\d{9,})/i.exec(errorMessage || '')
+    if (match) {
+      const resetSeconds = Number(match[1])
+      if (!Number.isNaN(resetSeconds)) {
+        return resetSeconds > 1_000_000_000_000 ? resetSeconds : resetSeconds * 1000
+      }
+    }
+
+    return undefined
   }
 
   /**

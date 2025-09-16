@@ -36,6 +36,7 @@ export class JobQueueService implements IJobService {
       }
 
       // Set defaults
+      const defaultMaxAttempts = 1
       const jobRecord = {
         type: jobData.type,
         priority: jobData.priority || 0,
@@ -43,7 +44,7 @@ export class JobQueueService implements IJobService {
         context: jobData.context || {},
         commit_id: jobData.commit_id || null,
         project_id: jobData.project_id || null,
-        max_attempts: jobData.max_attempts || 3,
+        max_attempts: jobData.max_attempts ?? defaultMaxAttempts,
         scheduled_for: jobData.scheduled_for || new Date().toISOString(),
         expires_at: jobData.expires_at || null,
       }

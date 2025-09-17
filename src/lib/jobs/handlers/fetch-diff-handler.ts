@@ -31,6 +31,14 @@ export class FetchDiffHandler implements JobHandler<FetchDiffJobData> {
   ) {}
 
   async handle(job: Job, data: FetchDiffJobData): Promise<JobResult> {
+    const tagError = (error: Error, code: string, context?: Record<string, any>) => {
+      ;(error as any).code = code
+      if (context) {
+        ;(error as any).context = context
+      }
+      return error
+    }
+
     try {
       // Validate job data
       if (!this.validate(data)) {
@@ -117,15 +125,16 @@ export class FetchDiffHandler implements JobHandler<FetchDiffJobData> {
 
       // Use injected diff service if present; otherwise create per-installation service
       let diffService = this.diffService
+      let apiClient = null as ReturnType<typeof createGitHubClient> | null
       if (!diffService) {
-        const apiClient = createGitHubClient({ auth: installationToken })
+        apiClient = createGitHubClient({ auth: installationToken })
         diffService = createDiffService(apiClient)
       }
 
       // Fetch the commit diff from GitHub with intelligent fallback
       let diffData: any = null;
       let diffRaw: string = '';
-      
+
       const fetchDiffWithReference = async (ref: any) => {
         const data = await diffService.getDiff(ref);
         const raw = await diffService.getDiffRaw(ref);
@@ -137,20 +146,71 @@ export class FetchDiffHandler implements JobHandler<FetchDiffJobData> {
         diffData = result.data;
         diffRaw = result.raw;
       } catch (error) {
+        const isNotFoundError = error instanceof Error && error.message.includes('Not Found')
         // If the base reference doesn't exist, fall back directly to a clean starting point
-        if (error instanceof Error && error.message.includes('Not Found')) {
-          console.log(`[FetchDiffHandler] Base reference "${diffReference.base}" not found, using clean start for ${diffReference.head}`);
+        if (isNotFoundError) {
+          console.log(`[FetchDiffHandler] Base reference "${diffReference.base}" not found; attempting parent fallback for ${diffReference.head}`);
+
           try {
-            const emptyTreeReference = {
-              ...diffReference,
-              base: '4b825dc642cb6eb9a060e54bf8d69288fbee4904' // Git empty tree
-            };
-            const result = await fetchDiffWithReference(emptyTreeReference);
-            diffData = result.data;
-            diffRaw = result.raw;
-            console.log(`[FetchDiffHandler] Used clean start (empty tree) for ${diffReference.head}`);
-          } catch (lastResortError) {
-            throw new Error(`Failed to fetch diff for ${diffReference.base}..${diffReference.head}: Clean start fallback failed`);
+            // Lazily create an API client if we are using an injected diff service
+            if (!apiClient) {
+              apiClient = createGitHubClient({ auth: installationToken })
+            }
+
+            const commit = await apiClient.getCommit(diffReference.owner, diffReference.repo, diffReference.head)
+            const parentShas = Array.isArray(commit.parents)
+              ? commit.parents.map(parent => parent.sha).filter(Boolean)
+              : []
+
+            if (parentShas.length === 0) {
+              throw tagError(new Error('Commit has no parents to compare against'), 'head_commit_has_no_parents', {
+                headSha: diffReference.head,
+              })
+            }
+
+            let parentFallbackError: unknown = null
+            for (const parentSha of parentShas) {
+              try {
+                console.log(`[FetchDiffHandler] Retrying diff using parent ${parentSha} for ${diffReference.head}`)
+                const parentResult = await fetchDiffWithReference({
+                  ...diffReference,
+                  base: parentSha,
+                })
+                diffData = parentResult.data
+                diffRaw = parentResult.raw
+                console.log(`[FetchDiffHandler] Parent fallback succeeded for ${diffReference.head}`)
+                break
+              } catch (parentError) {
+                parentFallbackError = parentError
+                console.warn(`[FetchDiffHandler] Parent fallback failed for ${parentSha} → ${diffReference.head}:`, parentError)
+              }
+            }
+
+            if (!diffData || !diffRaw) {
+              const details = parentFallbackError instanceof Error ? parentFallbackError.message : 'Unknown parent fallback error'
+              throw tagError(new Error(`Parent fallback failed: ${details}`), 'parent_fallback_failed', {
+                headSha: diffReference.head,
+                attemptedParents: parentShas,
+                lastError: details,
+              })
+            }
+          } catch (parentFallbackError) {
+            const parentDetails = parentFallbackError instanceof Error ? parentFallbackError.message : 'Unknown error'
+            if (parentFallbackError instanceof Error && !(parentFallbackError as any).code) {
+              tagError(parentFallbackError, 'parent_fallback_failed', {
+                headSha: diffReference.head,
+              })
+            }
+            throw tagError(
+              new Error(
+                `Failed to fetch diff for ${diffReference.base}..${diffReference.head}: No reachable base commit (${parentDetails})`
+              ),
+              'no_reachable_base_commit',
+              {
+                headSha: diffReference.head,
+                originalBaseSha: diffReference.base,
+              }
+            )
           }
         } else {
           throw new Error(`Failed to fetch diff for ${diffReference.base}..${diffReference.head}: ${error instanceof Error ? error.message : 'Unknown error'}`);
@@ -200,13 +260,21 @@ export class FetchDiffHandler implements JobHandler<FetchDiffJobData> {
       }
 
     } catch (error) {
+      const errorInstance = error instanceof Error ? error : new Error('Unknown error in fetch_diff handler')
+      const metadata: Record<string, any> = {
+        reason: (errorInstance as any).code || 'handler_exception',
+        errorType: errorInstance.constructor.name,
+        headSha: data.commit_sha,
+        repository: `${data.repository_owner}/${data.repository_name}`,
+      }
+      if ((errorInstance as any).context) {
+        metadata.details = (errorInstance as any).context
+      }
+
       return {
         success: false,
-        error: error instanceof Error ? error.message : 'Unknown error in fetch_diff handler',
-        metadata: {
-          reason: 'handler_exception',
-          errorType: error instanceof Error ? error.constructor.name : 'unknown',
-        },
+        error: errorInstance.message,
+        metadata,
       }
     }
   }

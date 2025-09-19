@@ -1,9 +1,8 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { Suspense, useState, useEffect, useRef } from 'react';
 import { useSession } from 'next-auth/react';
-import Link from 'next/link';
-import { useRouter } from 'next/navigation';
+import { useRouter, useSearchParams } from 'next/navigation';
 import SiteHeader from '@/components/layout/SiteHeader'
 import SiteFooter from '@/components/layout/SiteFooter'
 
@@ -33,22 +32,36 @@ interface Repository {
 // Removed Disconnect flow and dialog
 
 export default function ConfigurationPage() {
+  return (
+    <Suspense fallback={null}>
+      <ConfigurationPageContent />
+    </Suspense>
+  );
+}
+
+function ConfigurationPageContent() {
   const { data: session } = useSession();
   const router = useRouter();
+  const searchParams = useSearchParams();
   const [githubStatus, setGithubStatus] = useState<GitHubStatus | null>(null);
   const [repositories, setRepositories] = useState<Repository[]>([]);
   const [installations, setInstallations] = useState<Array<{ id: number; account?: { login: string } }>>([]);
   const [selectedInstallationId, setSelectedInstallationId] = useState<string>('');
   const [selectedRepository, setSelectedRepository] = useState<string>('');
   const [loadingRepos, setLoadingRepos] = useState(false);
-  const [savingRepo, setSavingRepo] = useState(false);
   const [loading, setLoading] = useState(false);
   // Removed disconnect flow
   const [saveMessage, setSaveMessage] = useState('');
   const [saveError, setSaveError] = useState('');
   const [isLoadingConfiguration, setIsLoadingConfiguration] = useState(false);
   const [showInstallPicker, setShowInstallPicker] = useState(false);
+  const [hasExistingConfiguration, setHasExistingConfiguration] = useState(false);
+  const [installationError, setInstallationError] = useState('');
+  const [saving, setSaving] = useState(false);
   const GITHUB_APP_INSTALL_URL = process.env.NEXT_PUBLIC_GITHUB_APP_INSTALL_URL;
+  const stayOnConfig = ['1', 'true'].includes((searchParams?.get('stay') || '').toLowerCase());
+  const hasRedirectedRef = useRef(false);
+  const lastSavedRef = useRef<{ repo: string; installation: string } | null>(null);
 
   const handleGitHubConnect = async () => {
     if (!GITHUB_APP_INSTALL_URL) return;
@@ -60,6 +73,13 @@ export default function ConfigurationPage() {
     } catch (error) {
       console.error('Error connecting to GitHub:', error);
       setLoading(false);
+    }
+  };
+
+  const handleReauthenticate = () => {
+    hasRedirectedRef.current = true;
+    if (typeof window !== 'undefined') {
+      window.location.assign('/api/auth/signin?callbackUrl=/config');
     }
   };
   
@@ -74,13 +94,6 @@ export default function ConfigurationPage() {
   }, [session]);
 
   // No-op cleanup; flow handled entirely by GitHub App + NextAuth callback
-
-  // Auto-save repository when selected (but not when loading existing config)
-  useEffect(() => {
-    if (selectedRepository && githubStatus?.connected && !isLoadingConfiguration) {
-      handleAutoSaveRepository();
-    }
-  }, [selectedRepository, githubStatus?.connected, isLoadingConfiguration]);
 
   const checkGitHubStatus = async () => {
     try {
@@ -100,16 +113,14 @@ export default function ConfigurationPage() {
       if (res.ok) {
         const installs = data.installations || [];
         setInstallations(installs);
-        if (installs.length === 1) {
-          const id = String(installs[0].id);
-          setSelectedInstallationId(id);
-          fetchRepositories(id);
-        }
+        setInstallationError(data.tokenError || '');
       } else {
         console.error('Failed to load installations', data.error);
+        setInstallationError(data.error || 'Failed to load installations');
       }
     } catch (e) {
       console.error('Error loading installations', e);
+      setInstallationError('Failed to load installations');
     }
   };
 
@@ -133,6 +144,15 @@ export default function ConfigurationPage() {
     }
   };
 
+  useEffect(() => {
+    if (installations.length !== 1) return;
+    if (selectedInstallationId && selectedInstallationId !== '0') return;
+
+    const id = String(installations[0].id);
+    setSelectedInstallationId(id);
+    fetchRepositories(id);
+  }, [installations, selectedInstallationId]);
+
   const loadExistingConfiguration = async () => {
     if (!session) return;
 
@@ -142,22 +162,70 @@ export default function ConfigurationPage() {
       const result = await response.json();
 
       if (response.ok && result.configuration) {
-        // Set the selected repository without triggering auto-save
-        setSelectedRepository(result.configuration.repositoryFullName || '');
+        setHasExistingConfiguration(true);
+        const repoName = result.configuration.repositoryFullName || '';
+        const installationId = result.configuration.installationId;
+
+        setSelectedRepository(repoName);
+
+        if (installationId) {
+          const idString = String(installationId);
+          setSelectedInstallationId(idString);
+          fetchRepositories(idString);
+          lastSavedRef.current = repoName
+            ? { repo: repoName, installation: idString }
+            : null;
+        } else {
+          setSelectedInstallationId('');
+        }
+      } else {
+        setHasExistingConfiguration(false);
       }
     } catch (error) {
       console.error('Error loading existing configuration:', error);
+      setHasExistingConfiguration(false);
     } finally {
       setIsLoadingConfiguration(false);
     }
   };
 
+  useEffect(() => {
+    if (
+      stayOnConfig ||
+      hasRedirectedRef.current ||
+      isLoadingConfiguration ||
+      !githubStatus?.connected ||
+      !hasExistingConfiguration ||
+      !selectedRepository
+    ) {
+      return;
+    }
+
+    hasRedirectedRef.current = true;
+    router.replace('/admin');
+  }, [stayOnConfig, isLoadingConfiguration, githubStatus?.connected, hasExistingConfiguration, selectedRepository, router]);
+
   // Removed disconnect handler
 
-  const handleAutoSaveRepository = async () => {
-    setSavingRepo(true);
-    setSaveMessage('');
-    setSaveError('');
+  const saveConfiguration = async (
+    repoName: string,
+    installationIdValue: string,
+    options?: { silent?: boolean }
+  ) => {
+    if (saving) {
+      return false;
+    }
+
+    if (!installationIdValue || installationIdValue === '0') {
+      setSaveError('Select a GitHub installation to continue.');
+      return false;
+    }
+
+    if (!options?.silent) {
+      setSaveMessage('');
+      setSaveError('');
+    }
+    setSaving(true);
 
     try {
       const response = await fetch('/api/config', {
@@ -166,31 +234,76 @@ export default function ConfigurationPage() {
           'Content-Type': 'application/json',
         },
         body: JSON.stringify({
-          repositoryFullName: selectedRepository,
-          installationId: Number(selectedInstallationId || 0),
+          repositoryFullName: repoName,
+          installationId: Number(installationIdValue),
         }),
       });
 
       const result = await response.json();
 
       if (response.ok) {
-        setSaveMessage(`Repository "${selectedRepository}" connected successfully!`);
-      } else {
-        setSaveError(result.error || 'Failed to save repository configuration');
+        setSaveError('');
+        lastSavedRef.current = { repo: repoName, installation: installationIdValue };
+        if (!options?.silent) {
+          setSaveMessage(`Repository "${repoName}" connected successfully!`);
+        }
+        return true;
       }
+
+      setSaveError(result.error || 'Failed to save repository configuration');
+      return false;
     } catch (error) {
       console.error('Error saving repository configuration:', error);
       setSaveError('An unexpected error occurred while saving repository');
+      return false;
     } finally {
-      setSavingRepo(false);
+      setSaving(false);
     }
   };
+
+  // Auto-save repository selection once we have both repo & installation
+  useEffect(() => {
+    if (
+      !githubStatus?.connected ||
+      isLoadingConfiguration ||
+      saving
+    ) {
+      return;
+    }
+
+    if (!selectedRepository) return;
+    if (!selectedInstallationId || selectedInstallationId === '0') return;
+
+    const key = { repo: selectedRepository, installation: selectedInstallationId };
+    const last = lastSavedRef.current;
+    if (last && last.repo === key.repo && last.installation === key.installation) {
+      return;
+    }
+
+    let cancelled = false;
+    (async () => {
+      const saved = await saveConfiguration(key.repo, key.installation, { silent: true });
+      if (!cancelled && saved) {
+        lastSavedRef.current = key;
+      }
+    })();
+
+    return () => {
+      cancelled = true;
+    };
+  }, [githubStatus?.connected, isLoadingConfiguration, saving, selectedRepository, selectedInstallationId]);
 
   // Email recipients removed from scope
 
   const handleTestConnection = async () => {
     if (!selectedRepository) {
       setSaveError('Please select a repository first.');
+      return;
+    }
+
+    const installationNumber = Number(selectedInstallationId);
+    if (!selectedInstallationId || selectedInstallationId === '0' || Number.isNaN(installationNumber) || installationNumber <= 0) {
+      setSaveError('Select a GitHub installation to test the connection.');
       return;
     }
 
@@ -206,7 +319,7 @@ export default function ConfigurationPage() {
         },
         body: JSON.stringify({
           repositoryName: selectedRepository,
-          installationId: Number(selectedInstallationId || 0),
+          installationId: installationNumber,
         }),
       });
 
@@ -224,6 +337,11 @@ export default function ConfigurationPage() {
       setLoading(false);
     }
   };
+
+  const needsReauth = installationError ? installationError.toLowerCase().includes('refresh') : false;
+  const hasConfiguredRepo = hasExistingConfiguration || Boolean(selectedRepository);
+  const needsReconnect = Boolean(githubStatus?.connected) && installations.length === 0 && hasConfiguredRepo;
+  const showInstallPrompt = Boolean(githubStatus?.connected) && installations.length === 0 && !hasConfiguredRepo;
 
   return (
     <div className="min-h-screen bg-gray-100">
@@ -317,14 +435,26 @@ export default function ConfigurationPage() {
 
               {githubStatus?.connected && (
                 <div>
-                  {installations.length === 0 ? (
+                  {showInstallPrompt ? (
                     <div className="px-6 pb-6">
                       <div className="p-4 border border-gray-200 rounded-xl bg-white flex items-center justify-between">
                         <div>
-                          <p className="text-sm text-gray-500">Next step</p>
-                          <p className="text-sm text-gray-800">Install the Wins Column GitHub App to continue.</p>
+                          <p className="text-sm text-gray-500">{needsReauth ? 'Welcome back' : 'Next step'}</p>
+                          <p className="text-sm text-gray-800">
+                            {needsReauth
+                              ? 'Your GitHub session expired. Sign in again to refresh your connection.'
+                              : 'Install the Wins Column GitHub App to continue.'}
+                          </p>
                         </div>
-                        {GITHUB_APP_INSTALL_URL ? (
+                        {needsReauth ? (
+                          <button
+                            type="button"
+                            onClick={handleReauthenticate}
+                            className="ml-4 inline-flex items-center px-4 py-2 text-sm font-medium text-white bg-black rounded-lg hover:bg-gray-800"
+                          >
+                            Sign in again
+                          </button>
+                        ) : GITHUB_APP_INSTALL_URL ? (
                           <a
                             href={GITHUB_APP_INSTALL_URL}
                             target="_blank"
@@ -337,6 +467,22 @@ export default function ConfigurationPage() {
                         ) : (
                           <span className="ml-4 text-xs text-gray-500">Set NEXT_PUBLIC_GITHUB_APP_INSTALL_URL</span>
                         )}
+                      </div>
+                    </div>
+                  ) : needsReconnect ? (
+                    <div className="px-6 pb-6">
+                      <div className="p-4 border border-gray-200 rounded-xl bg-white flex items-center justify-between">
+                        <div>
+                          <p className="text-sm text-gray-500">Welcome back</p>
+                          <p className="text-sm text-gray-800">We recognize your account, but need a quick sign-in to refresh access.</p>
+                        </div>
+                        <button
+                          type="button"
+                          onClick={handleReauthenticate}
+                          className="ml-4 inline-flex items-center px-4 py-2 text-sm font-medium text-white bg-black rounded-lg hover:bg-gray-800"
+                        >
+                          Sign in again
+                        </button>
                       </div>
                     </div>
                   ) : (
@@ -362,34 +508,62 @@ export default function ConfigurationPage() {
                         </select>
                       )}
 
-                      <div className="bg-white border border-gray-200 rounded-xl overflow-hidden">
-                        <div className="p-6">
-                          <label htmlFor="repository" className="block text-sm font-medium text-gray-700 mb-2">Repository</label>
-                          {loadingRepos ? (
-                            <div className="flex items-center space-x-3 p-4 border border-gray-200 rounded-xl">
-                              <div className="w-5 h-5 border-2 border-black border-t-transparent rounded-full animate-spin"></div>
-                              <span className="text-gray-600">Loading repositories...</span>
-                            </div>
-                          ) : (
-                            <select
-                              id="repository"
-                              value={selectedRepository}
-                              onChange={(e) => setSelectedRepository(e.target.value)}
-                              className="w-full rounded-lg border-gray-200 focus:border-black focus:ring-2 focus:ring-black text-gray-900 shadow-sm"
-                            >
-                              <option value="">Select a repository...</option>
-                              {repositories.map((repo) => (
-                                <option key={repo.id} value={repo.full_name}>
-                                  {repo.full_name} {repo.private ? '(Private)' : '(Public)'}
-                                </option>
-                              ))}
-                            </select>
-                          )}
-                          <p className="mt-2 text-sm text-gray-500">
-                            {selectedRepository ? `Selected: ${selectedRepository}` : 'Choose a repository to connect'}
-                          </p>
+                      {installations.length === 0 ? (
+                        <div className="px-6 pb-6">
+                          <div className="p-4 border border-gray-200 rounded-xl bg-white">
+                            <p className="text-sm text-gray-800">
+                              {selectedRepository
+                                ? `You're already connected to ${selectedRepository}.`
+                                : 'Your GitHub connection is active.'}
+                            </p>
+                            <p className="mt-2 text-sm text-gray-500">
+                              Continue to the dashboard, or reinstall the GitHub App if you need to change repositories.
+                            </p>
+                            {GITHUB_APP_INSTALL_URL && (
+                              <a
+                                href={GITHUB_APP_INSTALL_URL}
+                                target="_blank"
+                                rel="noopener noreferrer"
+                                onClick={() => { try { sessionStorage.setItem('installIntent', '1'); } catch {} }}
+                                className="mt-4 inline-flex items-center px-4 py-2 text-sm font-medium text-gray-700 border border-gray-300 rounded-lg hover:bg-gray-50"
+                              >
+                                Reinstall App
+                              </a>
+                            )}
+                          </div>
                         </div>
-                      </div>
+                      ) : (
+                        <div className="bg-white border border-gray-200 rounded-xl overflow-hidden">
+                          <div className="p-6">
+                            <label htmlFor="repository" className="block text-sm font-medium text-gray-700 mb-2">Repository</label>
+                            {loadingRepos ? (
+                              <div className="flex items-center space-x-3 p-4 border border-gray-200 rounded-xl">
+                                <div className="w-5 h-5 border-2 border-black border-t-transparent rounded-full animate-spin"></div>
+                                <span className="text-gray-600">Loading repositories...</span>
+                              </div>
+                            ) : (
+                              <select
+                                id="repository"
+                                value={selectedRepository}
+                                onChange={(e) => {
+                                  setSelectedRepository(e.target.value);
+                                }}
+                                className="w-full rounded-lg border-gray-200 focus:border-black focus:ring-2 focus:ring-black text-gray-900 shadow-sm"
+                              >
+                                <option value="">Select a repository...</option>
+                                {repositories.map((repo) => (
+                                  <option key={repo.id} value={repo.full_name}>
+                                    {repo.full_name} {repo.private ? '(Private)' : '(Public)'}
+                                  </option>
+                                ))}
+                              </select>
+                            )}
+                            <p className="mt-2 text-sm text-gray-500">
+                              {selectedRepository ? `Selected: ${selectedRepository}` : 'Choose a repository to connect'}
+                            </p>
+                          </div>
+                        </div>
+                      )}
 
                       <div className="mt-4">
                         <button
@@ -398,9 +572,11 @@ export default function ConfigurationPage() {
                               setSaveError('Please select a repository first.');
                               return;
                             }
+                            hasRedirectedRef.current = true;
                             router.push('/admin');
                           }}
-                          className="inline-flex items-center px-6 py-4 text-md font-medium text-white bg-black rounded-lg hover:bg-gray-800 transition-colors"
+                          disabled={saving}
+                          className="inline-flex items-center px-6 py-4 text-md font-medium text-white bg-black rounded-lg hover:bg-gray-800 transition-colors disabled:opacity-50"
                         >
                           See Dashboard →
                         </button>
@@ -408,7 +584,24 @@ export default function ConfigurationPage() {
                     </div>
                   )}
 
-                  {saveMessage && !saveMessage.includes('connected successfully') && (
+                  {(installationError && !needsReconnect) && (
+                    <div className="mx-6 mt-4 rounded-lg border border-yellow-200 bg-yellow-50 px-4 py-3 text-sm text-yellow-900">
+                      <p>{needsReauth ? 'Welcome back! Your GitHub session expired. Sign in again to refresh your connection.' : installationError}</p>
+                      {needsReauth && (
+                        <p className="mt-2 text-yellow-800">
+                          <button
+                            type="button"
+                            className="font-semibold underline"
+                            onClick={handleReauthenticate}
+                          >
+                            Sign in again
+                          </button>
+                        </p>
+                      )}
+                    </div>
+                  )}
+
+                  {saveMessage && (
                     <div className="mt-6 p-4 border border-gray-200 rounded-xl bg-white">
                       <p className="text-gray-800">{saveMessage}</p>
                     </div>

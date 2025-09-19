@@ -260,6 +260,7 @@ export async function GET(): Promise<NextResponse> {
         provider: project.provider,
         createdAt: project.created_at,
         updatedAt: project.updated_at,
+        installationId: project.installation_id ?? null,
       }
     });
 

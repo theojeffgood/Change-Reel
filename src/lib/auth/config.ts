@@ -1,5 +1,70 @@
 import { NextAuthOptions } from 'next-auth';
+import type { JWT } from 'next-auth/jwt';
 import GitHubProvider from 'next-auth/providers/github';
+
+const TOKEN_EXPIRY_BUFFER_MS = 60_000; // refresh 1 minute before expiry
+
+type GithubJwt = JWT & {
+  accessToken?: string;
+  accessTokenExpires?: number;
+  refreshToken?: string;
+  refreshTokenExpires?: number;
+  accessTokenError?: string;
+};
+
+async function refreshGitHubAccessToken(token: GithubJwt): Promise<GithubJwt> {
+  if (!token.refreshToken) {
+    return {
+      ...token,
+      accessTokenError: 'Missing refresh token',
+    };
+  }
+
+  try {
+    const params = new URLSearchParams({
+      client_id: process.env.OAUTH_CLIENT_ID!,
+      client_secret: process.env.OAUTH_CLIENT_SECRET!,
+      grant_type: 'refresh_token',
+      refresh_token: token.refreshToken,
+    });
+
+    const response = await fetch('https://github.com/login/oauth/access_token', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/x-www-form-urlencoded',
+        Accept: 'application/json',
+      },
+      body: params.toString(),
+    });
+
+    const refreshed = await response.json();
+
+    if (!response.ok || !refreshed?.access_token) {
+      const message = refreshed?.error_description || refreshed?.error || `HTTP ${response.status}`;
+      throw new Error(message);
+    }
+
+    const expiresInMs = typeof refreshed.expires_in === 'number' ? refreshed.expires_in * 1000 : undefined;
+    const refreshExpiresInMs = typeof refreshed.refresh_token_expires_in === 'number' ? refreshed.refresh_token_expires_in * 1000 : undefined;
+
+    return {
+      ...token,
+      accessToken: refreshed.access_token,
+      accessTokenExpires: expiresInMs ? Date.now() + expiresInMs : undefined,
+      refreshToken: refreshed.refresh_token || token.refreshToken,
+      refreshTokenExpires: refreshExpiresInMs ? Date.now() + refreshExpiresInMs : token.refreshTokenExpires,
+      accessTokenError: undefined,
+    };
+  } catch (error) {
+    console.error('[auth] failed to refresh GitHub access token', error);
+    return {
+      ...token,
+      accessToken: undefined,
+      accessTokenExpires: undefined,
+      accessTokenError: error instanceof Error ? error.message : 'Unknown refresh error',
+    };
+  }
+}
 
 if (!process.env.OAUTH_CLIENT_ID) {
   throw new Error('Missing OAUTH_CLIENT_ID environment variable');
@@ -30,18 +95,63 @@ export const authConfig: NextAuthOptions = {
   debug: process.env.NODE_ENV === 'development',
   callbacks: {
     async jwt({ token, account, profile }) {
-      // Persist the OAuth access_token to the token right after signin
-      if (account) {
-        token.githubId = profile?.id;
-        token.login = profile?.login;
-        // Store the GitHub user OAuth access token on the server-side JWT
-        // Used by server routes to call user-scoped GitHub APIs (e.g., /user/installations)
-        // Do NOT expose this on the client session.
-        // account.access_token is provided by next-auth for OAuth providers
-        // Typing cast to any to avoid NextAuth type limitations.
-        (token as any).accessToken = (account as any)?.access_token;
+      const githubToken = token as GithubJwt;
+
+      if (profile?.id) {
+        githubToken.githubId = profile.id;
       }
-      return token;
+      if (profile?.login) {
+        githubToken.login = profile.login;
+      }
+
+      if (account?.provider === 'github') {
+        const expiresAtMs = typeof (account as any)?.expires_at === 'number'
+          ? ((account as any).expires_at as number) * 1000
+          : undefined;
+        const expiresInMs = typeof (account as any)?.expires_in === 'number'
+          ? ((account as any).expires_in as number) * 1000
+          : undefined;
+
+        githubToken.accessToken = (account as any)?.access_token ?? githubToken.accessToken;
+        githubToken.accessTokenExpires = expiresAtMs ?? (expiresInMs ? Date.now() + expiresInMs : githubToken.accessTokenExpires);
+        githubToken.refreshToken = (account as any)?.refresh_token ?? githubToken.refreshToken;
+        const refreshExpiresInMs = typeof (account as any)?.refresh_token_expires_in === 'number'
+          ? ((account as any).refresh_token_expires_in as number) * 1000
+          : undefined;
+        githubToken.refreshTokenExpires = refreshExpiresInMs
+          ? Date.now() + refreshExpiresInMs
+          : githubToken.refreshTokenExpires;
+        githubToken.accessTokenError = undefined;
+      }
+
+      const expiresAt = githubToken.accessTokenExpires;
+
+      if (!githubToken.accessToken) {
+        return githubToken;
+      }
+
+      if (!expiresAt) {
+        // Token is treated as long-lived (some GitHub OAuth tokens never expire)
+        return githubToken;
+      }
+
+      if (Date.now() < expiresAt - TOKEN_EXPIRY_BUFFER_MS) {
+        return githubToken;
+      }
+
+      if (
+        githubToken.refreshTokenExpires &&
+        Date.now() >= githubToken.refreshTokenExpires - TOKEN_EXPIRY_BUFFER_MS
+      ) {
+        return {
+          ...githubToken,
+          accessToken: undefined,
+          accessTokenExpires: undefined,
+          accessTokenError: 'Refresh token expired',
+        };
+      }
+
+      return refreshGitHubAccessToken(githubToken);
     },
     async session({ session, token }) {
       // Send properties to the client
@@ -52,6 +162,9 @@ export const authConfig: NextAuthOptions = {
         if (token.githubId) {
           session.user.id = String(token.githubId);
         }
+      }
+      if ((token as GithubJwt).accessTokenError) {
+        (session as any).error = (token as GithubJwt).accessTokenError;
       }
       // Intentionally DO NOT add accessToken to the session object to avoid exposing it to the client.
       return session;

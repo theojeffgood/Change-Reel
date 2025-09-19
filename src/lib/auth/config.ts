@@ -83,6 +83,11 @@ export const authConfig: NextAuthOptions = {
     GitHubProvider({
       clientId: process.env.OAUTH_CLIENT_ID,
       clientSecret: process.env.OAUTH_CLIENT_SECRET,
+      authorization: {
+        params: {
+          scope: 'read:user user:email read:org',
+        },
+      },
       // Disable state/PKCE checks to support GitHub App-initiated OAuth during installation
       // (GitHub provides the state, not NextAuth; this prevents state mismatch)
       checks: [],

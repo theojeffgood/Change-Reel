@@ -1,7 +1,6 @@
 "use client";
 
 import Link from 'next/link'
-import { signIn } from 'next-auth/react'
 
 interface SiteHeaderProps {
   className?: string
@@ -14,14 +13,8 @@ const SiteHeader = ({
   isAuthenticated = false,
   hasActiveConfiguration = false,
 }: SiteHeaderProps) => {
-  const handleSignIn = (callback: string) => {
-    void signIn('github', { callbackUrl: callback });
-  };
-
-  const setupHref = hasActiveConfiguration ? '/config?stay=1' : undefined;
-  const setupLabel = hasActiveConfiguration ? 'Setup' : (isAuthenticated ? 'Sign in again' : 'Sign In');
-  const setupCallback = hasActiveConfiguration ? undefined : '/config?stay=1';
-  const primarySignInCallback = '/config';
+  const setupHref = hasActiveConfiguration ? '/config?stay=1' : '/config';
+  const setupLabel = isAuthenticated ? 'Setup' : 'Sign In';
 
   return (
     <nav className={`relative px-4 sm:px-6 lg:px-8 py-6 ${className}`}>
@@ -33,42 +26,22 @@ const SiteHeader = ({
           <span className="text-xl font-bold text-gray-900">Wins Column</span>
         </Link>
         
-        {isAuthenticated ? (
-          <div className="flex items-center space-x-4">
-            {hasActiveConfiguration ? (
-              <Link
-                href={setupHref!}
-                className="text-gray-600 hover:text-gray-900 transition-colors"
-              >
-                {setupLabel}
-              </Link>
-            ) : (
-              <button
-                type="button"
-                onClick={() => handleSignIn(setupCallback!)}
-                className="text-gray-600 hover:text-gray-900 transition-colors"
-              >
-                {setupLabel}
-              </button>
-            )}
-          </div>
-        ) : (
-          <div className="flex items-center space-x-4">
-            <button
-              type="button"
-              onClick={() => handleSignIn(primarySignInCallback)}
-              className="text-gray-600 hover:text-gray-900 transition-colors"
-            >
-              Sign In
-            </button>
+        <div className="flex items-center space-x-4">
+          <Link
+            href={setupHref}
+            className="text-gray-600 hover:text-gray-900 transition-colors"
+          >
+            {setupLabel}
+          </Link>
+          {!isAuthenticated && (
             <Link
               href="/admin"
               className="inline-flex items-center px-4 py-2 bg-black text-white rounded-lg hover:bg-gray-800 transition-colors"
             >
               Get Started
             </Link>
-          </div>
-        )}
+          )}
+        </div>
       </div>
     </nav>
   );

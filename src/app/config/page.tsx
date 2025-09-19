@@ -63,6 +63,12 @@ function ConfigurationPageContent() {
   const hasRedirectedRef = useRef(false);
   const lastSavedRef = useRef<{ repo: string; installation: string } | null>(null);
 
+  const needsReauth = installationError ? installationError.toLowerCase().includes('refresh') : false;
+  const hasConfiguredRepo = hasExistingConfiguration || Boolean(selectedRepository);
+  const needsReconnect = Boolean(githubStatus?.connected) && installations.length === 0 && hasConfiguredRepo;
+  const showInstallPrompt = Boolean(githubStatus?.connected) && installations.length === 0 && !hasConfiguredRepo;
+  const headerHasActiveConfiguration = hasExistingConfiguration && Boolean(selectedInstallationId && selectedInstallationId !== '0');
+
   const handleGitHubConnect = async () => {
     if (!GITHUB_APP_INSTALL_URL) return;
 
@@ -348,12 +354,6 @@ function ConfigurationPageContent() {
       setLoading(false);
     }
   };
-
-  const needsReauth = installationError ? installationError.toLowerCase().includes('refresh') : false;
-  const hasConfiguredRepo = hasExistingConfiguration || Boolean(selectedRepository);
-  const needsReconnect = Boolean(githubStatus?.connected) && installations.length === 0 && hasConfiguredRepo;
-  const showInstallPrompt = Boolean(githubStatus?.connected) && installations.length === 0 && !hasConfiguredRepo;
-  const headerHasActiveConfiguration = hasExistingConfiguration && Boolean(selectedInstallationId && selectedInstallationId !== '0');
 
   return (
     <div className="min-h-screen bg-gray-100">

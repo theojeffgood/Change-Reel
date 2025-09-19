@@ -1,6 +1,7 @@
 'use client';
 
-import { Suspense, useState, useEffect, useRef } from 'react';
+import { Suspense, useState, useEffect, useRef, useCallback } from 'react';
+import Image from 'next/image';
 import { useSession, signIn } from 'next-auth/react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import SiteHeader from '@/components/layout/SiteHeader'
@@ -15,7 +16,7 @@ interface GitHubStatus {
     avatar_url: string;
     email: string;
   };
-  repository?: any;
+  repository?: Record<string, unknown> | null;
   error?: string;
 }
 
@@ -65,30 +66,13 @@ function ConfigurationPageContent() {
   const stayOnConfig = ['1', 'true'].includes((searchParams?.get('stay') || '').toLowerCase());
   const hasRedirectedRef = useRef(false);
   const lastSavedRef = useRef<{ repo: string; installation: string } | null>(null);
+  const savingRef = useRef(false);
 
   const needsReauth = installationError ? installationError.toLowerCase().includes('refresh') : false;
   const hasConfiguredRepo = hasExistingConfiguration || Boolean(selectedRepository);
   const needsReconnect = Boolean(githubStatus?.connected) && installations.length === 0 && hasConfiguredRepo;
   const showInstallPrompt = Boolean(githubStatus?.connected) && installations.length === 0 && !hasConfiguredRepo;
   const headerHasActiveConfiguration = hasExistingConfiguration && Boolean(selectedInstallationId && selectedInstallationId !== '0');
-  const isInitializing = sessionStatus === 'loading' || githubStatusLoading || !configurationLoaded || !installationsLoaded;
-
-  if (isInitializing) {
-    return (
-      <div className="min-h-screen bg-gray-100">
-        <SiteHeader
-          isAuthenticated={Boolean(session)}
-          hasActiveConfiguration={false}
-        />
-        <div className="flex items-center justify-center py-24">
-          <div className="flex items-center space-x-3 text-gray-600">
-            <div className="w-5 h-5 border-2 border-gray-300 border-t-black rounded-full animate-spin" />
-            <span>Checking your GitHub connection…</span>
-          </div>
-        </div>
-      </div>
-    );
-  }
 
   const handleGitHubConnect = async () => {
     if (!GITHUB_APP_INSTALL_URL) return;
@@ -109,24 +93,7 @@ function ConfigurationPageContent() {
   };
   
 
-  // Check GitHub connection status and load existing configuration
-  useEffect(() => {
-    if (sessionStatus === 'authenticated') {
-      checkGitHubStatus();
-      fetchInstallations();
-      loadExistingConfiguration();
-    } else if (sessionStatus === 'unauthenticated') {
-      setGithubStatusLoading(false);
-      setInstallationsLoaded(true);
-      setConfigurationLoaded(true);
-      setGithubStatus({ connected: false });
-      setHasExistingConfiguration(false);
-    }
-  }, [sessionStatus]);
-
-  // No-op cleanup; flow handled entirely by GitHub App + NextAuth callback
-
-  const checkGitHubStatus = async () => {
+  const checkGitHubStatus = useCallback(async () => {
     try {
       const response = await fetch('/api/auth/github/status');
       const data = await response.json();
@@ -137,9 +104,9 @@ function ConfigurationPageContent() {
     } finally {
       setGithubStatusLoading(false);
     }
-  };
+  }, []);
 
-  const fetchInstallations = async () => {
+  const fetchInstallations = useCallback(async () => {
     setInstallationsLoaded(false);
     try {
       const res = await fetch('/api/github/installations');
@@ -158,9 +125,9 @@ function ConfigurationPageContent() {
     } finally {
       setInstallationsLoaded(true);
     }
-  };
+  }, []);
 
-  const fetchRepositories = async (installationId: string) => {
+  const fetchRepositories = useCallback(async (installationId: string) => {
     if (!installationId) return;
     setLoadingRepos(true);
     try {
@@ -178,7 +145,7 @@ function ConfigurationPageContent() {
     } finally {
       setLoadingRepos(false);
     }
-  };
+  }, []);
 
   useEffect(() => {
     if (installations.length !== 1) return;
@@ -186,10 +153,10 @@ function ConfigurationPageContent() {
 
     const id = String(installations[0].id);
     setSelectedInstallationId(id);
-    fetchRepositories(id);
-  }, [installations, selectedInstallationId]);
+    void fetchRepositories(id);
+  }, [installations, selectedInstallationId, fetchRepositories]);
 
-  const loadExistingConfiguration = async () => {
+  const loadExistingConfiguration = useCallback(async () => {
     if (!session) return;
 
     setIsLoadingConfiguration(true);
@@ -208,7 +175,7 @@ function ConfigurationPageContent() {
         if (installationId) {
           const idString = String(installationId);
           setSelectedInstallationId(idString);
-          fetchRepositories(idString);
+          void fetchRepositories(idString);
           lastSavedRef.current = repoName
             ? { repo: repoName, installation: idString }
             : null;
@@ -225,7 +192,27 @@ function ConfigurationPageContent() {
       setIsLoadingConfiguration(false);
       setConfigurationLoaded(true);
     }
-  };
+  }, [session, fetchRepositories]);
+
+  // Kick off initial data loading once session state is known
+  useEffect(() => {
+    if (sessionStatus === 'authenticated') {
+      void checkGitHubStatus();
+      void fetchInstallations();
+      void loadExistingConfiguration();
+    } else if (sessionStatus === 'unauthenticated') {
+      setGithubStatusLoading(false);
+      setInstallationsLoaded(true);
+      setConfigurationLoaded(true);
+      setGithubStatus({ connected: false });
+      setHasExistingConfiguration(false);
+    }
+  }, [
+    sessionStatus,
+    checkGitHubStatus,
+    fetchInstallations,
+    loadExistingConfiguration,
+  ]);
 
   useEffect(() => {
     if (
@@ -262,12 +249,12 @@ function ConfigurationPageContent() {
 
   // Removed disconnect handler
 
-  const saveConfiguration = async (
+  const saveConfiguration = useCallback(async (
     repoName: string,
     installationIdValue: string,
     options?: { silent?: boolean }
-  ) => {
-    if (saving) {
+  ): Promise<boolean> => {
+    if (savingRef.current) {
       return false;
     }
 
@@ -280,6 +267,7 @@ function ConfigurationPageContent() {
       setSaveMessage('');
       setSaveError('');
     }
+    savingRef.current = true;
     setSaving(true);
 
     try {
@@ -312,9 +300,10 @@ function ConfigurationPageContent() {
       setSaveError('An unexpected error occurred while saving repository');
       return false;
     } finally {
+      savingRef.current = false;
       setSaving(false);
     }
-  };
+  }, []);
 
   // Auto-save repository selection once we have both repo & installation
   useEffect(() => {
@@ -346,52 +335,11 @@ function ConfigurationPageContent() {
     return () => {
       cancelled = true;
     };
-  }, [githubStatus?.connected, isLoadingConfiguration, saving, selectedRepository, selectedInstallationId]);
+  }, [githubStatus?.connected, isLoadingConfiguration, saving, selectedRepository, selectedInstallationId, saveConfiguration]);
 
   // Email recipients removed from scope
 
-  const handleTestConnection = async () => {
-    if (!selectedRepository) {
-      setSaveError('Please select a repository first.');
-      return;
-    }
-
-    const installationNumber = Number(selectedInstallationId);
-    if (!selectedInstallationId || selectedInstallationId === '0' || Number.isNaN(installationNumber) || installationNumber <= 0) {
-      setSaveError('Select a GitHub installation to test the connection.');
-      return;
-    }
-
-    setLoading(true);
-    setSaveMessage('');
-    setSaveError('');
-
-    try {
-      const response = await fetch('/api/test-connection', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          repositoryName: selectedRepository,
-          installationId: installationNumber,
-        }),
-      });
-
-      const result = await response.json();
-
-      if (response.ok) {
-        setSaveMessage(`Connection successful! Repository: ${result.repository?.name}, Permissions: ${result.repository?.permissions || 'Unknown'}`);
-      } else {
-        setSaveError(result.error || 'Connection test failed');
-      }
-    } catch (error) {
-      console.error('Error testing connection:', error);
-      setSaveError('Failed to test connection');
-    } finally {
-      setLoading(false);
-    }
-  };
+  const isInitializing = sessionStatus === 'loading' || githubStatusLoading || !configurationLoaded || !installationsLoaded;
 
   return (
     <div className="min-h-screen bg-gray-100">
@@ -399,7 +347,16 @@ function ConfigurationPageContent() {
         isAuthenticated={Boolean(session)}
         hasActiveConfiguration={headerHasActiveConfiguration}
       />
-      
+
+      {isInitializing ? (
+        <div className="flex items-center justify-center py-24">
+          <div className="flex items-center space-x-3 text-gray-600">
+            <div className="w-5 h-5 border-2 border-gray-300 border-t-black rounded-full animate-spin" />
+            <span>Checking your GitHub connection…</span>
+          </div>
+        </div>
+      ) : (
+        <>
       {/* Disconnect dialog removed */}
 
       {/* Header */}
@@ -427,10 +384,12 @@ function ConfigurationPageContent() {
                       <div className="flex items-center justify-between p-6">
                         <div className="flex items-center space-x-4">
                           {githubStatus.user?.avatar_url && (
-                            <img 
-                              src={githubStatus.user.avatar_url} 
-                              alt="Profile Avatar" 
-                              className="w-10 h-10 rounded-full"
+                            <Image
+                              src={githubStatus.user.avatar_url}
+                              alt="Profile Avatar"
+                              width={40}
+                              height={40}
+                              className="rounded-full"
                             />
                           )}
                           <div>
@@ -458,10 +417,10 @@ function ConfigurationPageContent() {
                       <div className="text-center">
                         <div className="inline-flex flex-col items-center space-y-3">
                                                      <button
-                             onClick={handleGitHubConnect}
-                             disabled={loading || !GITHUB_APP_INSTALL_URL}
-                             className="inline-flex items-center mt-6 px-6 py-3 bg-black text-white rounded-lg hover:bg-gray-800 transition-colors font-semibold disabled:opacity-50"
-                           >
+                            onClick={handleGitHubConnect}
+                            disabled={loading || !GITHUB_APP_INSTALL_URL}
+                            className="inline-flex items-center mt-6 px-6 py-3 bg-black text-white rounded-lg hover:bg-gray-800 transition-colors font-semibold disabled:opacity-50"
+                          >
                              {loading ? (
                                <>
                                  <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin mr-2"></div>
@@ -671,6 +630,8 @@ function ConfigurationPageContent() {
         </div>
       </div>
       <SiteFooter />
+        </>
+      )}
     </div>
   );
 } 

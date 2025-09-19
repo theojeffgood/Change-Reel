@@ -5,6 +5,14 @@ const nextConfig: NextConfig = {
   experimental: {
     optimizePackageImports: ['@/components'],
   },
+  images: {
+    remotePatterns: [
+      {
+        protocol: 'https',
+        hostname: 'avatars.githubusercontent.com',
+      },
+    ],
+  },
   async headers() {
     const allowOrigin = process.env.NEXTAUTH_URL || '*'
     return [

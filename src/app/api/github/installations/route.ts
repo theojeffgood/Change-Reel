@@ -47,7 +47,7 @@ export async function GET(request: NextRequest) {
         const isAuthError = message.includes('401') || message.toLowerCase().includes('bad credentials');
         if (isAuthError) {
           effectiveTokenError = effectiveTokenError || 'refresh_required';
-          console.debug('[github/installations] user token invalid, relying on stored installations');
+          console.debug('[github/installations] user token invalid; prompting re-authentication');
         } else {
           console.warn('[github/installations] user installation lookup failed, falling back to stored data', err);
         }

@@ -64,7 +64,7 @@ export function createJobProcessingSystem(dependencies: JobSystemDependencies) {
       jobQueueService,
       dependencies.commitService,
       dependencies.projectService,
-      dependencies.userService
+      dependencies.webhookService
     ),
   }
 
@@ -164,7 +164,7 @@ export const DEVELOPMENT_CONFIG = {
   max_retry_delay_ms: 10000,
   exponential_backoff: true,
   job_timeout_ms: 300000, // 5 minutes
-  cleanup_completed_after_days: 1,
+  cleanup_completed_after_days: 5,
 }
 
 /**

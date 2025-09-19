@@ -1,7 +1,7 @@
 'use client';
 
 import { Suspense, useState, useEffect, useRef } from 'react';
-import { useSession } from 'next-auth/react';
+import { useSession, signIn } from 'next-auth/react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import SiteHeader from '@/components/layout/SiteHeader'
 import SiteFooter from '@/components/layout/SiteFooter'
@@ -84,10 +84,7 @@ function ConfigurationPageContent() {
 
   const handleReauthenticate = () => {
     hasRedirectedRef.current = true;
-    if (typeof window !== 'undefined') {
-      const callback = encodeURIComponent('/config?stay=1');
-      window.location.assign(`/api/auth/signin/github?callbackUrl=${callback}`);
-    }
+    void signIn('github', { callbackUrl: '/config?stay=1' });
   };
   
 

@@ -1,4 +1,7 @@
+"use client";
+
 import Link from 'next/link'
+import { signIn } from 'next-auth/react'
 
 interface SiteHeaderProps {
   className?: string
@@ -11,10 +14,14 @@ const SiteHeader = ({
   isAuthenticated = false,
   hasActiveConfiguration = false,
 }: SiteHeaderProps) => {
-  const callbackParam = encodeURIComponent('/config?stay=1')
-  const signinHref = `/api/auth/signin/github?callbackUrl=${callbackParam}`
-  const setupHref = hasActiveConfiguration ? '/config?stay=1' : signinHref
-  const setupLabel = hasActiveConfiguration ? 'Setup' : (isAuthenticated ? 'Sign in again' : 'Sign In')
+  const handleSignIn = (callback: string) => {
+    void signIn('github', { callbackUrl: callback });
+  };
+
+  const setupHref = hasActiveConfiguration ? '/config?stay=1' : undefined;
+  const setupLabel = hasActiveConfiguration ? 'Setup' : (isAuthenticated ? 'Sign in again' : 'Sign In');
+  const setupCallback = hasActiveConfiguration ? undefined : '/config?stay=1';
+  const primarySignInCallback = '/config';
 
   return (
     <nav className={`relative px-4 sm:px-6 lg:px-8 py-6 ${className}`}>
@@ -28,21 +35,32 @@ const SiteHeader = ({
         
         {isAuthenticated ? (
           <div className="flex items-center space-x-4">
-            <Link
-              href={setupHref}
-              className="text-gray-600 hover:text-gray-900 transition-colors"
-            >
-              {setupLabel}
-            </Link>
+            {hasActiveConfiguration ? (
+              <Link
+                href={setupHref!}
+                className="text-gray-600 hover:text-gray-900 transition-colors"
+              >
+                {setupLabel}
+              </Link>
+            ) : (
+              <button
+                type="button"
+                onClick={() => handleSignIn(setupCallback!)}
+                className="text-gray-600 hover:text-gray-900 transition-colors"
+              >
+                {setupLabel}
+              </button>
+            )}
           </div>
         ) : (
           <div className="flex items-center space-x-4">
-            <Link
-              href={signinHref}
+            <button
+              type="button"
+              onClick={() => handleSignIn(primarySignInCallback)}
               className="text-gray-600 hover:text-gray-900 transition-colors"
             >
               Sign In
-            </Link>
+            </button>
             <Link
               href="/admin"
               className="inline-flex items-center px-4 py-2 bg-black text-white rounded-lg hover:bg-gray-800 transition-colors"

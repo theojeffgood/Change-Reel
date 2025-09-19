@@ -28,12 +28,20 @@ export async function GET(request: NextRequest) {
     const tokenError = (jwt as any)?.accessTokenError as string | undefined;
 
     let installations: InstallationResponse[] = [];
+    let effectiveTokenError = tokenError;
 
     if (userAccessToken) {
       try {
         installations = await listUserInstallations(userAccessToken);
       } catch (err) {
-        console.warn('[github/installations] user installation lookup failed, falling back to stored data', err);
+        const message = err instanceof Error ? err.message : String(err);
+        const isAuthError = message.includes('401') || message.toLowerCase().includes('bad credentials');
+        if (isAuthError) {
+          effectiveTokenError = effectiveTokenError || 'refresh_required';
+          console.info('[github/installations] GitHub token invalid, using stored installations');
+        } else {
+          console.warn('[github/installations] user installation lookup failed, falling back to stored data', err);
+        }
       }
     }
 
@@ -67,7 +75,7 @@ export async function GET(request: NextRequest) {
       }
     }
 
-    return NextResponse.json({ installations, tokenError: tokenError || undefined });
+    return NextResponse.json({ installations, tokenError: effectiveTokenError || undefined });
   } catch (e: any) {
     return NextResponse.json({ error: e?.message || 'Failed to list installations' }, { status: 500 });
   }

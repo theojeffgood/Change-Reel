@@ -196,14 +196,25 @@ function ConfigurationPageContent() {
       isLoadingConfiguration ||
       !githubStatus?.connected ||
       !hasExistingConfiguration ||
-      !selectedRepository
+      !selectedRepository ||
+      needsReauth ||
+      needsReconnect
     ) {
       return;
     }
 
     hasRedirectedRef.current = true;
     router.replace('/admin');
-  }, [stayOnConfig, isLoadingConfiguration, githubStatus?.connected, hasExistingConfiguration, selectedRepository, router]);
+  }, [
+    stayOnConfig,
+    isLoadingConfiguration,
+    githubStatus?.connected,
+    hasExistingConfiguration,
+    selectedRepository,
+    needsReauth,
+    needsReconnect,
+    router,
+  ]);
 
   // Removed disconnect handler
 

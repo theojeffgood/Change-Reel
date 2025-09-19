@@ -40,7 +40,7 @@ export default function ConfigurationPage() {
 }
 
 function ConfigurationPageContent() {
-  const { data: session } = useSession();
+  const { data: session, status: sessionStatus } = useSession();
   const router = useRouter();
   const searchParams = useSearchParams();
   const [githubStatus, setGithubStatus] = useState<GitHubStatus | null>(null);
@@ -54,10 +54,13 @@ function ConfigurationPageContent() {
   const [saveMessage, setSaveMessage] = useState('');
   const [saveError, setSaveError] = useState('');
   const [isLoadingConfiguration, setIsLoadingConfiguration] = useState(false);
+  const [configurationLoaded, setConfigurationLoaded] = useState(false);
   const [showInstallPicker, setShowInstallPicker] = useState(false);
   const [hasExistingConfiguration, setHasExistingConfiguration] = useState(false);
   const [installationError, setInstallationError] = useState('');
   const [saving, setSaving] = useState(false);
+  const [installationsLoaded, setInstallationsLoaded] = useState(false);
+  const [githubStatusLoading, setGithubStatusLoading] = useState(true);
   const GITHUB_APP_INSTALL_URL = process.env.NEXT_PUBLIC_GITHUB_APP_INSTALL_URL;
   const stayOnConfig = ['1', 'true'].includes((searchParams?.get('stay') || '').toLowerCase());
   const hasRedirectedRef = useRef(false);
@@ -68,6 +71,24 @@ function ConfigurationPageContent() {
   const needsReconnect = Boolean(githubStatus?.connected) && installations.length === 0 && hasConfiguredRepo;
   const showInstallPrompt = Boolean(githubStatus?.connected) && installations.length === 0 && !hasConfiguredRepo;
   const headerHasActiveConfiguration = hasExistingConfiguration && Boolean(selectedInstallationId && selectedInstallationId !== '0');
+  const isInitializing = sessionStatus === 'loading' || githubStatusLoading || !configurationLoaded || !installationsLoaded;
+
+  if (isInitializing) {
+    return (
+      <div className="min-h-screen bg-gray-100">
+        <SiteHeader
+          isAuthenticated={Boolean(session)}
+          hasActiveConfiguration={false}
+        />
+        <div className="flex items-center justify-center py-24">
+          <div className="flex items-center space-x-3 text-gray-600">
+            <div className="w-5 h-5 border-2 border-gray-300 border-t-black rounded-full animate-spin" />
+            <span>Checking your GitHub connection…</span>
+          </div>
+        </div>
+      </div>
+    );
+  }
 
   const handleGitHubConnect = async () => {
     if (!GITHUB_APP_INSTALL_URL) return;
@@ -90,12 +111,18 @@ function ConfigurationPageContent() {
 
   // Check GitHub connection status and load existing configuration
   useEffect(() => {
-    if (session) {
+    if (sessionStatus === 'authenticated') {
       checkGitHubStatus();
       fetchInstallations();
       loadExistingConfiguration();
+    } else if (sessionStatus === 'unauthenticated') {
+      setGithubStatusLoading(false);
+      setInstallationsLoaded(true);
+      setConfigurationLoaded(true);
+      setGithubStatus({ connected: false });
+      setHasExistingConfiguration(false);
     }
-  }, [session]);
+  }, [sessionStatus]);
 
   // No-op cleanup; flow handled entirely by GitHub App + NextAuth callback
 
@@ -107,10 +134,13 @@ function ConfigurationPageContent() {
     } catch (error) {
       console.error('Error checking GitHub status:', error);
       setGithubStatus({ connected: false, error: 'Failed to check status' });
+    } finally {
+      setGithubStatusLoading(false);
     }
   };
 
   const fetchInstallations = async () => {
+    setInstallationsLoaded(false);
     try {
       const res = await fetch('/api/github/installations');
       const data = await res.json();
@@ -125,6 +155,8 @@ function ConfigurationPageContent() {
     } catch (e) {
       console.error('Error loading installations', e);
       setInstallationError('Failed to load installations');
+    } finally {
+      setInstallationsLoaded(true);
     }
   };
 
@@ -161,6 +193,7 @@ function ConfigurationPageContent() {
     if (!session) return;
 
     setIsLoadingConfiguration(true);
+    setConfigurationLoaded(false);
     try {
       const response = await fetch('/api/config');
       const result = await response.json();
@@ -190,6 +223,7 @@ function ConfigurationPageContent() {
       setHasExistingConfiguration(false);
     } finally {
       setIsLoadingConfiguration(false);
+      setConfigurationLoaded(true);
     }
   };
 
@@ -198,6 +232,9 @@ function ConfigurationPageContent() {
       stayOnConfig ||
       hasRedirectedRef.current ||
       isLoadingConfiguration ||
+      !configurationLoaded ||
+      !installationsLoaded ||
+      githubStatusLoading ||
       !githubStatus?.connected ||
       !hasExistingConfiguration ||
       !selectedRepository ||
@@ -212,6 +249,9 @@ function ConfigurationPageContent() {
   }, [
     stayOnConfig,
     isLoadingConfiguration,
+    configurationLoaded,
+    installationsLoaded,
+    githubStatusLoading,
     githubStatus?.connected,
     hasExistingConfiguration,
     selectedRepository,

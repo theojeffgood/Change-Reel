@@ -26,11 +26,20 @@ export async function GET(request: NextRequest) {
     const jwt = await getToken({ req: request, secret: process.env.NEXTAUTH_SECRET });
     const userAccessToken = (jwt as any)?.accessToken as string | undefined;
     const tokenError = (jwt as any)?.accessTokenError as string | undefined;
+    const tokenExpiresAt = typeof (jwt as any)?.accessTokenExpires === 'number'
+      ? (jwt as any).accessTokenExpires as number
+      : undefined;
 
     let installations: InstallationResponse[] = [];
     let effectiveTokenError = tokenError;
 
-    if (userAccessToken) {
+    const tokenValid = userAccessToken && (!tokenExpiresAt || Date.now() < tokenExpiresAt);
+
+    if (userAccessToken && !tokenValid) {
+      effectiveTokenError = effectiveTokenError || 'refresh_required';
+    }
+
+    if (tokenValid && userAccessToken) {
       try {
         installations = await listUserInstallations(userAccessToken);
       } catch (err) {
@@ -38,7 +47,7 @@ export async function GET(request: NextRequest) {
         const isAuthError = message.includes('401') || message.toLowerCase().includes('bad credentials');
         if (isAuthError) {
           effectiveTokenError = effectiveTokenError || 'refresh_required';
-          console.info('[github/installations] GitHub token invalid, using stored installations');
+          console.debug('[github/installations] user token invalid, relying on stored installations');
         } else {
           console.warn('[github/installations] user installation lookup failed, falling back to stored data', err);
         }

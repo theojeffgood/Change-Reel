@@ -13,6 +13,7 @@ import MetricsBar from './components/MetricsBar'
 export default async function AdminPage() {
   // Determine if current user has credits
   let hasCredits = false;
+  let hasActiveConfiguration = false;
   try {
     const session = await getServerSession(authConfig);
     if (session?.user?.githubId) {
@@ -22,15 +23,24 @@ export default async function AdminPage() {
       if (user) {
         const billing = createBillingService(supaService.getClient());
         hasCredits = await billing.hasCredits(user.id);
+
+        try {
+          const projectRes = await supaService.projects.getProjectByUserId(user.id);
+          const project = projectRes.data;
+          if (project?.installation_id) {
+            hasActiveConfiguration = true;
+          }
+        } catch {}
       }
     }
   } catch (_) {
     hasCredits = false;
+    hasActiveConfiguration = false;
   }
 
   return (
     <div className="min-h-screen bg-gray-50">
-      <SiteHeader isAuthenticated={true} />
+      <SiteHeader isAuthenticated={true} hasActiveConfiguration={hasActiveConfiguration} />
 
       {/* Main Content */}
       <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">

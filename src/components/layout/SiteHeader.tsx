@@ -11,9 +11,9 @@ const SiteHeader = ({
   isAuthenticated = false,
   hasActiveConfiguration = false,
 }: SiteHeaderProps) => {
-  const setupHref = hasActiveConfiguration
-    ? '/config?stay=1'
-    : '/api/auth/signin?callbackUrl=/config'
+  const callbackParam = encodeURIComponent('/config?stay=1')
+  const signinHref = `/api/auth/signin/github?callbackUrl=${callbackParam}`
+  const setupHref = hasActiveConfiguration ? '/config?stay=1' : signinHref
   const setupLabel = hasActiveConfiguration ? 'Setup' : (isAuthenticated ? 'Sign in again' : 'Sign In')
 
   return (
@@ -38,7 +38,7 @@ const SiteHeader = ({
         ) : (
           <div className="flex items-center space-x-4">
             <Link
-              href="/api/auth/signin?callbackUrl=/config"
+              href={signinHref}
               className="text-gray-600 hover:text-gray-900 transition-colors"
             >
               Sign In

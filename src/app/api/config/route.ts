@@ -232,14 +232,9 @@ export async function GET(): Promise<NextResponse> {
       });
     }
 
-    // Get user's projects ordered by last update to reflect most recent selection
-    const projectsResult = await supabaseService.projects.listProjects(
-      { user_id: user.id },
-      { orderBy: 'updated_at', ascending: false, page: 1, limit: 50 }
-    );
-    const projects = projectsResult.data;
-    
-    if (!projects || projects.length === 0) {
+    const latestProject = await supabaseService.projects.getLatestProjectForUser(user.id);
+
+    if (!latestProject) {
       return NextResponse.json({
         success: true,
         configuration: null,
@@ -247,20 +242,16 @@ export async function GET(): Promise<NextResponse> {
       });
     }
 
-    // For backward compatibility, return the first project
-    // TODO: In future, add query parameter to specify which repository
-    const project = projects[0];
-
     // Return configuration (without sensitive data)
     return NextResponse.json({
       success: true,
       configuration: {
-        repositoryFullName: project.repo_name || project.name,
-        emailRecipients: project.email_distribution_list || [],
-        provider: project.provider,
-        createdAt: project.created_at,
-        updatedAt: project.updated_at,
-        installationId: project.installation_id ?? null,
+        repositoryFullName: latestProject.repo_name || latestProject.name,
+        emailRecipients: latestProject.email_distribution_list || [],
+        provider: latestProject.provider,
+        createdAt: latestProject.created_at,
+        updatedAt: latestProject.updated_at,
+        installationId: latestProject.installation_id ?? null,
       }
     });
 

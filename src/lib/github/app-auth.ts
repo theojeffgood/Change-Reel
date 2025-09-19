@@ -121,7 +121,7 @@ export async function listInstallationRepositories(installationId: number): Prom
 export async function listUserInstallations(userAccessToken: string): Promise<AppInstallation[]> {
   const res = await fetch('https://api.github.com/user/installations?per_page=100', {
     headers: {
-      Authorization: `Bearer ${userAccessToken}`,
+      Authorization: `token ${userAccessToken}`,
       Accept: 'application/vnd.github.v3+json',
       'User-Agent': 'wins-column/1.0.0'
     },
@@ -134,4 +134,3 @@ export async function listUserInstallations(userAccessToken: string): Promise<Ap
   // /user/installations returns { total_count, installations: [...] }
   return (data?.installations || []) as AppInstallation[];
 }
-

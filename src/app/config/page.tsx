@@ -85,7 +85,8 @@ function ConfigurationPageContent() {
   const handleReauthenticate = () => {
     hasRedirectedRef.current = true;
     if (typeof window !== 'undefined') {
-      window.location.assign('/api/auth/signin?callbackUrl=/config');
+      const callback = encodeURIComponent('/config?stay=1');
+      window.location.assign(`/api/auth/signin/github?callbackUrl=${callback}`);
     }
   };
   

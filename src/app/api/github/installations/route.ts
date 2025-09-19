@@ -54,36 +54,6 @@ export async function GET(request: NextRequest) {
       }
     }
 
-    // If the user-scoped token is missing or returned no installations, fall back to
-    // the installations stored for the current user in Supabase. This ensures that
-    // users who already configured the app (or who lost the OAuth token) still see
-    // their installations and can continue to the dashboard without being blocked.
-    if (!installations.length) {
-      const supabaseService = getServiceRoleSupabaseService();
-      const userResult = await supabaseService.users.getUserByGithubId(String(session.user.githubId));
-      const user = userResult.data;
-
-      if (user) {
-        try {
-          const { createInstallationService } = await import('@/lib/supabase/services/installations');
-          const installationService = createInstallationService(supabaseService.getClient());
-          const stored = await installationService.listInstallationsByUser(user.id);
-
-          if (stored.data?.length) {
-            installations = stored.data.map((inst) => ({
-              id: inst.installation_id,
-              account: inst.account_login
-                ? { login: inst.account_login, type: inst.account_type }
-                : undefined,
-              repositories_url: '',
-            }));
-          }
-        } catch (fallbackErr) {
-          console.warn('[github/installations] failed to load stored installations', fallbackErr);
-        }
-      }
-    }
-
     return NextResponse.json({ installations, tokenError: effectiveTokenError || undefined });
   } catch (e: any) {
     return NextResponse.json({ error: e?.message || 'Failed to list installations' }, { status: 500 });

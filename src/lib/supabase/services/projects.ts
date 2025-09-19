@@ -20,6 +20,7 @@ export interface IProjectService {
   getProjectsByUser(userId: string): Promise<DatabaseResults<Project>>
   getProjectByUserId(userId: string): Promise<DatabaseResult<Project>>
   getProjectByUserAndRepository(userId: string, repositoryName: string): Promise<DatabaseResult<Project>>
+  getLatestProjectForUser(userId: string): Promise<Project | null>
 }
 
 export class ProjectService implements IProjectService {
@@ -346,6 +347,32 @@ export class ProjectService implements IProjectService {
         data: null,
         error: err instanceof Error ? err : new Error('Unknown error occurred'),
       }
+    }
+  }
+
+  async getLatestProjectForUser(userId: string): Promise<Project | null> {
+    try {
+      const { data, error } = await this.supabaseClient
+        .from('projects')
+        .select('*')
+        .eq('user_id', userId)
+        .order('updated_at', { ascending: false })
+        .limit(1)
+        .single()
+
+      if (error) {
+        if (error.code === 'PGRST116') {
+          return null
+        }
+        throw new Error(error.message || 'Failed to get latest project for user')
+      }
+
+      return data ?? null
+    } catch (err) {
+      if (err instanceof Error && err.message.includes('PGRST116')) {
+        return null
+      }
+      throw err instanceof Error ? err : new Error('Unknown error occurred')
     }
   }
 }

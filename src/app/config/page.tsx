@@ -72,7 +72,7 @@ function ConfigurationPageContent() {
   const hasConfiguredRepo = hasExistingConfiguration || Boolean(selectedRepository);
   const needsReconnect = Boolean(githubStatus?.connected) && installations.length === 0 && hasConfiguredRepo;
   const showInstallPrompt = Boolean(githubStatus?.connected) && installations.length === 0 && !hasConfiguredRepo;
-  const headerHasActiveConfiguration = hasExistingConfiguration && Boolean(selectedInstallationId && selectedInstallationId !== '0');
+  // const headerHasActiveConfiguration = hasExistingConfiguration && Boolean(selectedInstallationId && selectedInstallationId !== '0');
 
   const handleGitHubConnect = async () => {
     if (!GITHUB_APP_INSTALL_URL) return;
@@ -345,7 +345,7 @@ function ConfigurationPageContent() {
     <div className="min-h-screen bg-gray-100">
       <SiteHeader
         isAuthenticated={Boolean(session)}
-        hasActiveConfiguration={headerHasActiveConfiguration}
+        // hasActiveConfiguration={headerHasActiveConfiguration}
       />
 
       {isInitializing ? (

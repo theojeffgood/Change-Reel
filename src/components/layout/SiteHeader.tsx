@@ -11,8 +11,8 @@ const SiteHeader = ({
   className = '',
   isAuthenticated = false,
 }: SiteHeaderProps) => {
-  const setupHref = isAuthenticated ? '/config?stay=1' : '/config';
-  const setupLabel = isAuthenticated ? 'Setup' : 'Sign In';
+  const ctaLink = isAuthenticated ? '/config?stay=1' : '/config';
+  const ctaLabel = isAuthenticated ? 'Settings' : 'Sign In';
 
   return (
     <nav className={`relative px-4 sm:px-6 lg:px-8 py-6 ${className}`}>
@@ -23,10 +23,10 @@ const SiteHeader = ({
         
         <div className="flex items-center space-x-4">
           <Link
-            href={setupHref}
+            href={ctaLink}
             className="text-gray-600 hover:text-gray-900 transition-colors"
           >
-            {setupLabel}
+            {ctaLabel}
           </Link>
           {!isAuthenticated && (
             <Link

@@ -122,6 +122,19 @@ export interface GenerateSummaryJobData {
   commit_message?: string;
   author?: string;
   branch?: string;
+  file_changes?: Array<{
+    path: string;
+    status?: string;
+    additions?: number;
+    deletions?: number;
+  }>;
+  pull_request?: {
+    title?: string;
+    description?: string;
+    number?: number | string;
+    url?: string;
+  };
+  issue_references?: string[];
 }
 
 // Email sending job data

@@ -162,10 +162,10 @@ index 1234567..abcdefg 100644
         }
       });
 
-      expect(mockOpenAIClient.generateSummary).toHaveBeenCalledWith(
-        expect.stringContaining('src/component.js'),
-        'Focus on functional changes that would be relevant to users and developers.'
-      );
+      const [summaryDiff, summaryOptions] = mockOpenAIClient.generateSummary.mock.calls[0];
+      expect(summaryDiff).toContain('src/component.js');
+      expect((summaryOptions as any).customContext).toBeUndefined();
+      expect((summaryOptions as any).metadata).toBeUndefined();
       expect(mockOpenAIClient.detectChangeType).toHaveBeenCalledWith(
         expect.stringContaining('src/component.js'),
         'Added logging to component function'
@@ -179,10 +179,23 @@ index 1234567..abcdefg 100644
 
       await service.processDiff(validDiff, customConfig);
 
-      expect(mockOpenAIClient.generateSummary).toHaveBeenCalledWith(
-        expect.any(String),
-        'Custom analysis context'
-      );
+      const [, customOptions] = mockOpenAIClient.generateSummary.mock.calls[mockOpenAIClient.generateSummary.mock.calls.length - 1];
+      expect((customOptions as any).customContext).toContain('Custom analysis context');
+    });
+
+    it('should include summary metadata when provided in config', async () => {
+      const metadataConfig: DiffProcessingConfig = {
+        summaryMetadata: {
+          fileChanges: [{ path: 'src/index.ts', additions: 5, deletions: 2 }],
+          pullRequest: { title: 'Add new feature flag' },
+          issueReferences: ['#123'],
+        },
+      };
+
+      await service.processDiff(validDiff, metadataConfig);
+
+      const [, options] = mockOpenAIClient.generateSummary.mock.calls[mockOpenAIClient.generateSummary.mock.calls.length - 1];
+      expect((options as any).metadata).toEqual(metadataConfig.summaryMetadata);
     });
 
     it('should handle OpenAI API errors gracefully', async () => {

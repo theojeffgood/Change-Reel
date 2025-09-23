@@ -3,6 +3,42 @@
  * Provides configurable templates with variable substitution
  */
 
+import {
+  CHANGE_TYPE_TEMPLATE,
+  DIFF_SUMMARY_TEMPLATE,
+} from './prompts';
+
+export interface FileChangeSummary {
+  /** Repository-relative path of the file */
+  path: string;
+  /** Git status string such as added/modified/deleted */
+  status?: string;
+  /** Lines added in the change */
+  additions?: number;
+  /** Lines removed in the change */
+  deletions?: number;
+}
+
+export interface PullRequestSummary {
+  title?: string;
+  description?: string;
+  /** Optional PR number for reference */
+  number?: number | string;
+  /** Optional link to the PR */
+  url?: string;
+}
+
+export interface DiffSummaryMetadata {
+  fileChanges?: FileChangeSummary[];
+  pullRequest?: PullRequestSummary;
+  issueReferences?: string[];
+}
+
+export interface DiffSummaryPromptOptions {
+  customContext?: string;
+  metadata?: DiffSummaryMetadata;
+}
+
 /**
  * Template variables that can be substituted in prompts
  */
@@ -53,16 +89,11 @@ export const DEFAULT_TEMPLATES: Record<PromptTemplateType, PromptTemplate> = {
     id: 'diff_summary',
     name: 'Diff Summarization',
     description: 'Generates concise summaries of code diffs',
-    template: `You are a changelog assistant. Summarize the following code diff into a 1–2 sentence plain English description of what changed. Be concise and skip minor edits.
-
-{context}
-
-Input:
-{diff}`,
+    template: DIFF_SUMMARY_TEMPLATE,
     requiredVariables: ['diff'],
-    optionalVariables: ['context'],
+    optionalVariables: ['contextSection'],
     defaultValues: {
-      context: 'Focus on functional changes that would be relevant to users and developers.'
+      contextSection: '',
     }
   },
 
@@ -70,20 +101,7 @@ Input:
     id: 'change_type_detection',
     name: 'Change Type Detection',
     description: 'Detects the type of change (Feature or Bug fix)',
-    template: `Analyze the following code diff and summary to determine the type of change.
-
-Diff:
-{diff}
-
-Summary:
-{summary}
-
-Respond with exactly one of these types (case-sensitive):
-- Feature: New functionality or enhancements
-- Bug fix: Bug fixes or error corrections
-
-Answer with exactly one of: Feature, Bug fix
-Type:`,
+    template: CHANGE_TYPE_TEMPLATE,
     requiredVariables: ['diff', 'summary'],
     optionalVariables: [],
     defaultValues: {}
@@ -178,13 +196,14 @@ export class PromptTemplateEngine {
    * Create a prompt for diff summarization (convenience method)
    */
   createDiffSummaryPrompt(
-    diff: string, 
-    customContext?: string
+    diff: string,
+    options?: DiffSummaryPromptOptions
   ): string {
-    const variables: TemplateVariables = { diff };
-    if (customContext) {
-      variables.context = customContext;
-    }
+    const contextBlock = this.buildContext(options);
+    const variables: TemplateVariables = {
+      diff,
+      contextSection: contextBlock ? `Context:\n${contextBlock}\n\n` : '',
+    };
 
     return this.renderTemplate('diff_summary', variables);
   }
@@ -292,6 +311,124 @@ export class PromptTemplateEngine {
       .map(match => match.slice(1, -1)) // Remove { and }
       .filter((value, index, self) => self.indexOf(value) === index); // Remove duplicates
   }
+
+  private buildContext(options?: DiffSummaryPromptOptions): string {
+    const lines: string[] = [];
+
+    const baseContext = options?.customContext?.trim();
+    if (baseContext) {
+      lines.push(baseContext);
+    }
+
+    const metadata = options?.metadata;
+    if (!metadata) {
+      return lines.join('\n');
+    }
+
+    const fileChanges = this.formatFileChanges(metadata.fileChanges);
+    if (fileChanges.length) {
+      if (lines.length) {
+        lines.push('');
+      }
+      lines.push('File Changes:');
+      fileChanges.forEach(change => {
+        lines.push(`- ${change}`);
+      });
+    }
+
+    const pullRequest = this.formatPullRequest(metadata.pullRequest);
+    if (pullRequest.length) {
+      if (lines.length) {
+        lines.push('');
+      }
+      lines.push('Pull Request:');
+      pullRequest.forEach(line => lines.push(line));
+    }
+
+    const issues = this.formatIssueReferences(metadata.issueReferences);
+    if (issues.length) {
+      if (lines.length) {
+        lines.push('');
+      }
+      lines.push('Issue References:');
+      issues.forEach(ref => {
+        lines.push(`- ${ref}`);
+      });
+    }
+
+    return lines.join('\n');
+  }
+
+  private formatFileChanges(changes?: FileChangeSummary[]): string[] {
+    if (!changes?.length) {
+      return [];
+    }
+
+    return changes
+      .filter(change => Boolean(change?.path))
+      .map(change => {
+        const parts: string[] = [change.path];
+
+        const descriptors: string[] = [];
+        if (change.status) {
+          descriptors.push(change.status);
+        }
+
+        const hasAdditions = typeof change.additions === 'number';
+        const hasDeletions = typeof change.deletions === 'number';
+        if (hasAdditions || hasDeletions) {
+          const additions = hasAdditions ? change.additions : 0;
+          const deletions = hasDeletions ? change.deletions : 0;
+          descriptors.push(`+${additions}/-${deletions}`);
+        }
+
+        if (descriptors.length) {
+          parts.push(`(${descriptors.join(', ')})`);
+        }
+
+        return parts.join(' ');
+      });
+  }
+
+  private formatPullRequest(pr?: PullRequestSummary): string[] {
+    if (!pr) {
+      return [];
+    }
+
+    const lines: string[] = [];
+    if (pr.number !== undefined && pr.number !== null && `${pr.number}`.trim().length > 0) {
+      lines.push(`- Number: ${pr.number}`);
+    }
+    if (pr.title?.trim()) {
+      lines.push(`- Title: ${pr.title.trim()}`);
+    }
+    if (pr.url?.trim()) {
+      lines.push(`- URL: ${pr.url.trim()}`);
+    }
+    if (pr.description?.trim()) {
+      lines.push('- Description:');
+      lines.push(this.indentBlock(pr.description.trim(), '  '));
+    }
+
+    return lines;
+  }
+
+  private formatIssueReferences(references?: string[]): string[] {
+    if (!references?.length) {
+      return [];
+    }
+
+    return references
+      .map(ref => ref?.trim())
+      .filter((ref): ref is string => Boolean(ref && ref.length > 0));
+  }
+
+  private indentBlock(text: string, indent: string): string {
+    return text
+      .split(/\r?\n/)
+      .map(line => `${indent}${line}`)
+      .join('\n');
+  }
 }
 
 /**
@@ -307,10 +444,10 @@ export const defaultTemplateEngine = new PromptTemplateEngine();
  * Create a diff summary prompt using the default template
  */
 export function createDiffSummaryPrompt(
-  diff: string, 
-  customContext?: string
+  diff: string,
+  options?: DiffSummaryPromptOptions
 ): string {
-  return defaultTemplateEngine.createDiffSummaryPrompt(diff, customContext);
+  return defaultTemplateEngine.createDiffSummaryPrompt(diff, options);
 }
 
 /**

@@ -93,18 +93,17 @@ describe('PromptTemplateEngine', () => {
       });
 
       expect(result).toContain('Added new function');
-      expect(result).toContain('Focus on functional changes'); // default context
+      expect(result).not.toContain('Context:');
     });
 
     it('should render template with optional variables', () => {
       const result = engine.renderTemplate('diff_summary', {
         diff: 'Added new function',
-        context: 'Custom context for the diff'
+        contextSection: 'Context:\nCustom context for the diff\n\n'
       });
 
       expect(result).toContain('Added new function');
-      expect(result).toContain('Custom context for the diff');
-      expect(result).not.toContain('Focus on functional changes');
+      expect(result).toContain('Context:\nCustom context for the diff');
     });
 
     it('should merge default values', () => {
@@ -202,19 +201,19 @@ describe('PromptTemplateEngine', () => {
       const result = engine.createDiffSummaryPrompt('Added login function');
 
       expect(result).toContain('Added login function');
-      expect(result).toContain('Focus on functional changes');
       expect(result).toContain('changelog assistant');
+      expect(result).not.toContain('Context:');
     });
 
     it('should create diff summary prompt with custom context', () => {
       const result = engine.createDiffSummaryPrompt(
         'Added login function',
-        'This is for the authentication module'
+        { customContext: 'This is for the authentication module' }
       );
 
       expect(result).toContain('Added login function');
       expect(result).toContain('This is for the authentication module');
-      expect(result).not.toContain('Focus on functional changes');
+      expect(result).toContain('Context:');
     });
   });
 
@@ -331,14 +330,35 @@ describe('convenience functions', () => {
       
       expect(result).toContain(mockDiff);
       expect(result).toContain('changelog assistant');
+      expect(result).not.toContain('Context:');
     });
 
     it('should create diff summary prompt with custom context', () => {
       const customContext = 'Custom context for testing';
-      const result = createDiffSummaryPrompt(mockDiff, customContext);
+      const result = createDiffSummaryPrompt(mockDiff, { customContext });
       
       expect(result).toContain(mockDiff);
       expect(result).toContain(customContext);
+      expect(result).toContain('Context:');
+    });
+
+    it('should include metadata when provided', () => {
+      const result = createDiffSummaryPrompt(mockDiff, {
+        metadata: {
+          fileChanges: [
+            { path: 'src/app.ts', status: 'modified', additions: 5, deletions: 2 },
+          ],
+          pullRequest: { title: 'Add new feature', description: 'Implements feature XYZ' },
+          issueReferences: ['#123', 'PROJ-456'],
+        },
+      });
+
+      expect(result).toContain('File Changes:');
+      expect(result).toContain('src/app.ts');
+      expect(result).toContain('Pull Request:');
+      expect(result).toContain('Issue References:');
+      expect(result).toContain('#123');
+      expect(result).toContain('Context:');
     });
   });
 

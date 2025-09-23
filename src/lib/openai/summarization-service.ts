@@ -5,7 +5,7 @@
 
 import { IOpenAIClient } from './client';
 import { OpenAIError } from './error-handler';
-import { PromptTemplateEngine } from './prompt-templates';
+import { PromptTemplateEngine, DiffSummaryMetadata } from './prompt-templates';
 
 /**
  * Configuration for diff processing
@@ -15,6 +15,7 @@ export interface DiffProcessingConfig {
   excludePatterns?: string[];
   includeMetadata?: boolean;
   customContext?: string;
+  summaryMetadata?: DiffSummaryMetadata;
 }
 
 /**
@@ -74,9 +75,10 @@ export class SummarizationService implements ISummarizationService {
         'Thumbs.db'
       ],
       includeMetadata: true,
-      customContext: 'Focus on functional changes that would be relevant to users and developers.',
-      ...defaultConfig
-    };
+      customContext: defaultConfig?.customContext ?? undefined,
+      summaryMetadata: defaultConfig?.summaryMetadata,
+      ...defaultConfig,
+    } as Required<DiffProcessingConfig>;
   }
 
   /**
@@ -107,10 +109,10 @@ export class SummarizationService implements ISummarizationService {
     
     try {
       // Generate summary using OpenAI client
-      const summary = await this.openaiClient.generateSummary(
-        processedDiff,
-        mergedConfig.customContext
-      );
+      const summary = await this.openaiClient.generateSummary(processedDiff, {
+        customContext: mergedConfig.customContext,
+        metadata: mergedConfig.summaryMetadata,
+      });
 
       // Detect change type; if model doesn't return a valid type, default to 'chore'
       let changeType: string = 'Feature';

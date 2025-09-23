@@ -8,7 +8,7 @@ jest.mock('openai');
 const MockedOpenAI = OpenAI as jest.MockedClass<typeof OpenAI>;
 
 describe('OpenAIClient', () => {
-  let mockCreateCompletion: jest.MockedFunction<any>;
+  let mockResponsesCreate: jest.MockedFunction<any>;
   let mockRateLimiter: jest.Mocked<OpenAIRateLimiter>;
   let mockErrorHandler: jest.Mocked<OpenAIErrorHandler>;
   let client: OpenAIClient;
@@ -19,7 +19,7 @@ describe('OpenAIClient', () => {
     jest.clearAllMocks();
 
     // Create mock for the create method
-    mockCreateCompletion = jest.fn();
+    mockResponsesCreate = jest.fn();
 
     // Create mock rate limiter that always allows requests
     mockRateLimiter = {
@@ -50,10 +50,8 @@ describe('OpenAIClient', () => {
 
     // Mock the OpenAI constructor to return our mock instance
     MockedOpenAI.mockImplementation(() => ({
-      chat: {
-        completions: {
-          create: mockCreateCompletion,
-        },
+      responses: {
+        create: mockResponsesCreate,
       },
     } as any));
 
@@ -107,63 +105,75 @@ describe('OpenAIClient', () => {
 
     it('should generate summary successfully with default prompt', async () => {
       const mockResponse = {
-        choices: [
+        output_text: 'Add user validation import to login module',
+        output: [
           {
-            message: {
-              content: 'Add user validation import to login module',
-            },
+            role: 'assistant',
+            content: [{ type: 'output_text', text: 'Add user validation import to login module' }],
+            finish_reason: 'stop',
           },
         ],
+        usage: {
+          input_tokens: 120,
+          output_tokens: 20,
+          total_tokens: 140,
+        },
       };
 
-      mockCreateCompletion.mockResolvedValue(mockResponse as any);
+      mockResponsesCreate.mockResolvedValue(mockResponse as any);
 
       const result = await client.generateSummary(mockDiff);
 
       expect(result).toBe('Add user validation import to login module');
-      expect(mockCreateCompletion).toHaveBeenCalledWith({
+      expect(mockResponsesCreate).toHaveBeenCalledTimes(1);
+      const callArgs = mockResponsesCreate.mock.calls[0][0];
+      expect(callArgs).toMatchObject({
         model: 'gpt-4-turbo-preview',
-        messages: [
+        max_output_tokens: 150,
+      });
+      expect(Array.isArray(callArgs.input)).toBe(true);
+      expect(callArgs.input[0]).toMatchObject({
+        role: 'system',
+        content: [
           {
-            role: 'system',
-            content: 'You are a changelog assistant that creates concise, clear summaries of code changes.',
-          },
-          {
-            role: 'user',
-            content: expect.stringContaining('You are a changelog assistant'),
+            type: 'input_text',
+            text: expect.stringContaining('You are a product changelog assistant.'),
           },
         ],
-        max_completion_tokens: 150,
+      });
+      expect(callArgs.input[1]).toMatchObject({
+        role: 'user',
+        content: [
+          {
+            type: 'input_text',
+            text: expect.stringContaining('Diff:'),
+          },
+        ],
       });
     });
 
-    it('should generate summary with custom prompt template', async () => {
-      const customPrompt = 'Custom prompt: {diff}';
+    it('should generate summary with custom context', async () => {
+      const customContext = 'Custom prompt: focus on API behavior';
       const mockResponse = {
-        choices: [
+        output_text: 'Custom summary result',
+        output: [
           {
-            message: {
-              content: 'Custom summary result',
-            },
+            role: 'assistant',
+            content: [{ type: 'output_text', text: 'Custom summary result' }],
+            finish_reason: 'stop',
           },
         ],
       };
 
-      mockCreateCompletion.mockResolvedValue(mockResponse as any);
+      mockResponsesCreate.mockResolvedValue(mockResponse as any);
 
-      const result = await client.generateSummary(mockDiff, customPrompt);
+      const result = await client.generateSummary(mockDiff, { customContext });
 
       expect(result).toBe('Custom summary result');
-      expect(mockCreateCompletion).toHaveBeenCalledWith(
-        expect.objectContaining({
-          messages: expect.arrayContaining([
-            expect.objectContaining({
-              role: 'user',
-              content: `Custom prompt: ${mockDiff}`,
-            }),
-          ]),
-        })
-      );
+      const callArgs = mockResponsesCreate.mock.calls[mockResponsesCreate.mock.calls.length - 1][0];
+      const userContent = callArgs.input[1].content[0].text;
+      expect(userContent).toContain(customContext);
+      expect(userContent).toContain('Context:');
     });
 
     it('should throw error for empty diff', async () => {
@@ -173,16 +183,12 @@ describe('OpenAIClient', () => {
 
     it('should throw error when no summary is generated', async () => {
       const mockResponse = {
-        choices: [
-          {
-            message: {
-              content: null,
-            },
-          },
-        ],
+        output_text: '',
+        output: [],
+        usage: { output_tokens: 0 },
       };
 
-      mockCreateCompletion.mockResolvedValue(mockResponse as any);
+      mockResponsesCreate.mockResolvedValue(mockResponse as any);
 
       await expect(client.generateSummary(mockDiff)).rejects.toThrow(
         'No summary generated from OpenAI response'
@@ -197,7 +203,7 @@ describe('OpenAIClient', () => {
       apiError.error = { message: 'Rate limit exceeded', type: 'rate_limit_error' };
       
       // Mock the operation to throw the error
-      mockCreateCompletion.mockRejectedValue(apiError);
+      mockResponsesCreate.mockRejectedValue(apiError);
 
       try {
         const result = await client.generateSummary(mockDiff);
@@ -217,7 +223,7 @@ describe('OpenAIClient', () => {
 
     it('should rethrow non-API errors through error handler', async () => {
       const networkError = new Error('Network connection failed');
-      mockCreateCompletion.mockRejectedValue(networkError);
+      mockResponsesCreate.mockRejectedValue(networkError);
 
       try {
         await client.generateSummary(mockDiff);
@@ -249,14 +255,20 @@ describe('OpenAIClient', () => {
 
       // Should check rate limit but not call OpenAI API
       expect(mockRateLimiter.checkRateLimit).toHaveBeenCalledWith('summarization', expect.any(Number));
-      expect(mockCreateCompletion).not.toHaveBeenCalled();
+      expect(mockResponsesCreate).not.toHaveBeenCalled();
     });
 
     it('should estimate tokens for rate limiting', async () => {
       const mockResponse = {
-        choices: [{ message: { content: 'Test summary' } }],
+        output_text: 'Test summary',
+        output: [
+          {
+            content: [{ type: 'output_text', text: 'Test summary' }],
+            finish_reason: 'stop',
+          },
+        ],
       };
-      mockCreateCompletion.mockResolvedValue(mockResponse as any);
+      mockResponsesCreate.mockResolvedValue(mockResponse as any);
 
       await client.generateSummary(mockDiff);
 
@@ -279,48 +291,50 @@ describe('OpenAIClient', () => {
 
     it('should detect feature type', async () => {
       const mockResponse = {
-        choices: [
+        output_text: 'Feature',
+        output: [
           {
-            message: {
-              content: 'feature',
-            },
+            role: 'assistant',
+            content: [{ type: 'output_text', text: 'Feature' }],
+            finish_reason: 'stop',
           },
         ],
       };
 
-      mockCreateCompletion.mockResolvedValue(mockResponse as any);
+      mockResponsesCreate.mockResolvedValue(mockResponse as any);
 
       const result = await client.detectChangeType(mockDiff, mockSummary);
 
       expect(result).toBe('feature');
-      expect(mockCreateCompletion).toHaveBeenCalledWith({
+      const callArgs = mockResponsesCreate.mock.calls[0][0];
+      expect(callArgs).toMatchObject({
         model: 'gpt-4-turbo-preview',
-        messages: [
+        max_output_tokens: 10,
+      });
+      expect(callArgs.input[0]).toMatchObject({
+        role: 'system',
+        content: [
           {
-            role: 'system',
-            content: 'You are a code change categorization assistant. Respond with only one word: feature, fix, refactor, or chore.',
-          },
-          {
-            role: 'user',
-            content: expect.stringContaining('Analyze the following code diff and summary to determine the type of change'),
+            type: 'input_text',
+            text: 'You are a code change categorization assistant. Respond with exactly one of: Feature, Bug fix.',
           },
         ],
-        max_completion_tokens: 10,
       });
+      expect(callArgs.input[1].content[0].text).toContain('Analyze the following code diff and summary to determine the type of change');
     });
 
     it('should throw error for invalid response', async () => {
       const mockResponse = {
-        choices: [
+        output_text: 'invalid-category',
+        output: [
           {
-            message: {
-              content: 'invalid-category',
-            },
+            role: 'assistant',
+            content: [{ type: 'output_text', text: 'invalid-category' }],
           },
         ],
       };
 
-      mockCreateCompletion.mockResolvedValue(mockResponse as any);
+      mockResponsesCreate.mockResolvedValue(mockResponse as any);
 
       await expect(client.detectChangeType(mockDiff, 'Add new feature')).rejects.toThrow(
         'Invalid change type returned by OpenAI: "invalid-category". Expected one of: feature, fix, refactor, chore'
@@ -329,7 +343,7 @@ describe('OpenAIClient', () => {
 
     it('should throw error on API error through error handler', async () => {
       const apiError = new Error('API Error');
-      mockCreateCompletion.mockRejectedValue(apiError);
+      mockResponsesCreate.mockRejectedValue(apiError);
 
       try {
         await client.detectChangeType(mockDiff, 'Fix bug in authentication');
@@ -360,7 +374,7 @@ describe('OpenAIClient', () => {
       );
 
       // Should check rate limit but not call OpenAI API
-      expect(mockCreateCompletion).not.toHaveBeenCalled();
+      expect(mockResponsesCreate).not.toHaveBeenCalled();
       expect(mockRateLimiter.checkRateLimit).toHaveBeenCalledWith('change_detection', expect.any(Number));
     });
 

@@ -1,6 +1,28 @@
 import { NextResponse } from 'next/server';
 import { getServiceRoleSupabaseService } from '@/lib/supabase/client';
 import { createClient as createSupabaseClient } from '@supabase/supabase-js';
+import {
+  DIFF_SUMMARY_SYSTEM_PROMPT,
+} from '@/lib/openai/prompts';
+import { createDiffSummaryPrompt } from '@/lib/openai/prompt-templates';
+
+function extractFirstText(response: any): string | undefined {
+  if (!response?.output) {
+    return undefined;
+  }
+  for (const item of response.output) {
+    const contents = item?.content;
+    if (!Array.isArray(contents)) {
+      continue;
+    }
+    for (const part of contents) {
+      if (part?.type === 'output_text' && typeof part.text === 'string') {
+        return part.text;
+      }
+    }
+  }
+  return undefined;
+}
 
 export async function POST() {
   try {
@@ -319,23 +341,47 @@ async function processGenerateSummaryJob(job: any, supabaseService: any): Promis
       apiKey: process.env.OPENAI_API_KEY
     });
 
-    const prompt = `You are a changelog assistant. Summarize the following commit into a 1-2 sentence plain English description of what changed. Be concise and skip minor edits.
+    const diffContent = data.diff_content && data.diff_content.trim().length
+      ? data.diff_content
+      : `Commit message: ${data.commit_message || '(not provided)'}\nBranch: ${data.branch || '(unknown)'}`;
 
-Commit: ${data.commit_message}
-Author: ${data.author}
-Branch: ${data.branch}
+    const contextLines = [] as string[];
+    if (data.author) {
+      contextLines.push(`Author: ${data.author}`);
+    }
+    if (data.commit_message) {
+      contextLines.push(`Commit message: ${data.commit_message}`);
+    }
+    if (data.branch) {
+      contextLines.push(`Branch: ${data.branch}`);
+    }
 
-Provide only the summary, no additional text.`;
+    const context = contextLines.length ? contextLines.join('\n') : undefined;
 
-    const completion = await client.chat.completions.create({
+    const prompt = `${createDiffSummaryPrompt(diffContent, {
+      customContext: context,
+    })}\n\nProvide only the summary, no additional text.`;
+
+    const completion = await client.responses.create({
       model: process.env.OPENAI_MODEL || 'gpt-5',
-      messages: [{ role: 'user', content: prompt }],
-      max_completion_tokens: 100,
+      input: [
+        {
+          role: 'system',
+          content: [{ type: 'input_text', text: DIFF_SUMMARY_SYSTEM_PROMPT }],
+        },
+        {
+          role: 'user',
+          content: [{ type: 'input_text', text: prompt }],
+        },
+      ],
+      max_output_tokens: 100,
       temperature: 0.3
     });
 
-    const summary = completion.choices[0]?.message?.content?.trim();
-    
+    const summary = typeof completion.output_text === 'string'
+      ? completion.output_text.trim()
+      : extractFirstText(completion)?.trim();
+
     if (!summary) {
       return {
         success: false,

@@ -240,6 +240,20 @@ export class FetchDiffHandler implements JobHandler<FetchDiffJobData> {
         throw new Error(`Failed to fetch diff data for ${diffReference.base}..${diffReference.head} - no data received`);
       }
 
+      // Prepare condensed file change metadata for downstream summarization prompts
+      const MAX_FILE_CHANGES_FOR_PROMPT = 25;
+      const fileChanges = Array.isArray(diffData.files)
+        ? diffData.files
+            .slice(0, MAX_FILE_CHANGES_FOR_PROMPT)
+            .filter((file: any) => Boolean(file?.filename))
+            .map((file: any) => ({
+              path: file.filename,
+              status: file.status,
+              additions: file.additions,
+              deletions: file.deletions,
+            }))
+        : [];
+
       // Do not update commit with an empty payload; return diff in result instead
 
       return {
@@ -247,6 +261,7 @@ export class FetchDiffHandler implements JobHandler<FetchDiffJobData> {
         data: {
           // Provide raw unified diff for summarization
           diff_content: diffRaw,
+          file_changes: fileChanges,
           files_changed: diffData.stats.total_files,
           additions: diffData.stats.additions,
           deletions: diffData.stats.deletions,

@@ -6,6 +6,11 @@ import {
 } from '../../types/jobs'
 
 import { ISummarizationService } from '../../openai/summarization-service'
+import {
+  DiffSummaryMetadata,
+  FileChangeSummary,
+  PullRequestSummary,
+} from '../../openai/prompt-templates'
 import { createBillingService } from '../../supabase/services/billing'
 import { ISupabaseClient } from '../../types/supabase'
 import { IJobQueueService } from '../../types/jobs'
@@ -22,6 +27,10 @@ import { ICommitService } from '../../supabase/services/commits'
  */
 export class GenerateSummaryHandler implements JobHandler<GenerateSummaryJobData> {
   type = 'generate_summary' as const
+
+  private static readonly MAX_FILE_CHANGES = 25
+  private static readonly MAX_PR_DESCRIPTION_LENGTH = 600
+  private static readonly MAX_CONTEXT_MESSAGE_LENGTH = 600
 
   constructor(
     private summarizationService: ISummarizationService,
@@ -57,6 +66,7 @@ export class GenerateSummaryHandler implements JobHandler<GenerateSummaryJobData
 
       // Use diff content from job data if provided; otherwise from previous/completed job context
       let diffContent = data.diff_content
+      let dependencyContext: any = null
 
       // Check current job's context (supports both {result:{diff_content}} and {result:{data:{diff_content}}})
       if (!diffContent) {
@@ -72,6 +82,7 @@ export class GenerateSummaryHandler implements JobHandler<GenerateSummaryJobData
         if (depId) {
           const dep = await this.jobQueueService.getJob(depId)
           const depCtx = (dep.data as any)?.context?.result
+          dependencyContext = depCtx || dependencyContext
           const fromDepDirect = depCtx?.diff_content
           const fromDepNested = depCtx?.data?.diff_content
           diffContent = fromDepDirect || fromDepNested
@@ -90,12 +101,13 @@ export class GenerateSummaryHandler implements JobHandler<GenerateSummaryJobData
       }
 
       // Prepare summarization context
-      const summaryContext = {
-        commitMessage: data.commit_message || '',
-        author: data.author || commit.author || '',
-        branch: data.branch || '',
-        repository: '', // Not available in current Commit interface
-      }
+      const summaryContext = this.buildSummaryContext(data, commit, job, dependencyContext)
+      const summaryMetadata = await this.buildSummaryMetadata(
+        job,
+        data,
+        dependencyContext
+      )
+      const customContext = this.buildCustomContext(summaryContext)
 
       // Billing: resolve user from project_id (projects.user_id) and enforce presence
       let userId: string | undefined
@@ -131,8 +143,9 @@ export class GenerateSummaryHandler implements JobHandler<GenerateSummaryJobData
       const summaryResult = await this.summarizationService.processDiff(
         diffContent,
         {
-          customContext: `Commit by ${summaryContext.author}${summaryContext.commitMessage ? ': ' + summaryContext.commitMessage : ''}`,
+          customContext,
           includeMetadata: true,
+          summaryMetadata,
         }
       )
       try {
@@ -234,6 +247,363 @@ export class GenerateSummaryHandler implements JobHandler<GenerateSummaryJobData
         metadata: meta,
       }
     }
+  }
+
+  private buildSummaryContext(
+    data: GenerateSummaryJobData,
+    commit: any,
+    job: Job,
+    dependencyContext?: any
+  ): {
+    author: string
+    commitMessage: string
+    branch: string
+    repository?: string
+  } {
+    const author = (data.author || commit?.author || 'unknown').trim()
+    const branch = (data.branch || '').trim()
+    const commitMessage = data.commit_message || ''
+
+    const repository =
+      (data as any)?.repository ||
+      this.extractRepositoryFromContext(job?.context) ||
+      this.extractRepositoryFromContext((job?.context as any)?.result) ||
+      this.extractRepositoryFromContext(dependencyContext) ||
+      ''
+
+    return {
+      author,
+      branch,
+      commitMessage,
+      repository,
+    }
+  }
+
+  private buildCustomContext(context: {
+    author: string
+    commitMessage: string
+    branch: string
+    repository?: string
+  }): string {
+    const lines: string[] = []
+
+    if (context.author) {
+      lines.push(`Author: ${context.author}`)
+    }
+
+    if (context.branch) {
+      lines.push(`Branch: ${context.branch}`)
+    }
+
+    if (context.repository) {
+      lines.push(`Repository: ${context.repository}`)
+    }
+
+    if (context.commitMessage && context.commitMessage.trim()) {
+      lines.push('Commit Message:')
+      lines.push(
+        this.indent(
+          this.truncate(
+            context.commitMessage.trim(),
+            GenerateSummaryHandler.MAX_CONTEXT_MESSAGE_LENGTH
+          ),
+          '  '
+        )
+      )
+    }
+
+    return lines.join('\n')
+  }
+
+  private async buildSummaryMetadata(
+    job: Job,
+    data: GenerateSummaryJobData,
+    dependencyContext?: any
+  ): Promise<DiffSummaryMetadata | undefined> {
+    const fileChanges = await this.resolveFileChanges(job, data, dependencyContext)
+    const pullRequest = this.resolvePullRequest(data, job, dependencyContext)
+    const issueReferences = this.resolveIssueReferences(job, data, pullRequest, dependencyContext)
+
+    const metadata: DiffSummaryMetadata = {}
+
+    if (fileChanges.length) {
+      metadata.fileChanges = fileChanges
+    }
+
+    if (pullRequest) {
+      metadata.pullRequest = pullRequest
+    }
+
+    if (issueReferences.length) {
+      metadata.issueReferences = issueReferences
+    }
+
+    return Object.keys(metadata).length ? metadata : undefined
+  }
+
+  private async resolveFileChanges(
+    job: Job,
+    data: GenerateSummaryJobData,
+    dependencyContext?: any
+  ): Promise<FileChangeSummary[]> {
+    const fromData = this.normalizeFileChanges(data.file_changes || [])
+    if (fromData.length) {
+      return fromData
+    }
+
+    const jobContext = (job.context as any) || {}
+    const fromJobContext = this.normalizeFileChanges(this.extractFileChangesFromContext(jobContext))
+    if (fromJobContext.length) {
+      return fromJobContext
+    }
+
+    const fromJobResult = this.normalizeFileChanges(this.extractFileChangesFromContext(jobContext?.result))
+    if (fromJobResult.length) {
+      return fromJobResult
+    }
+
+    const fromDependency = this.normalizeFileChanges(this.extractFileChangesFromContext(dependencyContext))
+    if (fromDependency.length) {
+      return fromDependency
+    }
+
+    try {
+      const deps = await this.jobQueueService.getJobDependencies(job.id)
+      const depId = deps.data && deps.data[0]?.depends_on_job_id
+      if (depId) {
+        const dep = await this.jobQueueService.getJob(depId)
+        const depCtx = (dep.data as any)?.context?.result
+        const fromDepJob = this.normalizeFileChanges(this.extractFileChangesFromContext(depCtx))
+        if (fromDepJob.length) {
+          return fromDepJob
+        }
+      }
+    } catch {
+      // Metadata is optional; ignore dependency lookup failures
+    }
+
+    return []
+  }
+
+  private extractFileChangesFromContext(context: any): any[] {
+    if (!context) {
+      return []
+    }
+
+    if (Array.isArray(context.file_changes)) {
+      return context.file_changes
+    }
+
+    if (Array.isArray(context?.data?.file_changes)) {
+      return context.data.file_changes
+    }
+
+    if (Array.isArray(context?.result?.file_changes)) {
+      return context.result.file_changes
+    }
+
+    return []
+  }
+
+  private normalizeFileChanges(changes: any[]): FileChangeSummary[] {
+    if (!Array.isArray(changes) || !changes.length) {
+      return []
+    }
+
+    const unique = new Map<string, FileChangeSummary>()
+
+    for (const change of changes) {
+      if (!change) continue
+
+      const path = (change.path || change.filename || change.file || '').trim()
+      if (!path) continue
+
+      const additionsRaw = change.additions ?? change.added
+      const deletionsRaw = change.deletions ?? change.removed
+
+      const normalized: FileChangeSummary = {
+        path,
+        status: change.status || change.state || change.changeType,
+        additions: typeof additionsRaw === 'number' ? additionsRaw : undefined,
+        deletions: typeof deletionsRaw === 'number' ? deletionsRaw : undefined,
+      }
+
+      unique.set(path, normalized)
+      if (unique.size >= GenerateSummaryHandler.MAX_FILE_CHANGES) {
+        break
+      }
+    }
+
+    return Array.from(unique.values())
+  }
+
+  private resolvePullRequest(
+    data: GenerateSummaryJobData,
+    job: Job,
+    dependencyContext?: any
+  ): PullRequestSummary | undefined {
+    const candidates: Array<PullRequestSummary | undefined> = [
+      data.pull_request,
+      this.extractLoosePullRequest(data as Record<string, any>),
+      this.extractPullRequestFromContext(job.context),
+      this.extractPullRequestFromContext((job.context as any)?.result),
+      this.extractPullRequestFromContext(dependencyContext),
+    ]
+
+    for (const candidate of candidates) {
+      if (!candidate) continue
+
+      const hasContent = Boolean(
+        candidate.title ||
+        candidate.description ||
+        candidate.number !== undefined ||
+        candidate.url
+      )
+
+      if (hasContent) {
+        const pr: PullRequestSummary = { ...candidate }
+        if (pr.description) {
+          pr.description = this.truncate(
+            pr.description,
+            GenerateSummaryHandler.MAX_PR_DESCRIPTION_LENGTH
+          )
+        }
+        return pr
+      }
+    }
+
+    return undefined
+  }
+
+  private extractPullRequestFromContext(context: any): PullRequestSummary | undefined {
+    if (!context) {
+      return undefined
+    }
+
+    const candidate = context.pull_request || context.pr || context?.data?.pull_request
+    if (!candidate) {
+      return undefined
+    }
+
+    return {
+      title: candidate.title || candidate.name || candidate.pr_title,
+      description: candidate.description || candidate.body || candidate.pr_description,
+      number: candidate.number ?? candidate.id ?? candidate.pr_number,
+      url: candidate.url || candidate.html_url || candidate.pr_url,
+    }
+  }
+
+  private extractLoosePullRequest(source: Record<string, any> | undefined): PullRequestSummary | undefined {
+    if (!source) {
+      return undefined
+    }
+
+    const title = source.pr_title || source.pull_request_title
+    const description = source.pr_description || source.pull_request_description
+    const number = source.pr_number ?? source.pull_request_number
+    const url = source.pr_url || source.pull_request_url
+
+    if (title || description || number !== undefined || url) {
+      return { title, description, number, url }
+    }
+
+    return undefined
+  }
+
+  private resolveIssueReferences(
+    job: Job,
+    data: GenerateSummaryJobData,
+    pullRequest: PullRequestSummary | undefined,
+    dependencyContext?: any
+  ): string[] {
+    const references = new Set<string>()
+
+    const addRefs = (values?: string[]) => {
+      if (!values) return
+      values
+        .map(ref => (typeof ref === 'string' ? ref.trim() : ''))
+        .filter(ref => ref.length > 0)
+        .forEach(ref => references.add(ref))
+    }
+
+    addRefs(data.issue_references)
+    addRefs(this.extractIssueReferencesFromContext(job.context))
+    addRefs(this.extractIssueReferencesFromContext((job.context as any)?.result))
+    addRefs(this.extractIssueReferencesFromContext(dependencyContext))
+
+    this.parseIssueReferencesFromText(data.commit_message).forEach(ref => references.add(ref))
+    if (pullRequest?.description) {
+      this.parseIssueReferencesFromText(pullRequest.description).forEach(ref => references.add(ref))
+    }
+
+    return Array.from(references)
+  }
+
+  private extractIssueReferencesFromContext(context: any): string[] {
+    if (!context) {
+      return []
+    }
+
+    const references = context.issue_references || context.issues || context?.data?.issue_references
+    if (!Array.isArray(references)) {
+      return []
+    }
+
+    return references
+      .map(ref => (typeof ref === 'string' ? ref.trim() : ''))
+      .filter(ref => ref.length > 0)
+  }
+
+  private parseIssueReferencesFromText(text?: string): string[] {
+    if (!text) {
+      return []
+    }
+
+    const references = new Set<string>()
+    const ticketPattern = /\b[A-Z][A-Z0-9]+-\d+\b/g
+    const hashPattern = /#\d+/g
+
+    const capture = (pattern: RegExp) => {
+      const matches = text.match(pattern)
+      if (matches) {
+        matches.forEach(match => references.add(match))
+      }
+    }
+
+    capture(ticketPattern)
+    capture(hashPattern)
+
+    return Array.from(references)
+  }
+
+  private extractRepositoryFromContext(context: any): string | undefined {
+    if (!context) {
+      return undefined
+    }
+
+    return (
+      context.repository ||
+      context.repo ||
+      context?.data?.repository ||
+      context?.metadata?.repository ||
+      context?.result?.repository ||
+      undefined
+    )
+  }
+
+  private truncate(text: string, limit: number): string {
+    if (!text || text.length <= limit) {
+      return text
+    }
+
+    return `${text.slice(0, limit).trimEnd()}...`
+  }
+
+  private indent(text: string, indent: string): string {
+    return text
+      .split(/\r?\n/)
+      .map(line => `${indent}${line}`)
+      .join('\n')
   }
 
   validate(data: GenerateSummaryJobData): boolean {

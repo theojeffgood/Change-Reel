@@ -2,7 +2,7 @@
  * OpenAI API Test Fixtures
  * 
  * Realistic OpenAI API responses for testing our OpenAI integration services.
- * Based on OpenAI's Chat Completions API documentation and real API responses.
+ * Based on OpenAI's Responses API documentation and real API responses.
  * 
  * These fixtures support:
  * - Different types of diff summarization scenarios
@@ -17,6 +17,10 @@ import { OpenAIClientConfig } from '@/lib/openai/client';
 import { DiffProcessingConfig, SummaryResult } from '@/lib/openai/summarization-service';
 import { RateLimitConfig } from '@/lib/openai/rate-limiter';
 import { RetryConfig } from '@/lib/openai/error-handler';
+import {
+  CHANGE_TYPE_TEMPLATE,
+  DIFF_SUMMARY_TEMPLATE,
+} from '@/lib/openai/prompts';
 import OpenAI from 'openai';
 
 // =============================================================================
@@ -24,165 +28,158 @@ import OpenAI from 'openai';
 // =============================================================================
 
 /**
- * Standard successful chat completion response for diff summarization
+ * Standard successful Responses API payload for diff summarization
  */
 export const successfulSummaryResponse = {
-  id: 'chatcmpl-ABC123',
-  object: 'chat.completion',
+  id: 'resp-ABC123',
+  object: 'response',
   created: 1699896916,
-  model: 'gpt-4-turbo-preview',
-  choices: [
+  model: 'gpt-4.1-mini',
+  status: 'completed',
+  output: [
     {
-      index: 0,
-      message: {
-        role: 'assistant',
-        content: 'Add user authentication with JWT token validation and secure middleware',
-      },
-      logprobs: null,
+      id: 'output-1',
+      role: 'assistant',
+      content: [
+        {
+          type: 'output_text',
+          text: 'Add user authentication with JWT token validation and secure middleware',
+        },
+      ],
       finish_reason: 'stop',
     },
   ],
+  output_text: 'Add user authentication with JWT token validation and secure middleware',
   usage: {
-    prompt_tokens: 145,
-    completion_tokens: 12,
+    input_tokens: 145,
+    output_tokens: 12,
     total_tokens: 157,
   },
-  system_fingerprint: 'fp_44709d6fcb',
 };
 
 /**
  * Successful response for change type detection
  */
 export const successfulChangeTypeResponse = {
-  id: 'chatcmpl-DEF456',
-  object: 'chat.completion',
+  id: 'resp-DEF456',
+  object: 'response',
   created: 1699896917,
-  model: 'gpt-4-turbo-preview',
-  choices: [
+  model: 'gpt-4.1-mini',
+  status: 'completed',
+  output: [
     {
-      index: 0,
-      message: {
-        role: 'assistant',
-        content: 'feature',
-      },
-      logprobs: null,
+      id: 'output-1',
+      role: 'assistant',
+      content: [{ type: 'output_text', text: 'feature' }],
       finish_reason: 'stop',
     },
   ],
+  output_text: 'feature',
   usage: {
-    prompt_tokens: 89,
-    completion_tokens: 1,
+    input_tokens: 89,
+    output_tokens: 1,
     total_tokens: 90,
   },
-  system_fingerprint: 'fp_44709d6fcb',
 };
 
 /**
  * Response for a bug fix summarization
  */
 export const bugFixSummaryResponse = {
-  id: 'chatcmpl-GHI789',
-  object: 'chat.completion',
+  id: 'resp-GHI789',
+  object: 'response',
   created: 1699896918,
-  model: 'gpt-4-turbo-preview',
-  choices: [
+  model: 'gpt-4.1-mini',
+  status: 'completed',
+  output: [
     {
-      index: 0,
-      message: {
-        role: 'assistant',
-        content: 'Fix null pointer exception in user profile validation',
-      },
-      logprobs: null,
+      id: 'output-1',
+      role: 'assistant',
+      content: [{ type: 'output_text', text: 'Fix null pointer exception in user profile validation' }],
       finish_reason: 'stop',
     },
   ],
+  output_text: 'Fix null pointer exception in user profile validation',
   usage: {
-    prompt_tokens: 98,
-    completion_tokens: 9,
+    input_tokens: 98,
+    output_tokens: 9,
     total_tokens: 107,
   },
-  system_fingerprint: 'fp_44709d6fcb',
 };
 
 /**
  * Response for refactoring change type
  */
 export const refactorChangeTypeResponse = {
-  id: 'chatcmpl-JKL012',
-  object: 'chat.completion',
+  id: 'resp-JKL012',
+  object: 'response',
   created: 1699896919,
-  model: 'gpt-4-turbo-preview',
-  choices: [
+  model: 'gpt-4.1-mini',
+  status: 'completed',
+  output: [
     {
-      index: 0,
-      message: {
-        role: 'assistant',
-        content: 'refactor',
-      },
-      logprobs: null,
+      id: 'output-1',
+      role: 'assistant',
+      content: [{ type: 'output_text', text: 'refactor' }],
       finish_reason: 'stop',
     },
   ],
+  output_text: 'refactor',
   usage: {
-    prompt_tokens: 76,
-    completion_tokens: 1,
+    input_tokens: 76,
+    output_tokens: 1,
     total_tokens: 77,
   },
-  system_fingerprint: 'fp_44709d6fcb',
 };
 
 /**
  * Response for chore/maintenance change type
  */
 export const choreChangeTypeResponse = {
-  id: 'chatcmpl-MNO345',
-  object: 'chat.completion',
+  id: 'resp-MNO345',
+  object: 'response',
   created: 1699896920,
-  model: 'gpt-4-turbo-preview',
-  choices: [
+  model: 'gpt-4.1-mini',
+  status: 'completed',
+  output: [
     {
-      index: 0,
-      message: {
-        role: 'assistant',
-        content: 'chore',
-      },
-      logprobs: null,
+      id: 'output-1',
+      role: 'assistant',
+      content: [{ type: 'output_text', text: 'chore' }],
       finish_reason: 'stop',
     },
   ],
+  output_text: 'chore',
   usage: {
-    prompt_tokens: 84,
-    completion_tokens: 1,
+    input_tokens: 84,
+    output_tokens: 1,
     total_tokens: 85,
   },
-  system_fingerprint: 'fp_44709d6fcb',
 };
 
 /**
  * Response for fix change type
  */
 export const fixChangeTypeResponse = {
-  id: 'chatcmpl-PQR678',
-  object: 'chat.completion',
+  id: 'resp-PQR678',
+  object: 'response',
   created: 1699896921,
-  model: 'gpt-4-turbo-preview',
-  choices: [
+  model: 'gpt-4.1-mini',
+  status: 'completed',
+  output: [
     {
-      index: 0,
-      message: {
-        role: 'assistant',
-        content: 'fix',
-      },
-      logprobs: null,
+      id: 'output-1',
+      role: 'assistant',
+      content: [{ type: 'output_text', text: 'fix' }],
       finish_reason: 'stop',
     },
   ],
+  output_text: 'fix',
   usage: {
-    prompt_tokens: 67,
-    completion_tokens: 1,
+    input_tokens: 67,
+    output_tokens: 1,
     total_tokens: 68,
   },
-  system_fingerprint: 'fp_44709d6fcb',
 };
 
 // =============================================================================
@@ -193,81 +190,84 @@ export const fixChangeTypeResponse = {
  * Response for a complex feature addition with multiple files
  */
 export const complexFeatureSummaryResponse = {
-  id: 'chatcmpl-STU901',
-  object: 'chat.completion',
+  id: 'resp-STU901',
+  object: 'response',
   created: 1699896922,
-  model: 'gpt-4-turbo-preview',
-  choices: [
+  model: 'gpt-4.1-mini',
+  status: 'completed',
+  output: [
     {
-      index: 0,
-      message: {
-        role: 'assistant',
-        content: 'Implement comprehensive user dashboard with analytics, user management, and real-time data visualization including charts and export functionality',
-      },
-      logprobs: null,
+      id: 'output-1',
+      role: 'assistant',
+      content: [{
+        type: 'output_text',
+        text: 'Implement comprehensive user dashboard with analytics, user management, and real-time data visualization including charts and export functionality',
+      }],
       finish_reason: 'stop',
     },
   ],
+  output_text: 'Implement comprehensive user dashboard with analytics, user management, and real-time data visualization including charts and export functionality',
   usage: {
-    prompt_tokens: 287,
-    completion_tokens: 23,
+    input_tokens: 287,
+    output_tokens: 23,
     total_tokens: 310,
   },
-  system_fingerprint: 'fp_44709d6fcb',
 };
 
 /**
  * Response for database migration summarization
  */
 export const databaseMigrationSummaryResponse = {
-  id: 'chatcmpl-VWX234',
-  object: 'chat.completion',
+  id: 'resp-VWX234',
+  object: 'response',
   created: 1699896923,
-  model: 'gpt-4-turbo-preview',
-  choices: [
+  model: 'gpt-4.1-mini',
+  status: 'completed',
+  output: [
     {
-      index: 0,
-      message: {
-        role: 'assistant',
-        content: 'Add database migration to create user_preferences table with indexes and foreign key constraints',
-      },
-      logprobs: null,
+      id: 'output-1',
+      role: 'assistant',
+      content: [{
+        type: 'output_text',
+        text: 'Add database migration to create user_preferences table with indexes and foreign key constraints',
+      }],
       finish_reason: 'stop',
     },
   ],
+  output_text: 'Add database migration to create user_preferences table with indexes and foreign key constraints',
   usage: {
-    prompt_tokens: 156,
-    completion_tokens: 16,
+    input_tokens: 156,
+    output_tokens: 16,
     total_tokens: 172,
   },
-  system_fingerprint: 'fp_44709d6fcb',
 };
 
 /**
  * Response for configuration update
  */
 export const configUpdateSummaryResponse = {
-  id: 'chatcmpl-YZA567',
-  object: 'chat.completion',
+  id: 'resp-YZA567',
+  object: 'response',
   created: 1699896924,
-  model: 'gpt-4-turbo-preview',
-  choices: [
+  model: 'gpt-4.1-mini',
+  status: 'completed',
+  output: [
     {
-      index: 0,
-      message: {
-        role: 'assistant',
-        content: 'Update environment configuration for production deployment with new API endpoints and security settings',
-      },
-      logprobs: null,
+      id: 'output-1',
+      role: 'assistant',
+      content: [{
+        type: 'output_text',
+        text: 'Update environment configuration for production deployment with new API endpoints and security settings',
+      }],
       finish_reason: 'stop',
     },
   ],
+  output_text: 'Update environment configuration for production deployment with new API endpoints and security settings',
   usage: {
-    prompt_tokens: 134,
-    completion_tokens: 17,
+    input_tokens: 134,
+    output_tokens: 17,
     total_tokens: 151,
   },
-  system_fingerprint: 'fp_44709d6fcb',
 };
 
 // =============================================================================
@@ -278,135 +278,125 @@ export const configUpdateSummaryResponse = {
  * Response with null content (should trigger error)
  */
 export const nullContentResponse = {
-  id: 'chatcmpl-BCD890',
-  object: 'chat.completion',
+  id: 'resp-BCD890',
+  object: 'response',
   created: 1699896925,
-  model: 'gpt-4-turbo-preview',
-  choices: [
+  model: 'gpt-4.1-mini',
+  status: 'completed',
+  output: [
     {
-      index: 0,
-      message: {
-        role: 'assistant',
-        content: null,
-      },
-      logprobs: null,
+      id: 'output-1',
+      role: 'assistant',
+      content: [{ type: 'output_text', text: null }],
       finish_reason: 'stop',
     },
   ],
+  output_text: '',
   usage: {
-    prompt_tokens: 45,
-    completion_tokens: 0,
+    input_tokens: 45,
+    output_tokens: 0,
     total_tokens: 45,
   },
-  system_fingerprint: 'fp_44709d6fcb',
 };
 
 /**
  * Response with empty content (should trigger error)
  */
 export const emptyContentResponse = {
-  id: 'chatcmpl-EFG123',
-  object: 'chat.completion',
+  id: 'resp-EFG123',
+  object: 'response',
   created: 1699896926,
-  model: 'gpt-4-turbo-preview',
-  choices: [
+  model: 'gpt-4.1-mini',
+  status: 'completed',
+  output: [
     {
-      index: 0,
-      message: {
-        role: 'assistant',
-        content: '',
-      },
-      logprobs: null,
+      id: 'output-1',
+      role: 'assistant',
+      content: [{ type: 'output_text', text: '' }],
       finish_reason: 'stop',
     },
   ],
+  output_text: '',
   usage: {
-    prompt_tokens: 45,
-    completion_tokens: 0,
+    input_tokens: 45,
+    output_tokens: 0,
     total_tokens: 45,
   },
-  system_fingerprint: 'fp_44709d6fcb',
 };
 
 /**
  * Response with whitespace-only content (should be trimmed)
  */
 export const whitespaceContentResponse = {
-  id: 'chatcmpl-HIJ456',
-  object: 'chat.completion',
+  id: 'resp-HIJ456',
+  object: 'response',
   created: 1699896927,
-  model: 'gpt-4-turbo-preview',
-  choices: [
+  model: 'gpt-4.1-mini',
+  status: 'completed',
+  output: [
     {
-      index: 0,
-      message: {
-        role: 'assistant',
-        content: '   \n\t   ',
-      },
-      logprobs: null,
+      id: 'output-1',
+      role: 'assistant',
+      content: [{ type: 'output_text', text: '   \n\t   ' }],
       finish_reason: 'stop',
     },
   ],
+  output_text: '   \n\t   ',
   usage: {
-    prompt_tokens: 45,
-    completion_tokens: 1,
+    input_tokens: 45,
+    output_tokens: 1,
     total_tokens: 46,
   },
-  system_fingerprint: 'fp_44709d6fcb',
 };
 
 /**
  * Response with extra whitespace that should be trimmed
  */
 export const extraWhitespaceSummaryResponse = {
-  id: 'chatcmpl-KLM789',
-  object: 'chat.completion',
+  id: 'resp-KLM789',
+  object: 'response',
   created: 1699896928,
-  model: 'gpt-4-turbo-preview',
-  choices: [
+  model: 'gpt-4.1-mini',
+  status: 'completed',
+  output: [
     {
-      index: 0,
-      message: {
-        role: 'assistant',
-        content: '  Add comprehensive logging to authentication service  \n\t',
-      },
-      logprobs: null,
+      id: 'output-1',
+      role: 'assistant',
+      content: [{ type: 'output_text', text: '  Add comprehensive logging to authentication service  \n\t' }],
       finish_reason: 'stop',
     },
   ],
+  output_text: '  Add comprehensive logging to authentication service  \n\t',
   usage: {
-    prompt_tokens: 67,
-    completion_tokens: 8,
+    input_tokens: 67,
+    output_tokens: 8,
     total_tokens: 75,
   },
-  system_fingerprint: 'fp_44709d6fcb',
 };
 
 /**
  * Response with unusual but valid change type
  */
 export const unusualChangeTypeResponse = {
-  id: 'chatcmpl-NOP012',
-  object: 'chat.completion',
+  id: 'resp-NOP012',
+  object: 'response',
   created: 1699896929,
-  model: 'gpt-4-turbo-preview',
-  choices: [
+  model: 'gpt-4.1-mini',
+  status: 'completed',
+  output: [
     {
-      index: 0,
-      message: {
-        role: 'assistant',
-        content: 'FEATURE', // Should be normalized to lowercase
-      },
-      logprobs: null,
+      id: 'output-1',
+      role: 'assistant',
+      content: [{ type: 'output_text', text: 'FEATURE' }], // Should be normalized to lowercase
       finish_reason: 'stop',
     },
   ],
+  output_text: 'FEATURE',
   usage: {
-    prompt_tokens: 78,
-    completion_tokens: 1,
+    input_tokens: 78,
+    output_tokens: 1,
     total_tokens: 79,
   },
-  system_fingerprint: 'fp_44709d6fcb',
 };
 
 // =============================================================================
@@ -490,71 +480,49 @@ export const invalidRequestErrorResponse = {
 // =============================================================================
 
 /**
- * Sample streaming response chunks
+ * Sample streaming response events
  */
 export const streamingResponseChunks = [
   {
-    id: 'chatcmpl-streaming123',
-    object: 'chat.completion.chunk',
-    created: 1699896930,
-    model: 'gpt-4-turbo-preview',
-    choices: [
-      {
-        index: 0,
-        delta: {
+    type: 'response.output_text.delta',
+    response_id: 'resp-streaming123',
+    output_index: 0,
+    delta: 'Add',
+  },
+  {
+    type: 'response.output_text.delta',
+    response_id: 'resp-streaming123',
+    output_index: 0,
+    delta: ' user',
+  },
+  {
+    type: 'response.output_text.delta',
+    response_id: 'resp-streaming123',
+    output_index: 0,
+    delta: ' authentication',
+  },
+  {
+    type: 'response.completed',
+    response: {
+      id: 'resp-streaming123',
+      object: 'response',
+      model: 'gpt-4.1-mini',
+      status: 'completed',
+      output: [
+        {
+          id: 'output-1',
           role: 'assistant',
-          content: 'Add',
+          content: [{ type: 'output_text', text: 'Add user authentication' }],
+          finish_reason: 'stop',
         },
-        logprobs: null,
-        finish_reason: null,
+      ],
+      output_text: 'Add user authentication',
+      usage: {
+        input_tokens: 120,
+        output_tokens: 15,
+        total_tokens: 135,
       },
-    ],
-  },
-  {
-    id: 'chatcmpl-streaming123',
-    object: 'chat.completion.chunk',
-    created: 1699896930,
-    model: 'gpt-4-turbo-preview',
-    choices: [
-      {
-        index: 0,
-        delta: {
-          content: ' user',
-        },
-        logprobs: null,
-        finish_reason: null,
-      },
-    ],
-  },
-  {
-    id: 'chatcmpl-streaming123',
-    object: 'chat.completion.chunk',
-    created: 1699896930,
-    model: 'gpt-4-turbo-preview',
-    choices: [
-      {
-        index: 0,
-        delta: {
-          content: ' authentication',
-        },
-        logprobs: null,
-        finish_reason: null,
-      },
-    ],
-  },
-  {
-    id: 'chatcmpl-streaming123',
-    object: 'chat.completion.chunk',
-    created: 1699896930,
-    model: 'gpt-4-turbo-preview',
-    choices: [
-      {
-        index: 0,
-        delta: {},
-        logprobs: null,
-        finish_reason: 'stop',
-      },
-    ],
+    },
   },
 ];
 
@@ -584,41 +552,40 @@ export function createMockAPIError(
 }
 
 /**
- * Create a custom chat completion response
+ * Create a custom Responses API payload
  */
 export function createMockChatCompletion(overrides: {
   content?: string | null;
   id?: string;
   model?: string;
   usage?: {
-    prompt_tokens?: number;
-    completion_tokens?: number;
+    input_tokens?: number;
+    output_tokens?: number;
     total_tokens?: number;
   };
   finish_reason?: string;
 } = {}) {
+  const textContent = overrides.content !== undefined ? overrides.content : 'Mock response content';
   return {
-    id: overrides.id || 'chatcmpl-custom123',
-    object: 'chat.completion',
+    id: overrides.id || 'resp-custom123',
+    object: 'response',
     created: Math.floor(Date.now() / 1000),
-    model: overrides.model || 'gpt-4-turbo-preview',
-    choices: [
+    model: overrides.model || 'gpt-4.1-mini',
+    status: 'completed',
+    output: [
       {
-        index: 0,
-        message: {
-          role: 'assistant',
-          content: overrides.content !== undefined ? overrides.content : 'Mock response content',
-        },
-        logprobs: null,
+        id: 'output-1',
+        role: 'assistant',
+        content: [{ type: 'output_text', text: textContent }],
         finish_reason: overrides.finish_reason || 'stop',
       },
     ],
+    output_text: typeof textContent === 'string' ? textContent : '',
     usage: {
-      prompt_tokens: overrides.usage?.prompt_tokens || 50,
-      completion_tokens: overrides.usage?.completion_tokens || 10,
+      input_tokens: overrides.usage?.input_tokens || 50,
+      output_tokens: overrides.usage?.output_tokens || 10,
       total_tokens: overrides.usage?.total_tokens || 60,
     },
-    system_fingerprint: 'fp_44709d6fcb',
   };
 }
 
@@ -1028,65 +995,65 @@ export const OPENAI_RESPONSES = {
   // Successful responses
   SUCCESS: {
     FEATURE_SUMMARY: {
-      choices: [
+      output_text: 'Add user validation import to login module',
+      output: [
         {
-          message: {
-            content: 'Add user validation import to login module',
-          },
+          role: 'assistant',
+          content: [{ type: 'output_text', text: 'Add user validation import to login module' }],
         },
       ],
     },
     BUG_FIX_SUMMARY: {
-      choices: [
+      output_text: 'Fix date formatting to return empty string for invalid dates',
+      output: [
         {
-          message: {
-            content: 'Fix date formatting to return empty string for invalid dates',
-          },
+          role: 'assistant',
+          content: [{ type: 'output_text', text: 'Fix date formatting to return empty string for invalid dates' }],
         },
       ],
     },
     REFACTOR_SUMMARY: {
-      choices: [
+      output_text: 'Refactor user lookup methods into unified findUser function',
+      output: [
         {
-          message: {
-            content: 'Refactor user lookup methods into unified findUser function',
-          },
+          role: 'assistant',
+          content: [{ type: 'output_text', text: 'Refactor user lookup methods into unified findUser function' }],
         },
       ],
     },
     CHANGE_TYPE_FEATURE: {
-      choices: [
+      output_text: 'feature',
+      output: [
         {
-          message: {
-            content: 'feature',
-          },
+          role: 'assistant',
+          content: [{ type: 'output_text', text: 'feature' }],
         },
       ],
     },
     CHANGE_TYPE_FIX: {
-      choices: [
+      output_text: 'fix',
+      output: [
         {
-          message: {
-            content: 'fix',
-          },
+          role: 'assistant',
+          content: [{ type: 'output_text', text: 'fix' }],
         },
       ],
     },
     CHANGE_TYPE_REFACTOR: {
-      choices: [
+      output_text: 'refactor',
+      output: [
         {
-          message: {
-            content: 'refactor',
-          },
+          role: 'assistant',
+          content: [{ type: 'output_text', text: 'refactor' }],
         },
       ],
     },
     CHANGE_TYPE_CHORE: {
-      choices: [
+      output_text: 'chore',
+      output: [
         {
-          message: {
-            content: 'chore',
-          },
+          role: 'assistant',
+          content: [{ type: 'output_text', text: 'chore' }],
         },
       ],
     },
@@ -1095,19 +1062,19 @@ export const OPENAI_RESPONSES = {
   // Error responses
   ERROR: {
     EMPTY_CONTENT: {
-      choices: [
+      output_text: '',
+      output: [
         {
-          message: {
-            content: null,
-          },
+          role: 'assistant',
+          content: [{ type: 'output_text', text: null }],
         },
       ],
     },
-    NO_CHOICES: {
-      choices: [],
+    NO_OUTPUT: {
+      output: [],
     },
     MALFORMED: {
-      // Missing choices array
+      // Missing output array
     },
   },
 };
@@ -1257,7 +1224,6 @@ export const CONFIGS = {
         '.min.js',
         '.map',
       ],
-      customContext: 'Focus on functional changes that would be relevant to users and developers.',
     } as DiffProcessingConfig,
 
     STRICT: {
@@ -1338,13 +1304,13 @@ export const EXPECTED_RESULTS = {
 
 export const PROMPT_TEMPLATES = {
   DIFF_SUMMARY: {
-    DEFAULT: 'You are a changelog assistant. Summarize the following code diff into a 1-2 sentence plain English description of what changed. Be concise and skip minor edits.\n\nContext: {context}\n\nDiff:\n{diff}',
+    DEFAULT: DIFF_SUMMARY_TEMPLATE,
     CUSTOM: 'Custom prompt template: {diff}',
     WITH_CONTEXT: 'Analyze this diff with special attention to: {context}\n\nDiff content:\n{diff}',
   },
 
   CHANGE_TYPE: {
-    DEFAULT: 'Analyze the following code diff and summary to determine the type of change. Respond with only one word: feature, fix, refactor, or chore.\n\nDiff: {diff}\nSummary: {summary}',
+    DEFAULT: CHANGE_TYPE_TEMPLATE,
     SIMPLE: 'What type of change is this? Options: feature, fix, refactor, chore\n\nDiff: {diff}',
   },
 };

@@ -281,10 +281,19 @@ describe('OpenAI Error Handler', () => {
       
       const mockOperation = jest.fn()
         .mockRejectedValueOnce(mockApiError)
-        .mockResolvedValue({ choices: [{ message: { content: 'Success' } }] });
+        .mockResolvedValue({
+          output_text: 'Success',
+          output: [
+            {
+              role: 'assistant',
+              content: [{ type: 'output_text', text: 'Success' }],
+              finish_reason: 'stop',
+            },
+          ],
+        });
 
       const result = await errorHandler.executeWithRetry(mockOperation) as any;
-      expect(result.choices[0].message.content).toBe('Success');
+      expect(result.output_text).toBe('Success');
       expect(mockOperation).toHaveBeenCalledTimes(2);
     });
   });

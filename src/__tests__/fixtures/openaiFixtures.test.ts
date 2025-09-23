@@ -20,32 +20,42 @@ import {
   edgeCaseResponses,
 } from './openaiFixtures';
 
+function extractFirstContent(response: any): string | null {
+  if (!Array.isArray(response?.output)) {
+    return null;
+  }
+  const text = response.output[0]?.content?.[0]?.text;
+  return text === null ? null : typeof text === 'string' ? text : null;
+}
+
 describe('OpenAI Fixtures', () => {
   describe('Successful Response Fixtures', () => {
-    it('should have valid chat completion structure for summary response', () => {
+    it('should have valid response structure for summary response', () => {
       expect(successfulSummaryResponse).toHaveProperty('id');
-      expect(successfulSummaryResponse).toHaveProperty('object', 'chat.completion');
-      expect(successfulSummaryResponse).toHaveProperty('choices');
-      expect(successfulSummaryResponse.choices[0]).toHaveProperty('message');
-      expect(successfulSummaryResponse.choices[0].message).toHaveProperty('content');
-      expect(successfulSummaryResponse.choices[0].message.content).toBe(
+      expect(successfulSummaryResponse).toHaveProperty('object', 'response');
+      expect(successfulSummaryResponse).toHaveProperty('output');
+      expect(Array.isArray(successfulSummaryResponse.output)).toBe(true);
+      const firstText = extractFirstContent(successfulSummaryResponse);
+      expect(firstText).toBe(
         'Add user authentication with JWT token validation and secure middleware'
       );
+      expect(successfulSummaryResponse).toHaveProperty('output_text');
+      expect(successfulSummaryResponse.output_text).toContain('Add user authentication');
     });
 
     it('should have valid change type response', () => {
-      expect(successfulChangeTypeResponse.choices[0].message.content).toBe('feature');
+      expect(extractFirstContent(successfulChangeTypeResponse)).toBe('feature');
     });
 
     it('should have bug fix response', () => {
-      expect(bugFixSummaryResponse.choices[0].message.content).toBe(
+      expect(extractFirstContent(bugFixSummaryResponse)).toBe(
         'Fix null pointer exception in user profile validation'
       );
     });
 
     it('should have usage information', () => {
-      expect(successfulSummaryResponse.usage).toHaveProperty('prompt_tokens');
-      expect(successfulSummaryResponse.usage).toHaveProperty('completion_tokens');
+      expect(successfulSummaryResponse.usage).toHaveProperty('input_tokens');
+      expect(successfulSummaryResponse.usage).toHaveProperty('output_tokens');
       expect(successfulSummaryResponse.usage).toHaveProperty('total_tokens');
       expect(successfulSummaryResponse.usage.total_tokens).toBeGreaterThan(0);
     });
@@ -53,11 +63,11 @@ describe('OpenAI Fixtures', () => {
 
   describe('Edge Case Fixtures', () => {
     it('should have null content response', () => {
-      expect(nullContentResponse.choices[0].message.content).toBeNull();
+      expect(extractFirstContent(nullContentResponse)).toBeNull();
     });
 
     it('should have empty content response', () => {
-      expect(emptyContentResponse.choices[0].message.content).toBe('');
+      expect(extractFirstContent(emptyContentResponse)).toBe('');
     });
   });
 
@@ -65,18 +75,18 @@ describe('OpenAI Fixtures', () => {
     it('should create custom chat completion with overrides', () => {
       const customResponse = createMockChatCompletion({
         content: 'Custom test content',
-        model: 'gpt-4',
+        model: 'gpt-4.1-mini',
         usage: {
-          prompt_tokens: 100,
-          completion_tokens: 20,
+          input_tokens: 100,
+          output_tokens: 20,
           total_tokens: 120,
         },
       });
 
-      expect(customResponse.choices[0].message.content).toBe('Custom test content');
-      expect(customResponse.model).toBe('gpt-4');
-      expect(customResponse.usage.prompt_tokens).toBe(100);
-      expect(customResponse.usage.completion_tokens).toBe(20);
+      expect(extractFirstContent(customResponse)).toBe('Custom test content');
+      expect(customResponse.model).toBe('gpt-4.1-mini');
+      expect(customResponse.usage.input_tokens).toBe(100);
+      expect(customResponse.usage.output_tokens).toBe(20);
       expect(customResponse.usage.total_tokens).toBe(120);
     });
 
@@ -161,10 +171,10 @@ describe('OpenAI Fixtures', () => {
       const mockResponse = successfulSummaryResponse;
       
       // Simulate processing the response
-      const content = mockResponse.choices[0].message.content;
+      const content = extractFirstContent(mockResponse);
       expect(content).toBeDefined();
       expect(typeof content).toBe('string');
-      expect(content!.length).toBeGreaterThan(0);
+      expect((content as string).length).toBeGreaterThan(0);
     });
 
     it('should support mocking change type detection', () => {
@@ -172,7 +182,7 @@ describe('OpenAI Fixtures', () => {
       const mockResponse = successfulChangeTypeResponse;
       
       // Simulate processing the response
-      const changeType = mockResponse.choices[0].message.content;
+      const changeType = extractFirstContent(mockResponse);
       expect(changeType).toBe('feature');
     });
 

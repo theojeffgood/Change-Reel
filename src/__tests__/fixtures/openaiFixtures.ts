@@ -38,8 +38,23 @@ export const successfulSummaryResponse = {
       role: 'assistant',
       content: [
         {
-          type: 'output_text',
-          text: '{"summary":"Add user authentication with JWT token validation and secure middleware","change_type":"feature"}',
+          type: 'json_schema',
+          json_schema: {
+            name: 'DiffSummary',
+            schema: {
+              type: 'object',
+              properties: {
+                summary: { type: 'string' },
+                change_type: { type: 'string' }
+              },
+              required: ['summary', 'change_type'],
+              additionalProperties: false,
+            },
+            output: {
+              summary: 'Add user authentication with JWT token validation and secure middleware',
+              change_type: 'feature',
+            },
+          },
         },
       ],
       finish_reason: 'stop',
@@ -75,56 +90,6 @@ export const bugFixSummaryResponse = {
     input_tokens: 98,
     output_tokens: 9,
     total_tokens: 107,
-  },
-};
-
-/**
- * Response for refactoring change type
- */
-export const refactorChangeTypeResponse = {
-  id: 'resp-JKL012',
-  object: 'response',
-  created: 1699896919,
-  model: 'gpt-4.1-mini',
-  status: 'completed',
-  output: [
-    {
-      id: 'output-1',
-      role: 'assistant',
-      content: [{ type: 'output_text', text: 'refactor' }],
-      finish_reason: 'stop',
-    },
-  ],
-  output_text: 'refactor',
-  usage: {
-    input_tokens: 76,
-    output_tokens: 1,
-    total_tokens: 77,
-  },
-};
-
-/**
- * Response for chore/maintenance change type
- */
-export const choreChangeTypeResponse = {
-  id: 'resp-MNO345',
-  object: 'response',
-  created: 1699896920,
-  model: 'gpt-4.1-mini',
-  status: 'completed',
-  output: [
-    {
-      id: 'output-1',
-      role: 'assistant',
-      content: [{ type: 'output_text', text: 'chore' }],
-      finish_reason: 'stop',
-    },
-  ],
-  output_text: 'chore',
-  usage: {
-    input_tokens: 84,
-    output_tokens: 1,
-    total_tokens: 85,
   },
 };
 
@@ -681,52 +646,6 @@ index abc1234..def5678 100644
     response: bugFixSummaryResponse,
   },
 
-  refactor: {
-    diff: `diff --git a/src/components/UserProfile.tsx b/src/components/UserProfile.tsx
-index 1111111..2222222 100644
---- a/src/components/UserProfile.tsx
-+++ b/src/components/UserProfile.tsx
-@@ -1,15 +1,8 @@
--import { useState, useEffect } from 'react';
--import { getUserData } from '../api/users';
-+import { useUser } from '../hooks/useUser';
- 
- export function UserProfile({ userId }: { userId: string }) {
--  const [user, setUser] = useState(null);
--  
--  useEffect(() => {
--    getUserData(userId).then(setUser);
--  }, [userId]);
-+  const { user, loading, error } = useUser(userId);
- 
--  if (!user) return <div>Loading...</div>;
-+  if (loading) return <div>Loading...</div>;
-+  if (error) return <div>Error: {error}</div>;
-   
-   return <div>{user.name}</div>;
- }`,
-    expectedSummary: 'Refactor UserProfile component to use custom useUser hook',
-    expectedChangeType: 'refactor',
-    response: complexFeatureSummaryResponse,
-  },
-
-  chore: {
-    diff: `diff --git a/package.json b/package.json
-index aaa1111..bbb2222 100644
---- a/package.json
-+++ b/package.json
-@@ -10,8 +10,8 @@
-   "dependencies": {
--    "react": "^17.0.0",
--    "typescript": "^4.5.0"
-+    "react": "^18.2.0",
-+    "typescript": "^5.0.0"
-   }
- }`,
-    expectedSummary: 'Update React and TypeScript dependencies to latest versions',
-    expectedChangeType: 'chore',
-    response: configUpdateSummaryResponse,
-  },
 };
 
 /**
@@ -779,8 +698,6 @@ export const errorScenarios = {
 export const successfulResponses = {
   summary: successfulSummaryResponse,
   bugFix: bugFixSummaryResponse,
-  refactor: refactorChangeTypeResponse,
-  chore: choreChangeTypeResponse,
   fix: fixChangeTypeResponse,
   complex: complexFeatureSummaryResponse,
   database: databaseMigrationSummaryResponse,
@@ -1009,24 +926,6 @@ export const OPENAI_RESPONSES = {
         },
       ],
     },
-    CHANGE_TYPE_REFACTOR: {
-      output_text: 'refactor',
-      output: [
-        {
-          role: 'assistant',
-          content: [{ type: 'output_text', text: 'refactor' }],
-        },
-      ],
-    },
-    CHANGE_TYPE_CHORE: {
-      output_text: 'chore',
-      output: [
-        {
-          role: 'assistant',
-          content: [{ type: 'output_text', text: 'chore' }],
-        },
-      ],
-    },
   },
 
   // Error responses
@@ -1247,24 +1146,11 @@ export const EXPECTED_RESULTS = {
         templateUsed: 'diff_summary',
       },
     } as SummaryResult,
-
-    REFACTOR: {
-      summary: 'Refactor user lookup methods into unified findUser function',
-      changeType: 'refactor',
-      confidence: expect.any(Number),
-      metadata: {
-        diffLength: expect.any(Number),
-        processingTimeMs: expect.any(Number),
-        templateUsed: 'diff_summary',
-      },
-    } as SummaryResult,
   },
 
   CHANGE_TYPES: {
     FEATURE: 'feature',
-    FIX: 'fix', 
-    REFACTOR: 'refactor',
-    CHORE: 'chore',
+    FIX: 'fix',
   } as const,
 };
 
@@ -1348,7 +1234,7 @@ export function createMockTemplateEngine() {
  * Creates a realistic diff with specified characteristics
  */
 export function createTestDiff(options: {
-  type?: 'feature' | 'fix' | 'refactor' | 'chore';
+  type?: 'feature' | 'fix';
   files?: number;
   size?: 'small' | 'medium' | 'large';
   hasNoise?: boolean;
@@ -1368,9 +1254,6 @@ export function createTestDiff(options: {
         break;
       case 'fix':
         diff += SAMPLE_DIFFS.BUG_FIX;
-        break;
-      case 'refactor':
-        diff += SAMPLE_DIFFS.REFACTOR;
         break;
       default:
         diff += SAMPLE_DIFFS.SIMPLE_FEATURE;

@@ -1,27 +1,18 @@
 import { NextResponse } from 'next/server';
 import { getServiceRoleSupabaseService } from '@/lib/supabase/client';
 import { createClient as createSupabaseClient } from '@supabase/supabase-js';
-import {
-  DIFF_SUMMARY_SYSTEM_PROMPT,
-} from '@/lib/openai/prompts';
-import { createDiffSummaryPrompt } from '@/lib/openai/prompt-templates';
+import { createOpenAIClient } from '@/lib/openai/client';
+import { createSummarizationService, SummarizationService } from '@/lib/openai/summarization-service';
+import { OpenAIError } from '@/lib/openai/error-handler';
 
-function extractFirstText(response: any): string | undefined {
-  if (!response?.output) {
-    return undefined;
+let summarizationService: SummarizationService | null = null;
+
+function getSummarizationService(): SummarizationService {
+  if (!summarizationService) {
+    const client = createOpenAIClient();
+    summarizationService = createSummarizationService(client);
   }
-  for (const item of response.output) {
-    const contents = item?.content;
-    if (!Array.isArray(contents)) {
-      continue;
-    }
-    for (const part of contents) {
-      if (part?.type === 'output_text' && typeof part.text === 'string') {
-        return part.text;
-      }
-    }
-  }
-  return undefined;
+  return summarizationService;
 }
 
 export async function POST() {
@@ -335,12 +326,6 @@ async function processGenerateSummaryJob(job: any, supabaseService: any): Promis
   try {
     const data = job.data;
     
-    // Use OpenAI to generate summary - no fallbacks
-    const openai = await import('openai');
-    const client = new openai.OpenAI({
-      apiKey: process.env.OPENAI_API_KEY
-    });
-
     const diffContent = data.diff_content && data.diff_content.trim().length
       ? data.diff_content
       : `Commit message: ${data.commit_message || '(not provided)'}\nBranch: ${data.branch || '(unknown)'}`;
@@ -358,29 +343,12 @@ async function processGenerateSummaryJob(job: any, supabaseService: any): Promis
 
     const context = contextLines.length ? contextLines.join('\n') : undefined;
 
-    const prompt = `${createDiffSummaryPrompt(diffContent, {
+    const service = getSummarizationService();
+    const summaryResult = await service.processDiff(diffContent, {
       customContext: context,
-    })}\n\nProvide only the summary, no additional text.`;
-
-    const completion = await client.responses.create({
-      model: process.env.OPENAI_MODEL || 'gpt-5',
-      input: [
-        {
-          role: 'system',
-          content: [{ type: 'input_text', text: DIFF_SUMMARY_SYSTEM_PROMPT }],
-        },
-        {
-          role: 'user',
-          content: [{ type: 'input_text', text: prompt }],
-        },
-      ],
-      max_output_tokens: 100,
-      temperature: 0.3
     });
 
-    const summary = typeof completion.output_text === 'string'
-      ? completion.output_text.trim()
-      : extractFirstText(completion)?.trim();
+    const summary = summaryResult.summary?.trim();
 
     if (!summary) {
       return {
@@ -389,16 +357,7 @@ async function processGenerateSummaryJob(job: any, supabaseService: any): Promis
       };
     }
 
-    // Detect change type based on commit message
-    const commitMessage = data.commit_message?.toLowerCase() || '';
-    let changeType = 'chore';
-    if (commitMessage.includes('feat') || commitMessage.includes('add') || commitMessage.includes('new')) {
-      changeType = 'feature';
-    } else if (commitMessage.includes('fix') || commitMessage.includes('bug')) {
-      changeType = 'fix';
-    } else if (commitMessage.includes('refactor') || commitMessage.includes('improve')) {
-      changeType = 'refactor';
-    }
+    const changeType = summaryResult.changeType;
 
     // Update commit with summary
     const { error: updateError } = await supabaseService.commits.updateCommit(data.commit_id, {
@@ -418,7 +377,9 @@ async function processGenerateSummaryJob(job: any, supabaseService: any): Promis
       data: {
         summary: summary,
         change_type: changeType,
-        commit_id: data.commit_id
+        commit_id: data.commit_id,
+        confidence: summaryResult.confidence,
+        metadata: summaryResult.metadata,
       }
     };
   } catch (error: any) {
@@ -426,19 +387,53 @@ async function processGenerateSummaryJob(job: any, supabaseService: any): Promis
     let errorType = 'unknown_error';
     let errorMessage = error.message || 'Unknown error in summary generation';
     
-    if (error.status === 429) {
+    if (error instanceof OpenAIError) {
+      switch (error.code) {
+        case 'RATE_LIMIT_EXCEEDED':
+          errorType = 'rate_limit_exceeded';
+          errorMessage = `OpenAI rate limit exceeded: ${error.message}`;
+          break;
+        case 'AUTHENTICATION_ERROR':
+          errorType = 'api_key_invalid';
+          errorMessage = `OpenAI API key invalid: ${error.message}`;
+          break;
+        case 'INVALID_REQUEST':
+          errorType = 'invalid_request';
+          errorMessage = `Invalid OpenAI request: ${error.message}`;
+          break;
+        case 'SERVICE_UNAVAILABLE':
+          errorType = 'openai_server_error';
+          errorMessage = `OpenAI server error: ${error.message}`;
+          break;
+        case 'NETWORK_ERROR':
+          errorType = 'network_error';
+          errorMessage = `Network error connecting to OpenAI: ${error.message}`;
+          break;
+        case 'TOKEN_LIMIT_EXCEEDED':
+          errorType = 'token_limit_exceeded';
+          errorMessage = `OpenAI token limit exceeded: ${error.message}`;
+          break;
+        case 'QUOTA_EXCEEDED':
+          errorType = 'quota_exceeded';
+          errorMessage = `OpenAI quota exceeded: ${error.message}`;
+          break;
+        default:
+          errorType = `openai_error_${error.code.toLowerCase()}`;
+          errorMessage = `OpenAI error (${error.code}): ${error.message}`;
+      }
+    } else if (error?.status === 429) {
       errorType = 'rate_limit_exceeded';
       errorMessage = `OpenAI rate limit exceeded: ${error.message}`;
-    } else if (error.status === 401) {
+    } else if (error?.status === 401) {
       errorType = 'api_key_invalid';
       errorMessage = `OpenAI API key invalid: ${error.message}`;
-    } else if (error.status === 403) {
+    } else if (error?.status === 403) {
       errorType = 'permission_denied';
       errorMessage = `OpenAI permission denied: ${error.message}`;
-    } else if (error.status >= 500) {
+    } else if (error?.status >= 500) {
       errorType = 'openai_server_error';
       errorMessage = `OpenAI server error: ${error.message}`;
-    } else if (error.code === 'ENOTFOUND' || error.code === 'ECONNREFUSED') {
+    } else if (error?.code === 'ENOTFOUND' || error?.code === 'ECONNREFUSED') {
       errorType = 'network_error';
       errorMessage = `Network error connecting to OpenAI: ${error.message}`;
     }

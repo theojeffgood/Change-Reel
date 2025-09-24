@@ -23,7 +23,27 @@ function extractFirstContent(response: any): string | null {
   if (!Array.isArray(response?.output)) {
     return null;
   }
-  const text = response.output[0]?.content?.[0]?.text;
+  const firstContent = response.output[0]?.content?.[0];
+  if (!firstContent) {
+    return null;
+  }
+
+  if (firstContent.type === 'json_schema') {
+    const payload = firstContent.json_schema?.output;
+    if (payload && typeof payload === 'object') {
+      const summary = (payload as any).summary;
+      const changeType = (payload as any).change_type ?? (payload as any).changeType;
+      if (typeof summary === 'string') {
+        return summary;
+      }
+      if (typeof changeType === 'string') {
+        return changeType;
+      }
+    }
+    return null;
+  }
+
+  const text = firstContent.text;
   if (text === null || typeof text !== 'string') {
     return text === null ? null : typeof text === 'string' ? text : null;
   }
@@ -133,15 +153,6 @@ describe('OpenAI Fixtures', () => {
       expect(diffScenarios.bugFix.diff).toContain('validateUser');
     });
 
-    it('should have refactor scenario', () => {
-      expect(diffScenarios.refactor.expectedChangeType).toBe('refactor');
-      expect(diffScenarios.refactor.diff).toContain('useUser');
-    });
-
-    it('should have chore scenario', () => {
-      expect(diffScenarios.chore.expectedChangeType).toBe('chore');
-      expect(diffScenarios.chore.diff).toContain('package.json');
-    });
   });
 
   describe('Error Scenarios', () => {

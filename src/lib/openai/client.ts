@@ -1,13 +1,44 @@
 import OpenAI from 'openai';
+import type { ResponseCreateParams } from 'openai/resources/responses/responses';
 import { PromptTemplateEngine, DiffSummaryPromptOptions } from './prompt-templates';
 import { OpenAIRateLimiter, defaultRateLimiter } from './rate-limiter';
 import { OpenAIErrorHandler, defaultErrorHandler, OpenAIError } from './error-handler';
 import { DIFF_SUMMARY_SYSTEM_PROMPT } from './prompts';
 
+const DIFF_SUMMARY_SCHEMA_NAME = 'DiffSummary';
+const DIFF_SUMMARY_RESPONSE_SCHEMA = {
+  type: 'object',
+  properties: {
+    summary: {
+      type: 'string',
+      description: 'One short paragraph summarizing the diff for a non-technical audience.',
+      minLength: 1,
+    },
+    change_type: {
+      type: 'string',
+      description: 'Categorization of the change.',
+      enum: ['feature', 'fix'],
+    },
+  },
+  required: ['summary', 'change_type'],
+  additionalProperties: false,
+} as const;
+
+type ResponseCreateParamsWithSchema = ResponseCreateParams & {
+  response_format?: {
+    type: 'json_schema';
+    json_schema: {
+      name: string;
+      schema: typeof DIFF_SUMMARY_RESPONSE_SCHEMA;
+      strict?: boolean;
+    };
+  };
+};
+
 /**
  * Interface for OpenAI client to enable dependency injection and testing
  */
-export type ChangeTypeCategory = 'feature' | 'fix' | 'refactor' | 'chore';
+export type ChangeTypeCategory = 'feature' | 'fix';
 
 export interface GenerateSummaryResult {
   summary: string;
@@ -92,7 +123,7 @@ export class OpenAIClient implements IOpenAIClient {
 
       let response: any;
       try {
-        response = await this.openai.responses.create({
+        const requestPayload: ResponseCreateParamsWithSchema = {
           model: this.model,
           input: [
             {
@@ -105,7 +136,17 @@ export class OpenAIClient implements IOpenAIClient {
             },
           ],
           max_output_tokens: this.maxTokens,
-        });
+          response_format: {
+            type: 'json_schema',
+            json_schema: {
+              name: DIFF_SUMMARY_SCHEMA_NAME,
+              schema: DIFF_SUMMARY_RESPONSE_SCHEMA,
+              strict: true,
+            },
+          },
+          store: true,
+        };
+        response = await this.openai.responses.create(requestPayload);
       } catch (e) {
         const err = e as any;
         console.error('[OpenAIClient] responses.create failed (summary)', {
@@ -119,9 +160,12 @@ export class OpenAIClient implements IOpenAIClient {
 
       const usageMeta = response?.usage || undefined;
       const outputItems = Array.isArray(response?.output) ? response.output.length : 0;
-      const summary = typeof response?.output_text === 'string'
-        ? response.output_text.trim()
-        : this.extractFirstTextContent(response)?.trim() ?? '';
+      const structuredPayload = this.extractJsonSchemaPayload(response);
+      const fallbackText = typeof response?.output_text === 'string'
+        ? response.output_text
+        : this.extractFirstTextContent(response);
+      const parsed = this.parseStructuredSummary(structuredPayload ?? fallbackText ?? '');
+      const summary = parsed.summary.trim();
 
       // Debug: log response meta (no content text)
       console.debug('[OpenAIClient] generateSummary response', {
@@ -159,24 +203,6 @@ export class OpenAIClient implements IOpenAIClient {
         throw err;
       }
 
-      const parsed = this.parseStructuredSummary(summary);
-      if (!parsed.summary) {
-        const compTok = usageMeta?.output_tokens;
-        const totTok = usageMeta?.total_tokens;
-        const msg = `No summary generated from OpenAI response. finish_reasons=${JSON.stringify(this.collectFinishReasons(response) ?? [])}; output_tokens=${compTok ?? 'n/a'}; total_tokens=${totTok ?? 'n/a'}; maxTokens=${this.maxTokens}`;
-        const err = new OpenAIError(msg, 'OUTPUT_TOKEN_LIMIT', false, 400);
-        ;(err as any).details = {
-          finish_reasons: this.collectFinishReasons(response),
-          output_tokens: compTok,
-          total_tokens: totTok,
-          max_tokens: this.maxTokens,
-          operation: 'summarization',
-          model: this.model,
-          output_items: outputItems,
-        };
-        throw err;
-      }
-
       const changeType = this.normalizeChangeType(parsed.changeType);
       if (!changeType) {
         console.warn('[OpenAIClient] Invalid or missing change type from summary response, defaulting to "feature"', {
@@ -185,14 +211,60 @@ export class OpenAIClient implements IOpenAIClient {
       }
 
       return {
-        summary: parsed.summary.trim(),
+        summary,
         changeType: changeType ?? OpenAIClient.DEFAULT_CHANGE_TYPE,
       };
     }, 'summarization');
   }
 
-  private parseStructuredSummary(output: string): { summary: string; changeType?: string } {
-    const trimmed = output?.trim() ?? '';
+  private extractJsonSchemaPayload(response: any): Record<string, unknown> | undefined {
+    if (!Array.isArray(response?.output)) {
+      return undefined;
+    }
+    for (const item of response.output) {
+      const contents = item?.content;
+      if (!Array.isArray(contents)) {
+        continue;
+      }
+      for (const part of contents) {
+        if (part?.type === 'json_schema') {
+          const payload = part?.json_schema?.output;
+          if (payload && typeof payload === 'object') {
+            return payload as Record<string, unknown>;
+          }
+        }
+      }
+    }
+    return undefined;
+  }
+
+  private parseStructuredSummary(output: unknown): { summary: string; changeType?: string } {
+    if (!output) {
+      return { summary: '' };
+    }
+
+    if (typeof output === 'object') {
+      const candidate = output as Record<string, unknown>;
+      const summaryField = candidate.summary;
+      const changeTypeField = candidate.change_type ?? candidate.changeType;
+
+      if (typeof summaryField === 'string' && summaryField.trim().length > 0) {
+        return {
+          summary: summaryField.trim(),
+          changeType: typeof changeTypeField === 'string' ? changeTypeField : undefined,
+        };
+      }
+
+      if (typeof candidate.output === 'string') {
+        return this.parseStructuredSummary(candidate.output);
+      }
+    }
+
+    if (typeof output !== 'string') {
+      return { summary: '' };
+    }
+
+    const trimmed = output.trim();
     if (!trimmed) {
       return { summary: '' };
     }
@@ -240,16 +312,9 @@ export class OpenAIClient implements IOpenAIClient {
 
     switch (normalized) {
       case 'feature':
-      case 'new feature':
         return 'feature';
-      case 'bug fix':
-      case 'bugfix':
       case 'fix':
         return 'fix';
-      case 'refactor':
-        return 'refactor';
-      case 'chore':
-        return 'chore';
       default:
         return undefined;
     }
@@ -265,6 +330,20 @@ export class OpenAIClient implements IOpenAIClient {
         continue;
       }
       for (const part of contents) {
+        if (part?.type === 'json_schema') {
+          const payload = part?.json_schema?.output;
+          if (payload && typeof payload === 'object') {
+            const summary = (payload as any).summary;
+            if (typeof summary === 'string') {
+              return summary;
+            }
+            const changeType = (payload as any).change_type ?? (payload as any).changeType;
+            if (typeof changeType === 'string') {
+              return changeType;
+            }
+          }
+          continue;
+        }
         if (part?.type === 'output_text' && typeof part.text === 'string') {
           return part.text;
         }

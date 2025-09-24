@@ -5,7 +5,6 @@ import {
   DEFAULT_TEMPLATES,
   defaultTemplateEngine,
   createDiffSummaryPrompt,
-  createChangeTypePrompt,
   createCustomPrompt,
   registerGlobalTemplate,
   getAvailableTemplates
@@ -21,11 +20,10 @@ describe('PromptTemplateEngine', () => {
   describe('constructor', () => {
     it('should initialize with default templates', () => {
       const templates = engine.getAllTemplates();
-      expect(templates).toHaveLength(3);
+      expect(templates).toHaveLength(2);
       
       const templateIds = templates.map(t => t.id);
       expect(templateIds).toContain('diff_summary');
-      expect(templateIds).toContain('change_type_detection');
       expect(templateIds).toContain('custom');
     });
 
@@ -41,7 +39,7 @@ describe('PromptTemplateEngine', () => {
       const customEngine = new PromptTemplateEngine([customTemplate]);
       const templates = customEngine.getAllTemplates();
       
-      expect(templates).toHaveLength(4); // 3 default + 1 custom
+      expect(templates).toHaveLength(3); // 2 default + 1 custom
       expect(customEngine.getTemplate('test_template')).toEqual(customTemplate);
     });
   });
@@ -217,22 +215,6 @@ describe('PromptTemplateEngine', () => {
     });
   });
 
-  describe('createChangeTypePrompt', () => {
-    it('should create change type detection prompt', () => {
-      const result = engine.createChangeTypePrompt(
-        'Added new function',
-        'Implemented user authentication'
-      );
-
-      expect(result).toContain('Added new function');
-      expect(result).toContain('Implemented user authentication');
-      expect(result).toContain('feature');
-      expect(result).toContain('fix');
-      expect(result).toContain('refactor');
-      expect(result).toContain('chore');
-    });
-  });
-
   describe('createCustomPrompt', () => {
     it('should create custom prompt with variable substitution', () => {
       const result = engine.createCustomPrompt(
@@ -282,7 +264,6 @@ describe('TemplateValidationError', () => {
 describe('DEFAULT_TEMPLATES', () => {
   it('should have all required template types', () => {
     expect(DEFAULT_TEMPLATES).toHaveProperty('diff_summary');
-    expect(DEFAULT_TEMPLATES).toHaveProperty('change_type_detection');
     expect(DEFAULT_TEMPLATES).toHaveProperty('custom');
   });
 
@@ -305,15 +286,7 @@ describe('DEFAULT_TEMPLATES', () => {
 
     it('should have default context', () => {
       const template = DEFAULT_TEMPLATES.diff_summary;
-      expect(template.defaultValues?.context).toBeTruthy();
-    });
-  });
-
-  describe('change_type_detection template', () => {
-    it('should require diff and summary variables', () => {
-      const template = DEFAULT_TEMPLATES.change_type_detection;
-      expect(template.requiredVariables).toContain('diff');
-      expect(template.requiredVariables).toContain('summary');
+      expect(template.defaultValues?.contextSection).toBe('');
     });
   });
 
@@ -362,16 +335,6 @@ describe('convenience functions', () => {
     });
   });
 
-  describe('createChangeTypePrompt', () => {
-    it('should create change type prompt', () => {
-      const result = createChangeTypePrompt(mockDiff, mockSummary);
-      
-      expect(result).toContain(mockDiff);
-      expect(result).toContain(mockSummary);
-      expect(result).toContain('feature');
-    });
-  });
-
   describe('createCustomPrompt', () => {
     it('should create custom prompt', () => {
       const template = 'Process {item} with {tool}';
@@ -404,9 +367,9 @@ describe('convenience functions', () => {
     it('should return all global templates', () => {
       const templates = getAvailableTemplates();
       
-      expect(templates.length).toBeGreaterThanOrEqual(4);
+      expect(templates.length).toBeGreaterThanOrEqual(3);
       expect(templates.some(t => t.id === 'diff_summary')).toBe(true);
-      expect(templates.some(t => t.id === 'change_type_detection')).toBe(true);
+      expect(templates.some(t => t.id === 'custom')).toBe(true);
     });
   });
 }); 

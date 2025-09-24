@@ -104,12 +104,16 @@ describe('OpenAIClient', () => {
     `;
 
     it('should generate summary successfully with default prompt', async () => {
+      const payload = {
+        summary: 'Add user validation import to login module',
+        change_type: 'feature',
+      };
       const mockResponse = {
-        output_text: 'Add user validation import to login module',
+        output_text: JSON.stringify(payload),
         output: [
           {
             role: 'assistant',
-            content: [{ type: 'output_text', text: 'Add user validation import to login module' }],
+            content: [{ type: 'output_text', text: JSON.stringify(payload) }],
             finish_reason: 'stop',
           },
         ],
@@ -124,7 +128,10 @@ describe('OpenAIClient', () => {
 
       const result = await client.generateSummary(mockDiff);
 
-      expect(result).toBe('Add user validation import to login module');
+      expect(result).toEqual({
+        summary: 'Add user validation import to login module',
+        changeType: 'feature',
+      });
       expect(mockResponsesCreate).toHaveBeenCalledTimes(1);
       const callArgs = mockResponsesCreate.mock.calls[0][0];
       expect(callArgs).toMatchObject({
@@ -154,12 +161,13 @@ describe('OpenAIClient', () => {
 
     it('should generate summary with custom context', async () => {
       const customContext = 'Custom prompt: focus on API behavior';
+      const payload = { summary: 'Custom summary result', change_type: 'fix' };
       const mockResponse = {
-        output_text: 'Custom summary result',
+        output_text: JSON.stringify(payload),
         output: [
           {
             role: 'assistant',
-            content: [{ type: 'output_text', text: 'Custom summary result' }],
+            content: [{ type: 'output_text', text: JSON.stringify(payload) }],
             finish_reason: 'stop',
           },
         ],
@@ -169,11 +177,41 @@ describe('OpenAIClient', () => {
 
       const result = await client.generateSummary(mockDiff, { customContext });
 
-      expect(result).toBe('Custom summary result');
+      expect(result).toEqual({ summary: 'Custom summary result', changeType: 'fix' });
       const callArgs = mockResponsesCreate.mock.calls[mockResponsesCreate.mock.calls.length - 1][0];
       const userContent = callArgs.input[1].content[0].text;
       expect(userContent).toContain(customContext);
       expect(userContent).toContain('Context:');
+    });
+
+    it('should default change type when model returns invalid value', async () => {
+      const warnSpy = jest.spyOn(console, 'warn').mockImplementation(() => {});
+      const payload = { summary: 'Summary for invalid change type', change_type: 'something-else' };
+      const mockResponse = {
+        output_text: JSON.stringify(payload),
+        output: [
+          {
+            role: 'assistant',
+            content: [{ type: 'output_text', text: JSON.stringify(payload) }],
+            finish_reason: 'stop',
+          },
+        ],
+      };
+
+      mockResponsesCreate.mockResolvedValue(mockResponse as any);
+
+      const result = await client.generateSummary(mockDiff);
+
+      expect(result).toEqual({
+        summary: 'Summary for invalid change type',
+        changeType: 'feature',
+      });
+      expect(warnSpy).toHaveBeenCalledWith(
+        '[OpenAIClient] Invalid or missing change type from summary response, defaulting to "feature"',
+        { received: 'something-else' }
+      );
+
+      warnSpy.mockRestore();
     });
 
     it('should throw error for empty diff', async () => {
@@ -183,8 +221,13 @@ describe('OpenAIClient', () => {
 
     it('should throw error when no summary is generated', async () => {
       const mockResponse = {
-        output_text: '',
-        output: [],
+        output_text: JSON.stringify({ change_type: 'feature' }),
+        output: [
+          {
+            role: 'assistant',
+            content: [{ type: 'output_text', text: JSON.stringify({ change_type: 'feature' }) }],
+          },
+        ],
         usage: { output_tokens: 0 },
       };
 
@@ -259,11 +302,12 @@ describe('OpenAIClient', () => {
     });
 
     it('should estimate tokens for rate limiting', async () => {
+      const payload = { summary: 'Test summary', change_type: 'feature' };
       const mockResponse = {
-        output_text: 'Test summary',
+        output_text: JSON.stringify(payload),
         output: [
           {
-            content: [{ type: 'output_text', text: 'Test summary' }],
+            content: [{ type: 'output_text', text: JSON.stringify(payload) }],
             finish_reason: 'stop',
           },
         ],
@@ -285,101 +329,6 @@ describe('OpenAIClient', () => {
     });
   });
 
-  describe('detectChangeType', () => {
-    const mockDiff = 'sample diff content';
-    const mockSummary = 'sample summary';
-
-    it('should detect feature type', async () => {
-      const mockResponse = {
-        output_text: 'Feature',
-        output: [
-          {
-            role: 'assistant',
-            content: [{ type: 'output_text', text: 'Feature' }],
-            finish_reason: 'stop',
-          },
-        ],
-      };
-
-      mockResponsesCreate.mockResolvedValue(mockResponse as any);
-
-      const result = await client.detectChangeType(mockDiff, mockSummary);
-
-      expect(result).toBe('feature');
-      const callArgs = mockResponsesCreate.mock.calls[0][0];
-      expect(callArgs).toMatchObject({
-        model: 'gpt-4-turbo-preview',
-        max_output_tokens: 10,
-      });
-      expect(callArgs.input[0]).toMatchObject({
-        role: 'system',
-        content: [
-          {
-            type: 'input_text',
-            text: 'You are a code change categorization assistant. Respond with exactly one of: Feature, Bug fix.',
-          },
-        ],
-      });
-      expect(callArgs.input[1].content[0].text).toContain('Analyze the following code diff and summary to determine the type of change');
-    });
-
-    it('should throw error for invalid response', async () => {
-      const mockResponse = {
-        output_text: 'invalid-category',
-        output: [
-          {
-            role: 'assistant',
-            content: [{ type: 'output_text', text: 'invalid-category' }],
-          },
-        ],
-      };
-
-      mockResponsesCreate.mockResolvedValue(mockResponse as any);
-
-      await expect(client.detectChangeType(mockDiff, 'Add new feature')).rejects.toThrow(
-        'Invalid change type returned by OpenAI: "invalid-category". Expected one of: feature, fix, refactor, chore'
-      );
-    });
-
-    it('should throw error on API error through error handler', async () => {
-      const apiError = new Error('API Error');
-      mockResponsesCreate.mockRejectedValue(apiError);
-
-      try {
-        await client.detectChangeType(mockDiff, 'Fix bug in authentication');
-        fail('Expected error to be thrown');
-      } catch (error: any) {
-        expect(error.message).toBe('API Error');
-      }
-      
-      // Verify error handler was called
-      expect(mockErrorHandler.executeWithRetry).toHaveBeenCalledWith(
-        expect.any(Function),
-        'change_detection'
-      );
-    });
-
-    it('should throw error when rate limited', async () => {
-      // Mock rate limiter to reject the request
-      mockRateLimiter.checkRateLimit.mockResolvedValue({
-        allowed: false,
-        retryAfterMs: 5000,
-        remainingRequests: 0,
-        remainingTokens: 0,
-        resetTimeMs: Date.now() + 60000,
-      });
-
-      await expect(client.detectChangeType(mockDiff, 'Add new feature implementation')).rejects.toThrow(
-        'Rate limit exceeded for change type detection. Retry after 5000ms. Remaining tokens: 0'
-      );
-
-      // Should check rate limit but not call OpenAI API
-      expect(mockResponsesCreate).not.toHaveBeenCalled();
-      expect(mockRateLimiter.checkRateLimit).toHaveBeenCalledWith('change_detection', expect.any(Number));
-    });
-
-
-  });
 });
 
 describe('createOpenAIClient', () => {

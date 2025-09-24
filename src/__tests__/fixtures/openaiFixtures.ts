@@ -6,7 +6,6 @@
  * 
  * These fixtures support:
  * - Different types of diff summarization scenarios
- * - Change type detection responses
  * - Error scenarios and edge cases
  * - Rate limiting responses
  * - Various response formats (success, partial, empty)
@@ -17,10 +16,7 @@ import { OpenAIClientConfig } from '@/lib/openai/client';
 import { DiffProcessingConfig, SummaryResult } from '@/lib/openai/summarization-service';
 import { RateLimitConfig } from '@/lib/openai/rate-limiter';
 import { RetryConfig } from '@/lib/openai/error-handler';
-import {
-  CHANGE_TYPE_TEMPLATE,
-  DIFF_SUMMARY_TEMPLATE,
-} from '@/lib/openai/prompts';
+import { DIFF_SUMMARY_TEMPLATE } from '@/lib/openai/prompts';
 import OpenAI from 'openai';
 
 // =============================================================================
@@ -43,42 +39,17 @@ export const successfulSummaryResponse = {
       content: [
         {
           type: 'output_text',
-          text: 'Add user authentication with JWT token validation and secure middleware',
+          text: '{"summary":"Add user authentication with JWT token validation and secure middleware","change_type":"feature"}',
         },
       ],
       finish_reason: 'stop',
     },
   ],
-  output_text: 'Add user authentication with JWT token validation and secure middleware',
+  output_text: '{"summary":"Add user authentication with JWT token validation and secure middleware","change_type":"feature"}',
   usage: {
     input_tokens: 145,
     output_tokens: 12,
     total_tokens: 157,
-  },
-};
-
-/**
- * Successful response for change type detection
- */
-export const successfulChangeTypeResponse = {
-  id: 'resp-DEF456',
-  object: 'response',
-  created: 1699896917,
-  model: 'gpt-4.1-mini',
-  status: 'completed',
-  output: [
-    {
-      id: 'output-1',
-      role: 'assistant',
-      content: [{ type: 'output_text', text: 'feature' }],
-      finish_reason: 'stop',
-    },
-  ],
-  output_text: 'feature',
-  usage: {
-    input_tokens: 89,
-    output_tokens: 1,
-    total_tokens: 90,
   },
 };
 
@@ -807,7 +778,6 @@ export const errorScenarios = {
  */
 export const successfulResponses = {
   summary: successfulSummaryResponse,
-  changeType: successfulChangeTypeResponse,
   bugFix: bugFixSummaryResponse,
   refactor: refactorChangeTypeResponse,
   chore: choreChangeTypeResponse,
@@ -1308,11 +1278,6 @@ export const PROMPT_TEMPLATES = {
     CUSTOM: 'Custom prompt template: {diff}',
     WITH_CONTEXT: 'Analyze this diff with special attention to: {context}\n\nDiff content:\n{diff}',
   },
-
-  CHANGE_TYPE: {
-    DEFAULT: CHANGE_TYPE_TEMPLATE,
-    SIMPLE: 'What type of change is this? Options: feature, fix, refactor, chore\n\nDiff: {diff}',
-  },
 };
 
 // =============================================================================
@@ -1324,8 +1289,10 @@ export const PROMPT_TEMPLATES = {
  */
 export function createMockOpenAIClient(): jest.Mocked<import('@/lib/openai/client').IOpenAIClient> {
   return {
-    generateSummary: jest.fn().mockResolvedValue('Mock summary generated'),
-    detectChangeType: jest.fn().mockResolvedValue('feature'),
+    generateSummary: jest.fn().mockResolvedValue({
+      summary: 'Mock summary generated',
+      changeType: 'feature',
+    }),
   };
 }
 
@@ -1374,7 +1341,6 @@ export function createMockTemplateEngine() {
       return template.replace(/\{(\w+)\}/g, (match: string, key: string) => variables[key] || match);
     }),
     createDiffSummaryPrompt: jest.fn().mockReturnValue(PROMPT_TEMPLATES.DIFF_SUMMARY.DEFAULT),
-    createChangeTypePrompt: jest.fn().mockReturnValue(PROMPT_TEMPLATES.CHANGE_TYPE.DEFAULT),
   };
 }
 

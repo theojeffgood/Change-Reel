@@ -7,7 +7,6 @@
 
 import {
   successfulSummaryResponse,
-  successfulChangeTypeResponse,
   bugFixSummaryResponse,
   nullContentResponse,
   emptyContentResponse,
@@ -25,7 +24,23 @@ function extractFirstContent(response: any): string | null {
     return null;
   }
   const text = response.output[0]?.content?.[0]?.text;
-  return text === null ? null : typeof text === 'string' ? text : null;
+  if (text === null || typeof text !== 'string') {
+    return text === null ? null : typeof text === 'string' ? text : null;
+  }
+
+  const trimmed = text.trim();
+  if (trimmed.startsWith('{')) {
+    try {
+      const parsed = JSON.parse(trimmed);
+      if (typeof parsed?.summary === 'string') {
+        return parsed.summary;
+      }
+      if (typeof parsed?.change_type === 'string') {
+        return parsed.change_type;
+      }
+    } catch {}
+  }
+  return trimmed;
 }
 
 describe('OpenAI Fixtures', () => {
@@ -41,10 +56,6 @@ describe('OpenAI Fixtures', () => {
       );
       expect(successfulSummaryResponse).toHaveProperty('output_text');
       expect(successfulSummaryResponse.output_text).toContain('Add user authentication');
-    });
-
-    it('should have valid change type response', () => {
-      expect(extractFirstContent(successfulChangeTypeResponse)).toBe('feature');
     });
 
     it('should have bug fix response', () => {
@@ -153,7 +164,6 @@ describe('OpenAI Fixtures', () => {
   describe('Organized Exports', () => {
     it('should have successful responses collection', () => {
       expect(successfulResponses).toHaveProperty('summary');
-      expect(successfulResponses).toHaveProperty('changeType');
       expect(successfulResponses).toHaveProperty('bugFix');
       expect(successfulResponses).toHaveProperty('complex');
     });
@@ -175,15 +185,6 @@ describe('OpenAI Fixtures', () => {
       expect(content).toBeDefined();
       expect(typeof content).toBe('string');
       expect((content as string).length).toBeGreaterThan(0);
-    });
-
-    it('should support mocking change type detection', () => {
-      // Example: Mock OpenAI client to return change type
-      const mockResponse = successfulChangeTypeResponse;
-      
-      // Simulate processing the response
-      const changeType = extractFirstContent(mockResponse);
-      expect(changeType).toBe('feature');
     });
 
     it('should support error handling scenarios', () => {

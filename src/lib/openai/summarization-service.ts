@@ -3,7 +3,7 @@
  * Integrates OpenAI client with prompt templates following dependency injection pattern
  */
 
-import { IOpenAIClient } from './client';
+import { IOpenAIClient, ChangeTypeCategory } from './client';
 import { OpenAIError } from './error-handler';
 import { PromptTemplateEngine, DiffSummaryMetadata } from './prompt-templates';
 
@@ -23,7 +23,7 @@ export interface DiffProcessingConfig {
  */
 export interface SummaryResult {
   summary: string;
-  changeType: string;
+  changeType: ChangeTypeCategory;
   confidence: number;
   metadata: {
     diffLength: number;
@@ -82,7 +82,7 @@ export class SummarizationService implements ISummarizationService {
   }
 
   /**
-   * Process a single diff and generate summary with change type detection
+   * Process a single diff and generate summary with change type classification
    */
   async processDiff(diff: string, config?: DiffProcessingConfig): Promise<SummaryResult> {
     const startTime = Date.now();
@@ -109,30 +109,20 @@ export class SummarizationService implements ISummarizationService {
     
     try {
       // Generate summary using OpenAI client
-      const summary = await this.openaiClient.generateSummary(processedDiff, {
+      const { summary, changeType } = await this.openaiClient.generateSummary(processedDiff, {
         customContext: mergedConfig.customContext,
         metadata: mergedConfig.summaryMetadata,
       });
 
-      // Detect change type; if model doesn't return a valid type, default to 'chore'
-      let changeType: string = 'Feature';
-      try {
-        changeType = await this.openaiClient.detectChangeType(processedDiff, summary);
-      } catch (classificationError) {
-        // Don't fail the whole operation if classification is missing; log and continue
-        // eslint-disable-next-line no-console
-        console.warn('[SummarizationService] Change type detection failed, defaulting to "Feature"', {
-          error: classificationError instanceof Error ? classificationError.message : String(classificationError),
-        });
-      }
+      const trimmedSummary = summary.trim();
 
       // Calculate confidence based on diff characteristics
-      const confidence = this.calculateConfidence(processedDiff, summary);
+      const confidence = this.calculateConfidence(processedDiff, trimmedSummary);
 
       const processingTime = Date.now() - startTime;
 
       return {
-        summary: summary.trim(),
+        summary: trimmedSummary,
         changeType,
         confidence,
         metadata: {

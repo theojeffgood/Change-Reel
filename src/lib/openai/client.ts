@@ -1,49 +1,22 @@
 import OpenAI from 'openai';
-import {
-  createDiffSummaryPrompt,
-  createChangeTypePrompt,
-  PromptTemplateEngine,
-  DiffSummaryPromptOptions,
-} from './prompt-templates';
-import { OpenAIRateLimiter, defaultRateLimiter, OperationType } from './rate-limiter';
+import { PromptTemplateEngine, DiffSummaryPromptOptions } from './prompt-templates';
+import { OpenAIRateLimiter, defaultRateLimiter } from './rate-limiter';
 import { OpenAIErrorHandler, defaultErrorHandler, OpenAIError } from './error-handler';
-import {
-  CHANGE_TYPE_SYSTEM_PROMPT,
-  DIFF_SUMMARY_SYSTEM_PROMPT,
-} from './prompts';
-
-// Safe JSON stringify helper to avoid huge logs and circular refs
-function safeStringify(obj: any, maxLen: number = 20000): string {
-  try {
-    const seen = new WeakSet<any>();
-    const json = JSON.stringify(
-      obj,
-      (key, value) => {
-        if (typeof value === 'string') {
-          if (value.length > 4000) return value.slice(0, 4000) + '...<truncated>'; // cap long strings
-          return value;
-        }
-        if (typeof value === 'object' && value !== null) {
-          if (seen.has(value)) return '[Circular]';
-          seen.add(value);
-        }
-        return value;
-      },
-      2
-    );
-    return json.length > maxLen ? json.slice(0, maxLen) + '...<truncated>' : json;
-  } catch (e) {
-    return String(obj);
-  }
-}
+import { DIFF_SUMMARY_SYSTEM_PROMPT } from './prompts';
 
 /**
  * Interface for OpenAI client to enable dependency injection and testing
  */
+export type ChangeTypeCategory = 'feature' | 'fix' | 'refactor' | 'chore';
+
+export interface GenerateSummaryResult {
+  summary: string;
+  changeType: ChangeTypeCategory;
+}
+
 export interface IOpenAIClient {
   // customContext is optional additional guidance appended to the prompt; NOT a template
-  generateSummary(diff: string, options?: DiffSummaryPromptOptions): Promise<string>;
-  detectChangeType(diff: string, summary: string): Promise<'feature' | 'fix' | 'refactor' | 'chore'>;
+  generateSummary(diff: string, options?: DiffSummaryPromptOptions): Promise<GenerateSummaryResult>;
 }
 
 /**
@@ -69,6 +42,8 @@ export class OpenAIClient implements IOpenAIClient {
   private rateLimiter: OpenAIRateLimiter;
   private errorHandler: OpenAIErrorHandler;
 
+  private static readonly DEFAULT_CHANGE_TYPE: ChangeTypeCategory = 'feature';
+
   constructor(config: OpenAIClientConfig) {
     if (!config.apiKey) {
       throw new Error('OpenAI API key is required');
@@ -89,7 +64,7 @@ export class OpenAIClient implements IOpenAIClient {
   /**
    * Generate a summary for the given diff using OpenAI
    */
-  async generateSummary(diff: string, options?: DiffSummaryPromptOptions): Promise<string> {
+  async generateSummary(diff: string, options?: DiffSummaryPromptOptions): Promise<GenerateSummaryResult> {
     if (!diff.trim()) {
       throw new Error('Diff content is required');
     }
@@ -131,9 +106,6 @@ export class OpenAIClient implements IOpenAIClient {
           ],
           max_output_tokens: this.maxTokens,
         });
-        try {
-          console.log('[OpenAIClient] responses raw summary response:', safeStringify(response));
-        } catch {}
       } catch (e) {
         const err = e as any;
         console.error('[OpenAIClient] responses.create failed (summary)', {
@@ -187,69 +159,100 @@ export class OpenAIClient implements IOpenAIClient {
         throw err;
       }
 
-      return summary;
+      const parsed = this.parseStructuredSummary(summary);
+      if (!parsed.summary) {
+        const compTok = usageMeta?.output_tokens;
+        const totTok = usageMeta?.total_tokens;
+        const msg = `No summary generated from OpenAI response. finish_reasons=${JSON.stringify(this.collectFinishReasons(response) ?? [])}; output_tokens=${compTok ?? 'n/a'}; total_tokens=${totTok ?? 'n/a'}; maxTokens=${this.maxTokens}`;
+        const err = new OpenAIError(msg, 'OUTPUT_TOKEN_LIMIT', false, 400);
+        ;(err as any).details = {
+          finish_reasons: this.collectFinishReasons(response),
+          output_tokens: compTok,
+          total_tokens: totTok,
+          max_tokens: this.maxTokens,
+          operation: 'summarization',
+          model: this.model,
+          output_items: outputItems,
+        };
+        throw err;
+      }
+
+      const changeType = this.normalizeChangeType(parsed.changeType);
+      if (!changeType) {
+        console.warn('[OpenAIClient] Invalid or missing change type from summary response, defaulting to "feature"', {
+          received: parsed.changeType,
+        });
+      }
+
+      return {
+        summary: parsed.summary.trim(),
+        changeType: changeType ?? OpenAIClient.DEFAULT_CHANGE_TYPE,
+      };
     }, 'summarization');
   }
 
-  /**
-   * Detect the type of change based on diff and summary
-   * Returns a DB-safe enum value: 'feature' | 'fix' (subset of allowed types)
-   */
-  async detectChangeType(diff: string, summary: string): Promise<'feature' | 'fix' | 'refactor' | 'chore'> {
-    return this.errorHandler.executeWithRetry(async () => {
-      // Use template engine for change type detection prompt
-      const prompt = this.templateEngine.createChangeTypePrompt(diff, summary);
+  private parseStructuredSummary(output: string): { summary: string; changeType?: string } {
+    const trimmed = output?.trim() ?? '';
+    if (!trimmed) {
+      return { summary: '' };
+    }
 
-      // Estimate tokens for rate limiting (change detection uses fewer tokens)
-      const estimatedTokens = Math.ceil((prompt.length + 10) / 3); // Only 10 max tokens for output
-      
-      // Check rate limit before making the API call
-      const rateLimitResult = await this.rateLimiter.checkRateLimit('change_detection', estimatedTokens);
-      if (!rateLimitResult.allowed) {
-        const waitTime = rateLimitResult.retryAfterMs || 1000;
-        throw new Error(`Rate limit exceeded for change type detection. Retry after ${waitTime}ms. Remaining tokens: ${rateLimitResult.remainingTokens}`);
+    const parsed = this.tryParseJsonObject(trimmed);
+    if (parsed && typeof parsed === 'object') {
+      const summary = typeof parsed.summary === 'string' ? parsed.summary.trim() : '';
+      const changeType = (parsed.change_type ?? parsed.changeType) as string | undefined;
+      if (summary) {
+        return { summary, changeType };
       }
+    }
 
-      // Debug: log request meta (no sensitive content)
-      console.debug('[OpenAIClient] detectChangeType request', {
-        model: this.model,
-        maxTokens: 10,
-      });
+    // Fallback: treat the whole output as summary text
+    return { summary: trimmed };
+  }
 
-      const response = await this.openai.responses.create({
-        model: this.model,
-        input: [
-          {
-            role: 'system',
-            content: [{ type: 'input_text', text: CHANGE_TYPE_SYSTEM_PROMPT }],
-          },
-          {
-            role: 'user',
-            content: [{ type: 'input_text', text: prompt }],
-          },
-        ],
-        max_output_tokens: 10,
-      });
-      const usageMeta = response?.usage || undefined;
-      console.debug('[OpenAIClient] detectChangeType response', {
-        outputItems: Array.isArray(response?.output) ? response.output.length : 0,
-        usage: usageMeta,
-      });
+  private tryParseJsonObject(raw: string): any | undefined {
+    try {
+      return JSON.parse(raw);
+    } catch {}
 
-      const raw = typeof response?.output_text === 'string'
-        ? response.output_text.trim()
-        : this.extractFirstTextContent(response)?.trim() ?? '';
-      const normalized = raw?.toLowerCase();
-      const category = normalized === 'feature'
-        ? 'feature'
-        : normalized === 'bug fix' || normalized === 'bugfix'
-          ? 'fix'
-          : undefined;
-      if (!category) {
-        throw new Error(`Invalid change type returned by OpenAI: "${raw ?? ''}". Expected one of: Feature, Bug fix`);
-      }
-      return category;
-    }, 'change_detection');
+    const start = raw.indexOf('{');
+    const end = raw.lastIndexOf('}');
+    if (start !== -1 && end !== -1 && end > start) {
+      const slice = raw.slice(start, end + 1);
+      try {
+        return JSON.parse(slice);
+      } catch {}
+    }
+
+    return undefined;
+  }
+
+  private normalizeChangeType(raw?: string): ChangeTypeCategory | undefined {
+    if (!raw) {
+      return undefined;
+    }
+
+    const normalized = raw
+      .toLowerCase()
+      .replace(/[^a-z]/g, ' ')
+      .replace(/\s+/g, ' ')
+      .trim();
+
+    switch (normalized) {
+      case 'feature':
+      case 'new feature':
+        return 'feature';
+      case 'bug fix':
+      case 'bugfix':
+      case 'fix':
+        return 'fix';
+      case 'refactor':
+        return 'refactor';
+      case 'chore':
+        return 'chore';
+      default:
+        return undefined;
+    }
   }
 
   private extractFirstTextContent(response: any): string | undefined {
@@ -286,8 +289,6 @@ export class OpenAIClient implements IOpenAIClient {
   getTemplateEngine(): PromptTemplateEngine {
     return this.templateEngine;
   }
-
-
 }
 
 /**

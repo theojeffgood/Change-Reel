@@ -3,10 +3,7 @@
  * Provides configurable templates with variable substitution
  */
 
-import {
-  CHANGE_TYPE_TEMPLATE,
-  DIFF_SUMMARY_TEMPLATE,
-} from './prompts';
+import { DIFF_SUMMARY_TEMPLATE } from './prompts';
 
 export interface FileChangeSummary {
   /** Repository-relative path of the file */
@@ -64,7 +61,6 @@ export interface PromptTemplate {
  */
 export type PromptTemplateType = 
   | 'diff_summary' 
-  | 'change_type_detection' 
   | 'custom';
 
 /**
@@ -96,18 +92,6 @@ export const DEFAULT_TEMPLATES: Record<PromptTemplateType, PromptTemplate> = {
       contextSection: '',
     }
   },
-
-  change_type_detection: {
-    id: 'change_type_detection',
-    name: 'Change Type Detection',
-    description: 'Detects the type of change (Feature or Bug fix)',
-    template: CHANGE_TYPE_TEMPLATE,
-    requiredVariables: ['diff', 'summary'],
-    optionalVariables: [],
-    defaultValues: {}
-  },
-
-
 
   custom: {
     id: 'custom',
@@ -206,13 +190,6 @@ export class PromptTemplateEngine {
     };
 
     return this.renderTemplate('diff_summary', variables);
-  }
-
-  /**
-   * Create a prompt for change type detection (convenience method)
-   */
-  createChangeTypePrompt(diff: string, summary: string): string {
-    return this.renderTemplate('change_type_detection', { diff, summary });
   }
 
   /**
@@ -448,13 +425,6 @@ export function createDiffSummaryPrompt(
   options?: DiffSummaryPromptOptions
 ): string {
   return defaultTemplateEngine.createDiffSummaryPrompt(diff, options);
-}
-
-/**
- * Create a change type detection prompt using the default template
- */
-export function createChangeTypePrompt(diff: string, summary: string): string {
-  return defaultTemplateEngine.createChangeTypePrompt(diff, summary);
 }
 
 /**

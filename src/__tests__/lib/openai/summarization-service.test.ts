@@ -17,13 +17,11 @@ import { PromptTemplateEngine } from '../../../lib/openai/prompt-templates';
 // Mock implementations
 const mockOpenAIClient: jest.Mocked<IOpenAIClient> = {
   generateSummary: jest.fn(),
-  detectChangeType: jest.fn(),
 };
 
 const mockTemplateEngine = {
   renderTemplate: jest.fn(),
   createDiffSummaryPrompt: jest.fn(),
-  createChangeTypePrompt: jest.fn(),
 } as unknown as jest.Mocked<PromptTemplateEngine>;
 
 describe('SummarizationService', () => {
@@ -144,8 +142,10 @@ index 1234567..abcdefg 100644
  }`;
 
     beforeEach(() => {
-      mockOpenAIClient.generateSummary.mockResolvedValue('Added logging to component function');
-      mockOpenAIClient.detectChangeType.mockResolvedValue('feature');
+      mockOpenAIClient.generateSummary.mockResolvedValue({
+        summary: 'Added logging to component function',
+        changeType: 'feature',
+      });
     });
 
     it('should process valid diff and return summary result', async () => {
@@ -166,10 +166,6 @@ index 1234567..abcdefg 100644
       expect(summaryDiff).toContain('src/component.js');
       expect((summaryOptions as any).customContext).toBeUndefined();
       expect((summaryOptions as any).metadata).toBeUndefined();
-      expect(mockOpenAIClient.detectChangeType).toHaveBeenCalledWith(
-        expect.stringContaining('src/component.js'),
-        'Added logging to component function'
-      );
     });
 
     it('should use custom context when provided', async () => {
@@ -217,7 +213,10 @@ index 1234567..abcdefg 100644
 @@ -1,10 +1,15 @@
 ${Array(20).fill('// structured content line').join('\n')}`;
 
-      mockOpenAIClient.generateSummary.mockResolvedValue('Detailed summary of changes');
+      mockOpenAIClient.generateSummary.mockResolvedValue({
+        summary: 'Detailed summary of changes',
+        changeType: 'feature',
+      });
 
       const result = await service.processDiff(structuredDiff);
       
@@ -234,10 +233,8 @@ ${Array(20).fill('// structured content line').join('\n')}`;
 
     it('should process multiple diffs sequentially', async () => {
       mockOpenAIClient.generateSummary
-        .mockResolvedValueOnce('Summary for file1')
-        .mockResolvedValueOnce('Summary for file2');
-      mockOpenAIClient.detectChangeType
-        .mockResolvedValue('feature');
+        .mockResolvedValueOnce({ summary: 'Summary for file1', changeType: 'feature' })
+        .mockResolvedValueOnce({ summary: 'Summary for file2', changeType: 'fix' });
 
       const results = await service.processMultipleDiffs(diffs);
 
@@ -255,13 +252,10 @@ ${Array(20).fill('// structured content line').join('\n')}`;
     it('should fail fast when individual diffs fail', async () => {
       // Clear any previous mock setup
       mockOpenAIClient.generateSummary.mockClear();
-      mockOpenAIClient.detectChangeType.mockClear();
 
       mockOpenAIClient.generateSummary
         .mockRejectedValueOnce(new Error('First diff failed'))
-        .mockResolvedValueOnce('Summary for file2');
-      mockOpenAIClient.detectChangeType
-        .mockResolvedValue('feature');
+        .mockResolvedValueOnce({ summary: 'Summary for file2', changeType: 'feature' });
 
       // Should throw on first failure and not continue processing
       await expect(service.processMultipleDiffs(diffs)).rejects.toThrow('First diff failed');
@@ -317,10 +311,11 @@ ${Array(20).fill('// structured content line').join('\n')}`;
     it('should handle very short summaries', async () => {
       // Clear any previous mock setup completely
       mockOpenAIClient.generateSummary.mockReset();
-      mockOpenAIClient.detectChangeType.mockReset();
 
-      mockOpenAIClient.generateSummary.mockResolvedValue('Short');
-      mockOpenAIClient.detectChangeType.mockResolvedValue('chore');
+      mockOpenAIClient.generateSummary.mockResolvedValue({
+        summary: 'Short',
+        changeType: 'chore',
+      });
 
       const diff = 'diff --git a/file.js b/file.js\n@@ -1,1 +1,2 @@\n+line';
       const result = await service.processDiff(diff);
@@ -329,22 +324,14 @@ ${Array(20).fill('// structured content line').join('\n')}`;
       expect(result.confidence).toBeLessThan(0.5); // Lower confidence for short summary
     });
 
-    it('should handle change type detection failures', async () => {
-      mockOpenAIClient.generateSummary.mockResolvedValue('Good summary');
-      mockOpenAIClient.detectChangeType.mockRejectedValue(new Error('Detection failed'));
-
-      const diff = 'diff --git a/file.js b/file.js\n@@ -1,1 +1,2 @@\n+line';
-      
-      await expect(service.processDiff(diff)).rejects.toThrow('Failed to process diff');
-    });
-
     it('should trim summary results', async () => {
       // Clear any previous mock setup
       mockOpenAIClient.generateSummary.mockClear();
-      mockOpenAIClient.detectChangeType.mockClear();
 
-      mockOpenAIClient.generateSummary.mockResolvedValue('  Summary with whitespace  ');
-      mockOpenAIClient.detectChangeType.mockResolvedValue('feature');
+      mockOpenAIClient.generateSummary.mockResolvedValue({
+        summary: '  Summary with whitespace  ',
+        changeType: 'feature',
+      });
 
       const diff = 'diff --git a/file.js b/file.js\n@@ -1,1 +1,2 @@\n+line';
       const result = await service.processDiff(diff);
@@ -357,12 +344,13 @@ ${Array(20).fill('// structured content line').join('\n')}`;
     it('should add delays between multiple diff processing', async () => {
       // Clear any previous mock setup
       mockOpenAIClient.generateSummary.mockClear();
-      mockOpenAIClient.detectChangeType.mockClear();
 
       const startTime = Date.now();
       
-      mockOpenAIClient.generateSummary.mockResolvedValue('Summary');
-      mockOpenAIClient.detectChangeType.mockResolvedValue('feature');
+      mockOpenAIClient.generateSummary.mockResolvedValue({
+        summary: 'Summary',
+        changeType: 'feature',
+      });
 
       const diffs = [
         'diff --git a/file1.js b/file1.js\n@@ -1,1 +1,2 @@\n+change1',
@@ -381,12 +369,10 @@ ${Array(20).fill('// structured content line').join('\n')}`;
     it('should track processing time in metadata', async () => {
       // Clear any previous mock setup
       mockOpenAIClient.generateSummary.mockClear();
-      mockOpenAIClient.detectChangeType.mockClear();
 
       mockOpenAIClient.generateSummary.mockImplementation(
-        () => new Promise(resolve => setTimeout(() => resolve('Summary'), 50))
+        () => new Promise(resolve => setTimeout(() => resolve({ summary: 'Summary', changeType: 'feature' }), 50))
       );
-      mockOpenAIClient.detectChangeType.mockResolvedValue('feature');
 
       const diff = 'diff --git a/file.js b/file.js\n@@ -1,1 +1,2 @@\n+line';
       const result = await service.processDiff(diff);

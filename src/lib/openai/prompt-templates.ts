@@ -59,9 +59,7 @@ export interface PromptTemplate {
 /**
  * Available prompt template types
  */
-export type PromptTemplateType = 
-  | 'diff_summary' 
-  | 'custom';
+export type PromptTemplateType = 'diff_summary';
 
 /**
  * Error thrown when template variables are missing or invalid
@@ -86,19 +84,7 @@ export const DEFAULT_TEMPLATES: Record<PromptTemplateType, PromptTemplate> = {
     name: 'Diff Summarization',
     description: 'Generates concise summaries of code diffs',
     template: DIFF_SUMMARY_TEMPLATE,
-    requiredVariables: ['diff'],
-    optionalVariables: ['contextSection'],
-    defaultValues: {
-      contextSection: '',
-    }
-  },
-
-  custom: {
-    id: 'custom',
-    name: 'Custom Template',
-    description: 'User-defined custom template',
-    template: '{prompt}',
-    requiredVariables: ['prompt'],
+    requiredVariables: [],
     optionalVariables: [],
     defaultValues: {}
   }
@@ -184,12 +170,15 @@ export class PromptTemplateEngine {
     options?: DiffSummaryPromptOptions
   ): string {
     const contextBlock = this.buildContext(options);
-    const variables: TemplateVariables = {
-      diff,
-      contextSection: contextBlock ? `Context:\n${contextBlock}\n\n` : '',
-    };
+    const sections: string[] = [];
 
-    return this.renderTemplate('diff_summary', variables);
+    if (contextBlock) {
+      sections.push(`Context:\n${contextBlock}`.trim());
+    }
+
+    sections.push(`Diff:\n${diff}`.trim());
+
+    return sections.join('\n\n');
   }
 
   /**

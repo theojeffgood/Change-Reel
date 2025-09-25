@@ -20,11 +20,10 @@ describe('PromptTemplateEngine', () => {
   describe('constructor', () => {
     it('should initialize with default templates', () => {
       const templates = engine.getAllTemplates();
-      expect(templates).toHaveLength(2);
+      expect(templates).toHaveLength(1);
       
       const templateIds = templates.map(t => t.id);
-      expect(templateIds).toContain('diff_summary');
-      expect(templateIds).toContain('custom');
+      expect(templateIds).toEqual(['diff_summary']);
     });
 
     it('should initialize with custom templates', () => {
@@ -39,7 +38,7 @@ describe('PromptTemplateEngine', () => {
       const customEngine = new PromptTemplateEngine([customTemplate]);
       const templates = customEngine.getAllTemplates();
       
-      expect(templates).toHaveLength(3); // 2 default + 1 custom
+      expect(templates).toHaveLength(2); // 1 default + 1 custom
       expect(customEngine.getTemplate('test_template')).toEqual(customTemplate);
     });
   });
@@ -85,23 +84,11 @@ describe('PromptTemplateEngine', () => {
   });
 
   describe('renderTemplate', () => {
-    it('should render template with required variables', () => {
-      const result = engine.renderTemplate('diff_summary', {
-        diff: 'Added new function'
-      });
+    it('should return diff summary instructions without substitutions', () => {
+      const result = engine.renderTemplate('diff_summary', {});
 
-      expect(result).toContain('Added new function');
-      expect(result).not.toContain('Context:');
-    });
-
-    it('should render template with optional variables', () => {
-      const result = engine.renderTemplate('diff_summary', {
-        diff: 'Added new function',
-        contextSection: 'Context:\nCustom context for the diff\n\n'
-      });
-
-      expect(result).toContain('Added new function');
-      expect(result).toContain('Context:\nCustom context for the diff');
+      expect(result).toContain('You are a product changelog assistant');
+      expect(result).toContain('You will receive an optional "Context:" section');
     });
 
     it('should merge default values', () => {
@@ -150,8 +137,18 @@ describe('PromptTemplateEngine', () => {
     });
 
     it('should throw error for missing required variables', () => {
+      const template: PromptTemplate = {
+        id: 'needs_name',
+        name: 'Needs Name',
+        description: 'Requires name variable',
+        template: 'Hello {name}',
+        requiredVariables: ['name'],
+      };
+
+      engine.registerTemplate(template);
+
       expect(() => {
-        engine.renderTemplate('diff_summary', {});
+        engine.renderTemplate('needs_name', {});
       }).toThrow(TemplateValidationError);
     });
 
@@ -195,23 +192,20 @@ describe('PromptTemplateEngine', () => {
   });
 
   describe('createDiffSummaryPrompt', () => {
-    it('should create diff summary prompt with default context', () => {
-      const result = engine.createDiffSummaryPrompt('Added login function');
+    it('should create diff summary prompt with diff only', () => {
+      const diff = 'diff --git a/file.js b/file.js';
+      const result = engine.createDiffSummaryPrompt(diff);
 
-      expect(result).toContain('Added login function');
-      expect(result).toContain('changelog assistant');
-      expect(result).not.toContain('Context:');
+      expect(result).toBe(`Diff:\n${diff}`);
     });
 
-    it('should create diff summary prompt with custom context', () => {
-      const result = engine.createDiffSummaryPrompt(
-        'Added login function',
-        { customContext: 'This is for the authentication module' }
-      );
+    it('should include custom context block when provided', () => {
+      const diff = 'diff --git a/file.js b/file.js';
+      const context = 'High priority change';
+      const result = engine.createDiffSummaryPrompt(diff, { customContext: context });
 
-      expect(result).toContain('Added login function');
-      expect(result).toContain('This is for the authentication module');
-      expect(result).toContain('Context:');
+      expect(result).toContain(`Context:\n${context}`);
+      expect(result).toContain(`Diff:\n${diff}`);
     });
   });
 
@@ -262,9 +256,8 @@ describe('TemplateValidationError', () => {
 });
 
 describe('DEFAULT_TEMPLATES', () => {
-  it('should have all required template types', () => {
+  it('should include diff_summary template', () => {
     expect(DEFAULT_TEMPLATES).toHaveProperty('diff_summary');
-    expect(DEFAULT_TEMPLATES).toHaveProperty('custom');
   });
 
   it('should have valid template structure', () => {
@@ -279,14 +272,10 @@ describe('DEFAULT_TEMPLATES', () => {
   });
 
   describe('diff_summary template', () => {
-    it('should require diff variable', () => {
+    it('should not require variables', () => {
       const template = DEFAULT_TEMPLATES.diff_summary;
-      expect(template.requiredVariables).toContain('diff');
-    });
-
-    it('should have default context', () => {
-      const template = DEFAULT_TEMPLATES.diff_summary;
-      expect(template.defaultValues?.contextSection).toBe('');
+      expect(Array.isArray(template.requiredVariables)).toBe(true);
+      expect(template.requiredVariables).toHaveLength(0);
     });
   });
 
@@ -301,18 +290,15 @@ describe('convenience functions', () => {
     it('should create diff summary prompt', () => {
       const result = createDiffSummaryPrompt(mockDiff);
       
-      expect(result).toContain(mockDiff);
-      expect(result).toContain('changelog assistant');
-      expect(result).not.toContain('Context:');
+      expect(result).toBe(`Diff:\n${mockDiff}`);
     });
 
     it('should create diff summary prompt with custom context', () => {
       const customContext = 'Custom context for testing';
       const result = createDiffSummaryPrompt(mockDiff, { customContext });
       
-      expect(result).toContain(mockDiff);
-      expect(result).toContain(customContext);
-      expect(result).toContain('Context:');
+      expect(result).toContain(`Context:\n${customContext}`);
+      expect(result).toContain(`Diff:\n${mockDiff}`);
     });
 
     it('should include metadata when provided', () => {
@@ -367,9 +353,8 @@ describe('convenience functions', () => {
     it('should return all global templates', () => {
       const templates = getAvailableTemplates();
       
-      expect(templates.length).toBeGreaterThanOrEqual(3);
+      expect(templates.length).toBeGreaterThanOrEqual(1);
       expect(templates.some(t => t.id === 'diff_summary')).toBe(true);
-      expect(templates.some(t => t.id === 'custom')).toBe(true);
     });
   });
 }); 

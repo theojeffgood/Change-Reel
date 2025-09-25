@@ -73,7 +73,7 @@
 
 ### 3.3 External Services
 
-- **OpenAI API**: GPT-4 Turbo for diff summarization
+- **OpenAI API**: GPT-5 for diff summarization
 - **Resend**: Email delivery (with templated layout)
 - **Supabase**: Database and storage (auth features deferred to post-MVP)
 

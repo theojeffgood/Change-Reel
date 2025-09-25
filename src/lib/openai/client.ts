@@ -3,7 +3,7 @@ import type { ResponseCreateParams } from 'openai/resources/responses/responses'
 import { PromptTemplateEngine, DiffSummaryPromptOptions } from './prompt-templates';
 import { OpenAIRateLimiter, defaultRateLimiter } from './rate-limiter';
 import { OpenAIErrorHandler, defaultErrorHandler, OpenAIError } from './error-handler';
-import { DIFF_SUMMARY_SYSTEM_PROMPT } from './prompts';
+import { DIFF_SUMMARY_TEMPLATE } from './prompts';
 
 const DIFF_SUMMARY_SCHEMA_NAME = 'DiffSummary';
 const DIFF_SUMMARY_RESPONSE_SCHEMA = {
@@ -125,16 +125,8 @@ export class OpenAIClient implements IOpenAIClient {
       try {
         const requestPayload: ResponseCreateParamsWithSchema = {
           model: this.model,
-          input: [
-            {
-              role: 'system',
-              content: [{ type: 'input_text', text: DIFF_SUMMARY_SYSTEM_PROMPT }],
-            },
-            {
-              role: 'user',
-              content: [{ type: 'input_text', text: prompt }],
-            },
-          ],
+          instructions: DIFF_SUMMARY_TEMPLATE,
+          input: prompt,
           max_output_tokens: this.maxTokens,
           response_format: {
             type: 'json_schema',

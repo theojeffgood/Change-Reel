@@ -138,25 +138,9 @@ describe('OpenAIClient', () => {
         model: 'gpt-4-turbo-preview',
         max_output_tokens: 150,
       });
-      expect(Array.isArray(callArgs.input)).toBe(true);
-      expect(callArgs.input[0]).toMatchObject({
-        role: 'system',
-        content: [
-          {
-            type: 'input_text',
-            text: expect.stringContaining('You are a product changelog assistant.'),
-          },
-        ],
-      });
-      expect(callArgs.input[1]).toMatchObject({
-        role: 'user',
-        content: [
-          {
-            type: 'input_text',
-            text: expect.stringContaining('Diff:'),
-          },
-        ],
-      });
+      expect(callArgs.instructions).toContain('You are a product changelog assistant');
+      expect(typeof callArgs.input).toBe('string');
+      expect(callArgs.input).toContain('Diff:');
     });
 
     it('should generate summary with custom context', async () => {
@@ -179,9 +163,9 @@ describe('OpenAIClient', () => {
 
       expect(result).toEqual({ summary: 'Custom summary result', changeType: 'fix' });
       const callArgs = mockResponsesCreate.mock.calls[mockResponsesCreate.mock.calls.length - 1][0];
-      const userContent = callArgs.input[1].content[0].text;
-      expect(userContent).toContain(customContext);
-      expect(userContent).toContain('Context:');
+      expect(typeof callArgs.input).toBe('string');
+      expect(callArgs.input).toContain(customContext);
+      expect(callArgs.input).toContain('Context:');
     });
 
     it('should default change type when model returns invalid value', async () => {

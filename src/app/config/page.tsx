@@ -138,24 +138,22 @@ function ConfigurationPageContent() {
         const reposList = (data.repositories || []) as Repository[];
         setRepositories(reposList);
         try {
-          // Initialize selection from tracked projects
+          // Initialize selection from tracked projects in DB
           const trackedRes = await fetch('/api/projects');
           if (trackedRes.ok) {
             const trackedJson = await trackedRes.json();
             const trackedNames: string[] = Array.isArray(trackedJson?.projects)
               ? trackedJson.projects.map((p: any) => p.repo_name || p.name).filter(Boolean)
               : [];
-            if (trackedNames.length) {
-              const repoFullNames = new Set(reposList.map(r => r.full_name));
-              const initialSelection = trackedNames.filter(n => repoFullNames.has(n));
-              setSelectedRepoFullNames(initialSelection);
-            } else {
-              setSelectedRepoFullNames([]);
-            }
+            const repoFullNames = new Set(reposList.map(r => r.full_name));
+            const initialSelection = trackedNames.filter(n => repoFullNames.has(n));
+            setSelectedRepoFullNames(initialSelection);
           } else {
             setSelectedRepoFullNames([]);
           }
-        } catch {}
+        } catch {
+          setSelectedRepoFullNames([]);
+        }
       } else {
         console.error('Failed to load repositories', data.error);
         setRepositories([]);

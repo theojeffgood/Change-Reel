@@ -78,31 +78,21 @@ export default function MetricsBar() {
     fetchBalance()
   }, [session])
 
-  const now = new Date()
-  const weekAgo = new Date(now)
-  weekAgo.setDate(now.getDate() - 7)
-
-  const featuresThisWeek = commits.filter(
-    c => c.type === 'feature' && new Date(c.timestamp) >= weekAgo
-  ).length
-
-  const contributors = new Set(commits.map(c => c.author)).size
+  const summariesDisplayed = commits.length
 
   return (
     <div className="flex flex-col gap-4">
       <div className="bg-white border border-gray-200 rounded-xl p-6">
         <div className="flex flex-col items-center justify-center text-center min-h-[120px]">
-          <div className="text-2xl font-semibold text-gray-900 truncate">
-            {repoNames.length === 0 ? '—' : repoNames.length === 1 ? repoNames[0] : `${repoNames.length} repositories`}
-          </div>
-          <div className="text-md text-gray-500 mt-1">{repoNames.length <= 1 ? 'App name' : 'All repositories'}</div>
+          <div className="text-2xl font-semibold text-gray-900 truncate">{repoNames.length}</div>
+          <div className="text-md text-gray-500 mt-1">Repos</div>
         </div>
       </div>
 
       <div className="bg-white border border-gray-200 rounded-xl p-6">
         <div className="flex flex-col items-center justify-center text-center min-h-[120px]">
-          <div className="text-2xl font-semibold text-gray-900">{featuresThisWeek}</div>
-          <div className="text-md text-gray-500 mt-1">Features this week</div>
+          <div className="text-2xl font-semibold text-gray-900">{summariesDisplayed}</div>
+          <div className="text-md text-gray-500 mt-1">Feature shipped</div>
         </div>
       </div>
 

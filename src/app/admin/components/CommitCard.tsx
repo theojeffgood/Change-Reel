@@ -36,13 +36,13 @@ export default function CommitCard({ commit, hasCredits = false, repositoryName 
       <div className="flex items-start justify-between mb-4">
         <div>
           <div className="mb-2 flex items-start gap-3">
-            <span className={`inline-flex px-2 py-2 text-xs font-medium rounded border ${getUpdateTypeColor(commit.type || 'unknown')}`}>
+            <span className={`inline-flex px-2 py-3 text-xs font-medium rounded border ${getUpdateTypeColor(commit.type || 'unknown')}`}>
               {getUpdateTypeLabel(commit.type || 'unknown')}
             </span>
             <div className="flex flex-col text-sm text-gray-600 leading-tight">
-              <span>By: {commit.author}</span>
-              <span>At: {dateOnly}</span>
               <span>Repo: {repositoryName || '—'}</span>
+              <span>At: {dateOnly}</span>
+              <span>By: {commit.author}</span>
             </div>
           </div>
         </div>

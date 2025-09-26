@@ -46,6 +46,7 @@ function ConfigurationPageContent() {
   const searchParams = useSearchParams();
   const [githubStatus, setGithubStatus] = useState<GitHubStatus | null>(null);
   const [repositories, setRepositories] = useState<Repository[]>([]);
+  const [selectedRepoFullNames, setSelectedRepoFullNames] = useState<string[]>([]);
   const [installations, setInstallations] = useState<Array<{ id: number; account?: { login: string } }>>([]);
   const [selectedInstallationId, setSelectedInstallationId] = useState<string>('');
   const [selectedRepository, setSelectedRepository] = useState<string>('');
@@ -135,13 +136,19 @@ function ConfigurationPageContent() {
       const data = await res.json();
       if (res.ok) {
         setRepositories((data.repositories || []) as Repository[]);
+        try {
+          const fullNames = (data.repositories || []).map((r: Repository) => r.full_name);
+          setSelectedRepoFullNames(fullNames);
+        } catch {}
       } else {
         console.error('Failed to load repositories', data.error);
         setRepositories([]);
+        setSelectedRepoFullNames([]);
       }
     } catch (e) {
       console.error('Error loading repositories', e);
       setRepositories([]);
+      setSelectedRepoFullNames([]);
     } finally {
       setLoadingRepos(false);
     }
@@ -271,6 +278,7 @@ function ConfigurationPageContent() {
     setSaving(true);
 
     try {
+      // Persist tracked repos selection
       const response = await fetch('/api/config', {
         method: 'POST',
         headers: {
@@ -279,6 +287,7 @@ function ConfigurationPageContent() {
         body: JSON.stringify({
           repositoryFullName: repoName,
           installationId: Number(installationIdValue),
+          trackedRepositories: selectedRepoFullNames,
         }),
       });
 
@@ -288,7 +297,7 @@ function ConfigurationPageContent() {
         setSaveError('');
         lastSavedRef.current = { repo: repoName, installation: installationIdValue };
         if (!options?.silent) {
-          setSaveMessage(`Repository "${repoName}" connected successfully!`);
+          setSaveMessage(`Configuration saved! ${selectedRepoFullNames.length} repositories selected.`);
         }
         return true;
       }
@@ -547,32 +556,45 @@ function ConfigurationPageContent() {
                       ) : (
                         <div className="bg-white border border-gray-200 rounded-xl overflow-hidden">
                           <div className="p-6">
-                            <label htmlFor="repository" className="block text-sm font-medium text-gray-700 mb-2">Repository</label>
-                            {loadingRepos ? (
-                              <div className="flex items-center space-x-3 p-4 border border-gray-200 rounded-xl">
-                                <div className="w-5 h-5 border-2 border-black border-t-transparent rounded-full animate-spin"></div>
-                                <span className="text-gray-600">Loading repositories...</span>
-                              </div>
-                            ) : (
-                              <select
-                                id="repository"
-                                value={selectedRepository}
-                                onChange={(e) => {
-                                  setSelectedRepository(e.target.value);
-                                }}
-                                className="w-full rounded-lg border-gray-200 focus:border-black focus:ring-2 focus:ring-black text-gray-900 shadow-sm"
-                              >
-                                <option value="">Select a repository...</option>
-                                {repositories.map((repo) => (
-                                  <option key={repo.id} value={repo.full_name}>
-                                    {repo.full_name} {repo.private ? '(Private)' : '(Public)'}
-                                  </option>
-                                ))}
-                              </select>
-                            )}
-                            <p className="mt-2 text-sm text-gray-500">
-                              {selectedRepository ? `Selected: ${selectedRepository}` : 'Choose a repository to connect'}
-                            </p>
+                            <div className="flex items-center justify-between mb-4">
+                              <h3 className="text-sm font-medium text-gray-700">Repositories</h3>
+                              {loadingRepos && (
+                                <div className="flex items-center space-x-2 text-sm text-gray-600">
+                                  <div className="w-4 h-4 border-2 border-black border-t-transparent rounded-full animate-spin"></div>
+                                  <span>Loading…</span>
+                                </div>
+                              )}
+                            </div>
+                            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                              {repositories.map((repo) => {
+                                const fullName = repo.full_name;
+                                const selected = selectedRepoFullNames.includes(fullName);
+                                return (
+                                  <button
+                                    key={repo.id}
+                                    type="button"
+                                    onClick={() => {
+                                      setSelectedRepoFullNames(prev =>
+                                        prev.includes(fullName)
+                                          ? prev.filter(n => n !== fullName)
+                                          : [...prev, fullName]
+                                      );
+                                      setSelectedRepository(fullName);
+                                    }}
+                                    className={`text-left p-4 rounded-xl border transition-colors ${selected ? 'border-black bg-gray-50' : 'border-gray-200 hover:bg-gray-50'}`}
+                                  >
+                                    <div className="flex items-start justify-between">
+                                      <div>
+                                        <div className="text-sm font-medium text-gray-900">{repo.full_name}</div>
+                                        <div className="text-xs text-gray-500 mt-1">{repo.private ? 'Private' : 'Public'}</div>
+                                      </div>
+                                      <div className={`w-5 h-5 rounded-full border ${selected ? 'bg-black border-black' : 'bg-white border-gray-300'}`} />
+                                    </div>
+                                  </button>
+                                );
+                              })}
+                            </div>
+                            <p className="mt-3 text-sm text-gray-500">Selected: {selectedRepoFullNames.length}</p>
                           </div>
                         </div>
                       )}
@@ -580,8 +602,8 @@ function ConfigurationPageContent() {
                       <div className="mt-4">
                         <button
                           onClick={() => {
-                            if (!selectedRepository) {
-                              setSaveError('Please select a repository first.');
+                            if (selectedRepoFullNames.length === 0) {
+                              setSaveError('Please select at least one repository.');
                               return;
                             }
                             hasRedirectedRef.current = true;

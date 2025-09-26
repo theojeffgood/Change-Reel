@@ -254,6 +254,10 @@ export class ProjectService implements IProjectService {
       if (filter?.user_id) {
         query = query.eq('user_id', filter.user_id)
       }
+      // Track only projects flagged for tracking when requested
+      if ((filter as any)?.is_tracked === true) {
+        query = query.eq('is_tracked', true)
+      }
 
       // Apply ordering
       const orderBy = pagination?.orderBy || 'created_at'

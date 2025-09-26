@@ -28,17 +28,14 @@ export async function GET() {
     }
     
     if (!projects || projects.length === 0) {
-      return NextResponse.json({ project: null, projects: [] }, { status: 200 });
+      return NextResponse.json({ projects: [] }, { status: 200 });
     }
 
-    // For backward compatibility, return the first project as the "current" project
-    // TODO: Add repository selection UI to choose which project to view
-    const currentProject = projects[0];
+    // Only include tracked projects for dashboard visibility
+    const tracked = (projects || []).filter((p: any) => p.is_tracked !== false);
 
-    // webhook_secret is deprecated in GitHub App model, no longer sensitive
     return NextResponse.json({ 
-      project: currentProject,
-      projects // Include all projects for future repository selector
+      projects: tracked
     });
   } catch (error) {
     console.error('Error fetching project config:', error);

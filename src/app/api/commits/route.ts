@@ -33,9 +33,14 @@ export async function GET(request: Request) {
       return NextResponse.json({ commits: [], count: 0 });
     }
 
-    const projectIds = projects.map(p => p.id);
+    // Filter to tracked projects only
+    const tracked = (projects || []).filter((p: any) => p.is_tracked !== false);
+    if (!tracked.length) {
+      return NextResponse.json({ commits: [], count: 0 });
+    }
+    const projectIds = tracked.map(p => p.id);
     const projectIdToRepoName: Record<string, string> = Object.fromEntries(
-      projects.map(p => [p.id, p.repo_name || p.name || ''])
+      tracked.map(p => [p.id, p.repo_name || p.name || ''])
     );
 
     // Paginated commits across all projects with summaries only

@@ -236,7 +236,8 @@ async function processWebhookJob(job: any, supabaseService: any): Promise<{ succ
       };
     }
 
-    // Extract commits from payload
+    // Extract repository and commits from payload
+    const repositoryFullName: string | undefined = data.payload?.repository?.full_name;
     const commits = data.payload?.commits || [];
     if (commits.length === 0) {
       return {
@@ -246,16 +247,33 @@ async function processWebhookJob(job: any, supabaseService: any): Promise<{ succ
       };
     }
 
-    // Get project information (for now, assume we have one project)
-    const { data: projects } = await supabaseService.projects.listProjects();
-    if (!projects || projects.length === 0) {
+    // Resolve project for this repository
+    if (!repositoryFullName) {
       return {
-        success: false,
-        error: 'No projects found in database'
+        success: true,
+        message: 'No repository in payload; ignored',
+        data: { commits_processed: 0 }
       };
     }
 
-    const project = projects[0]; // Use first project for MVP
+    const { data: project, error: projectError } = await supabaseService.projects.getProjectByRepository(repositoryFullName);
+    if (projectError) {
+      return { success: false, error: `Project lookup failed: ${projectError.message}` };
+    }
+    if (!project) {
+      return {
+        success: true,
+        message: `Repository ${repositoryFullName} not registered; ignored`,
+        data: { commits_processed: 0 }
+      };
+    }
+    if ((project as any).is_tracked === false) {
+      return {
+        success: true,
+        message: `Repository ${repositoryFullName} is untracked; ignored`,
+        data: { commits_processed: 0 }
+      };
+    }
     const createdCommits = [];
     const createdJobs = [];
 

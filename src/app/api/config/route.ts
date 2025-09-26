@@ -7,6 +7,7 @@ interface ConfigRequest {
   repositoryFullName: string;
   installationId?: number;
   emailRecipients?: string[]; // Made optional
+  trackedRepositories?: string[]; // New: list of repo full_names to track
 }
 
 interface ConfigResponse {
@@ -35,7 +36,7 @@ export async function POST(request: NextRequest): Promise<NextResponse<ConfigRes
 
     // Parse request body
     const body: ConfigRequest = await request.json();
-    const { repositoryFullName, installationId, emailRecipients = [] } = body; // Default to empty array
+    const { repositoryFullName, installationId, emailRecipients = [], trackedRepositories = [] } = body; // Default to empty array
 
     if (!repositoryFullName) {
       return NextResponse.json(
@@ -148,6 +149,23 @@ export async function POST(request: NextRequest): Promise<NextResponse<ConfigRes
       }
       project = createResult.data;
       console.log('Project created successfully:', project?.id);
+    }
+    // Update tracked flag across user's repos if provided
+    try {
+      if (Array.isArray(trackedRepositories)) {
+        // Fetch all user projects
+        const { data: userProjects } = await supabaseService.projects.getProjectsByUser(user.id);
+        if (Array.isArray(userProjects)) {
+          for (const p of userProjects) {
+            const shouldTrack = trackedRepositories.includes(p.repo_name || p.name);
+            if ((p as any).is_tracked !== shouldTrack) {
+              await supabaseService.projects.updateProject(p.id, { is_tracked: shouldTrack } as any);
+            }
+          }
+        }
+      }
+    } catch (e) {
+      console.warn('[config] failed to update tracked flags', (e as any)?.message)
     }
 
     // Automatically upsert installation mapping and register all repos for this installation

@@ -254,8 +254,6 @@ function ConfigurationPageContent() {
     router,
   ]);
 
-  // Removed disconnect handler
-
   const saveConfiguration = useCallback(async (
     repoName: string,
     installationIdValue: string,
@@ -314,37 +312,7 @@ function ConfigurationPageContent() {
     }
   }, []);
 
-  // Auto-save repository selection once we have both repo & installation
-  useEffect(() => {
-    if (
-      !githubStatus?.connected ||
-      isLoadingConfiguration ||
-      saving
-    ) {
-      return;
-    }
-
-    if (!selectedRepository) return;
-    if (!selectedInstallationId || selectedInstallationId === '0') return;
-
-    const key = { repo: selectedRepository, installation: selectedInstallationId };
-    const last = lastSavedRef.current;
-    if (last && last.repo === key.repo && last.installation === key.installation) {
-      return;
-    }
-
-    let cancelled = false;
-    (async () => {
-      const saved = await saveConfiguration(key.repo, key.installation, { silent: true });
-      if (!cancelled && saved) {
-        lastSavedRef.current = key;
-      }
-    })();
-
-    return () => {
-      cancelled = true;
-    };
-  }, [githubStatus?.connected, isLoadingConfiguration, saving, selectedRepository, selectedInstallationId, saveConfiguration]);
+  // Removed auto-save: selection is saved only when clicking "See Dashboard"
 
   // Email recipients removed from scope
 
@@ -581,14 +549,20 @@ function ConfigurationPageContent() {
                                       );
                                       setSelectedRepository(fullName);
                                     }}
-                                    className={`text-left p-4 rounded-xl border transition-colors ${selected ? 'border-black bg-gray-50' : 'border-gray-200 hover:bg-gray-50'}`}
+                                    className={`text-left p-4 rounded-xl border transition-colors ${selected ? 'border-green-600 bg-green-50' : 'border-gray-200 hover:bg-gray-50'}`}
                                   >
                                     <div className="flex items-start justify-between">
                                       <div>
                                         <div className="text-sm font-medium text-gray-900">{repo.full_name}</div>
                                         <div className="text-xs text-gray-500 mt-1">{repo.private ? 'Private' : 'Public'}</div>
                                       </div>
-                                      <div className={`w-5 h-5 rounded-full border ${selected ? 'bg-black border-black' : 'bg-white border-gray-300'}`} />
+                                      <div className={`w-5 h-5 rounded-full border flex items-center justify-center ${selected ? 'bg-green-600 border-green-600' : 'bg-white border-gray-300'}`}>
+                                        {selected ? (
+                                          <svg viewBox="0 0 16 16" className="w-3.5 h-3.5" aria-hidden="true">
+                                            <path d="M4 8.5 7 11l5-6" fill="none" stroke="white" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+                                          </svg>
+                                        ) : null}
+                                      </div>
                                     </div>
                                   </button>
                                 );
@@ -601,13 +575,21 @@ function ConfigurationPageContent() {
 
                       <div className="mt-4">
                         <button
-                          onClick={() => {
+                          onClick={async () => {
                             if (selectedRepoFullNames.length === 0) {
                               setSaveError('Please select at least one repository.');
                               return;
                             }
-                            hasRedirectedRef.current = true;
-                            router.push('/admin');
+                            if (!selectedInstallationId || selectedInstallationId === '0') {
+                              setSaveError('Select a GitHub installation to continue.');
+                              return;
+                            }
+                            const primaryRepo = selectedRepository || selectedRepoFullNames[0];
+                            const saved = await saveConfiguration(primaryRepo, selectedInstallationId, { silent: false });
+                            if (saved) {
+                              hasRedirectedRef.current = true;
+                              router.push('/admin');
+                            }
                           }}
                           disabled={saving}
                           className="inline-flex items-center px-6 py-4 text-md font-medium text-white bg-black rounded-lg hover:bg-gray-800 transition-colors disabled:opacity-50"

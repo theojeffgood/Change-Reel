@@ -150,9 +150,10 @@ export async function POST(request: NextRequest): Promise<NextResponse<ConfigRes
       project = createResult.data;
       console.log('Project created successfully:', project?.id);
     }
-    // Update tracked flag across user's repos if provided
+    // Update tracked flag across user's repos if provided (guard against accidental clearing)
     try {
-      if (Array.isArray(trackedRepositories)) {
+      const hasTrackedField = Object.prototype.hasOwnProperty.call(body, 'trackedRepositories');
+      if (hasTrackedField && Array.isArray(trackedRepositories) && trackedRepositories.length > 0) {
         // Fetch all user projects
         const { data: userProjects } = await supabaseService.projects.getProjectsByUser(user.id);
         if (Array.isArray(userProjects)) {

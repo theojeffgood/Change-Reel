@@ -4,6 +4,7 @@ import { Commit } from '@/lib/types/supabase';
 interface CommitCardProps {
   commit: Commit;
   hasCredits?: boolean;
+  repositoryName?: string;
 }
 
 const getUpdateTypeColor = (type: string) => {
@@ -23,8 +24,12 @@ const getUpdateTypeLabel = (type: string) => {
   return 'Update';
 };
 
-export default function CommitCard({ commit, hasCredits = false }: CommitCardProps) {
-  const timeAgo = new Date(commit.timestamp).toLocaleString();
+export default function CommitCard({ commit, hasCredits = false, repositoryName }: CommitCardProps) {
+  const dateOnly = new Date(commit.timestamp).toLocaleDateString(undefined, {
+    year: 'numeric',
+    month: 'short',
+    day: '2-digit',
+  });
 
   return (
     <div className="bg-white border border-gray-200 rounded-xl p-6 hover:shadow-md transition-shadow">
@@ -36,7 +41,8 @@ export default function CommitCard({ commit, hasCredits = false }: CommitCardPro
             </span>
             <div className="flex flex-col text-sm text-gray-600 leading-tight">
               <span>By: {commit.author}</span>
-              <span>At: {timeAgo}</span>
+              <span>At: {dateOnly}</span>
+              <span>Repo: {repositoryName || '—'}</span>
             </div>
           </div>
         </div>

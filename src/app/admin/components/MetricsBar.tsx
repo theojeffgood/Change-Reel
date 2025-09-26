@@ -89,30 +89,36 @@ export default function MetricsBar() {
   return (
     <div className="flex flex-col gap-4">
       <div className="bg-white border border-gray-200 rounded-xl p-6">
-        <div className="text-md text-gray-500 mb-1">App name</div>
-        <div className="text-base font-medium text-gray-900 truncate">{repoName || '—'}</div>
+        <div className="flex flex-col items-center justify-center text-center min-h-[120px]">
+          <div className="text-2xl font-semibold text-gray-900 truncate">{repoName || '—'}</div>
+          <div className="text-md text-gray-500 mt-1">App name</div>
+        </div>
       </div>
 
       <div className="bg-white border border-gray-200 rounded-xl p-6">
-        <div className="text-md text-gray-500 mb-1">Features this week</div>
-        <div className="text-2xl font-semibold text-gray-900">{featuresThisWeek}</div>
+        <div className="flex flex-col items-center justify-center text-center min-h-[120px]">
+          <div className="text-2xl font-semibold text-gray-900">{featuresThisWeek}</div>
+          <div className="text-md text-gray-500 mt-1">Features this week</div>
+        </div>
       </div>
 
       <div className="bg-white border border-gray-200 rounded-xl p-6">
-        <div className="text-md text-gray-500 mb-1">Credits Remaining</div>
-        {session ? (
-          balanceLoading ? (
-            <div className="text-gray-500">Loading…</div>
-          ) : balanceError ? (
-            <div className="text-red-600 text-sm">{balanceError}</div>
+        <div className="flex flex-col items-center justify-center text-center min-h-[120px]">
+          {session ? (
+            balanceLoading ? (
+              <div className="text-gray-500">Loading…</div>
+            ) : balanceError ? (
+              <div className="text-red-600 text-sm">{balanceError}</div>
+            ) : (
+              <div className="text-2xl font-semibold text-gray-900">{balance ?? '—'}</div>
+            )
           ) : (
-            <div className="text-2xl font-semibold text-gray-900">{balance ?? '—'}</div>
-          )
-        ) : (
-          <div className="text-sm text-gray-600">
-            <Link href="/billing" className="text-blue-600 hover:underline">Sign in</Link> to view and top up credits
-          </div>
-        )}
+            <div className="text-sm text-gray-600">
+              <Link href="/billing" className="text-blue-600 hover:underline">Sign in</Link> to view and top up credits
+            </div>
+          )}
+          <div className="text-md text-gray-500 mt-1">Credits Remaining</div>
+        </div>
       </div>
     </div>
   )

@@ -13,6 +13,7 @@ import MetricsBar from './components/MetricsBar'
 export default async function AdminPage() {
   // Determine if current user has credits
   let hasCredits = false;
+  let repositoryName: string = '';
   try {
     const session = await getServerSession(authConfig);
     if (session?.user?.githubId) {
@@ -24,9 +25,9 @@ export default async function AdminPage() {
         hasCredits = await billing.hasCredits(user.id);
 
         try {
-          const projectRes = await supaService.projects.getProjectByUserId(user.id);
-          const project = projectRes.data;
-          if (project?.installation_id) {
+          const latestProject = await supaService.projects.getLatestProjectForUser(user.id);
+          if (latestProject) {
+            repositoryName = latestProject.repo_name || latestProject.name || '';
           }
         } catch {}
       }
@@ -65,7 +66,7 @@ export default async function AdminPage() {
             {/* Timeline Panel */}
             <div className="space-y-6">
               <ErrorBoundary>
-                <CommitHistoryPanel hasCredits={hasCredits} />
+                <CommitHistoryPanel hasCredits={hasCredits} repositoryName={repositoryName} />
               </ErrorBoundary>
             </div>
           </section>

@@ -25,9 +25,9 @@ const DIFF_SUMMARY_RESPONSE_SCHEMA = {
 } as const;
 
 type ResponseCreateParamsWithSchema = ResponseCreateParams & {
-  response_format?: {
-    type: 'json_schema';
-    json_schema: {
+  text?: {
+    format?: {
+      type: 'json_schema';
       name: string;
       schema: typeof DIFF_SUMMARY_RESPONSE_SCHEMA;
       strict?: boolean;
@@ -128,9 +128,9 @@ export class OpenAIClient implements IOpenAIClient {
           instructions: DIFF_SUMMARY_TEMPLATE,
           input: prompt,
           max_output_tokens: this.maxTokens,
-          response_format: {
-            type: 'json_schema',
-            json_schema: {
+          text: {
+            format: {
+              type: 'json_schema',
               name: DIFF_SUMMARY_SCHEMA_NAME,
               schema: DIFF_SUMMARY_RESPONSE_SCHEMA,
               strict: true,

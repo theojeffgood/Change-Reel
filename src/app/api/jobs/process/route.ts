@@ -438,7 +438,15 @@ async function processGenerateSummaryJob(job: any, supabaseService: any): Promis
       errorMessage = `Network error connecting to OpenAI: ${error.message}`;
     }
 
-    console.error(`❌ OpenAI summarization failed (${errorType}):`, errorMessage);
+    console.error('❌ OpenAI summarization failed', {
+      jobId: job?.id,
+      commitId: job?.data?.commit_id,
+      errorType,
+      errorMessage,
+      code: (error as any)?.code,
+      status: (error as any)?.status,
+      details: error instanceof OpenAIError ? (error as any).details : undefined,
+    });
     
     return {
       success: false,

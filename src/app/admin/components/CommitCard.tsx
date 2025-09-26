@@ -51,7 +51,7 @@ export default function CommitCard({ commit, hasCredits = false, repositoryName 
       <div className="mb-4">
         {commit.summary ? (
           <div className="">
-            <h3 className="text-lg font-semibold text-gray-900 mb-2">What Changed:</h3>
+            {/* <h3 className="text-lg font-semibold text-gray-900 mb-2">What Changed:</h3> */}
             <p className="text-gray-800 leading-relaxed">{commit.summary}</p>
           </div>
         ) : hasCredits ? (

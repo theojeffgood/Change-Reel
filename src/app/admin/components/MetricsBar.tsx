@@ -85,7 +85,7 @@ export default function MetricsBar() {
       <div className="bg-white border border-gray-200 rounded-xl p-6">
         <div className="flex flex-col items-center justify-center text-center min-h-[120px]">
           <div className="text-2xl font-semibold text-gray-900 truncate">{repoNames.length}</div>
-          <div className="text-md text-gray-500 mt-1">Repos</div>
+          <div className="text-md text-gray-500 mt-1">Repositories</div>
         </div>
       </div>
 

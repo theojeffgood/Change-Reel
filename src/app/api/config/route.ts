@@ -153,7 +153,7 @@ export async function POST(request: NextRequest): Promise<NextResponse<ConfigRes
     // Update tracked flag across user's repos if provided (guard against accidental clearing)
     try {
       const hasTrackedField = Object.prototype.hasOwnProperty.call(body, 'trackedRepositories');
-      if (hasTrackedField && Array.isArray(trackedRepositories) && trackedRepositories.length > 0) {
+      if (hasTrackedField && Array.isArray(trackedRepositories)) {
         // Fetch all user projects
         const { data: userProjects } = await supabaseService.projects.getProjectsByUser(user.id);
         if (Array.isArray(userProjects)) {

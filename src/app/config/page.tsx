@@ -135,10 +135,26 @@ function ConfigurationPageContent() {
       const res = await fetch(`/api/github/installation-repos?installation_id=${installationId}`);
       const data = await res.json();
       if (res.ok) {
-        setRepositories((data.repositories || []) as Repository[]);
+        const reposList = (data.repositories || []) as Repository[];
+        setRepositories(reposList);
         try {
-          const fullNames = (data.repositories || []).map((r: Repository) => r.full_name);
-          setSelectedRepoFullNames(fullNames);
+          // Initialize selection from tracked projects
+          const trackedRes = await fetch('/api/projects');
+          if (trackedRes.ok) {
+            const trackedJson = await trackedRes.json();
+            const trackedNames: string[] = Array.isArray(trackedJson?.projects)
+              ? trackedJson.projects.map((p: any) => p.repo_name || p.name).filter(Boolean)
+              : [];
+            if (trackedNames.length) {
+              const repoFullNames = new Set(reposList.map(r => r.full_name));
+              const initialSelection = trackedNames.filter(n => repoFullNames.has(n));
+              setSelectedRepoFullNames(initialSelection);
+            } else {
+              setSelectedRepoFullNames([]);
+            }
+          } else {
+            setSelectedRepoFullNames([]);
+          }
         } catch {}
       } else {
         console.error('Failed to load repositories', data.error);

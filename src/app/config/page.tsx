@@ -324,7 +324,7 @@ function ConfigurationPageContent() {
       savingRef.current = false;
       setSaving(false);
     }
-  }, []);
+  }, [selectedRepoFullNames]);
 
   // Removed auto-save: selection is saved only when clicking "See Dashboard"
 

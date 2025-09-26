@@ -30,8 +30,13 @@ export default function CommitHistoryPanel({ hasCredits, repositoryName }: { has
         ) : commits && commits.length > 0 ? (
           <>
             <div className="space-y-4">
-              {commits.map(commit => (
-                <CommitCard key={commit.id} commit={commit} hasCredits={hasCredits} repositoryName={repositoryName} />
+              {commits.map((commit: any) => (
+                <CommitCard
+                  key={commit.id}
+                  commit={commit}
+                  hasCredits={hasCredits}
+                  repositoryName={(commit as any).repository_name || repositoryName}
+                />
               ))}
             </div>
             {totalPages > 1 && (

@@ -19,7 +19,7 @@ type CommitsResponse = {
 export default function MetricsBar() {
   const { data: session } = useSession()
   const [commits, setCommits] = useState<Commit[]>([])
-  const [repoName, setRepoName] = useState<string>('')
+  const [repoNames, setRepoNames] = useState<string[]>([])
   const [balance, setBalance] = useState<number | null>(null)
   const [balanceLoading, setBalanceLoading] = useState<boolean>(false)
   const [balanceError, setBalanceError] = useState<string | null>(null)
@@ -36,12 +36,14 @@ export default function MetricsBar() {
       } catch {}
 
       try {
-        // Fetch config to display selected repository/app name
-        const res = await fetch('/api/config')
+        // Fetch all projects to derive repository list for display
+        const res = await fetch('/api/projects')
         if (res.ok) {
           const data = await res.json()
-          const name: string = data?.configuration?.repositoryFullName || ''
-          setRepoName(name)
+          const names: string[] = Array.isArray(data?.projects)
+            ? data.projects.map((p: any) => p.repo_name || p.name).filter(Boolean)
+            : []
+          setRepoNames(names)
         }
       } catch {}
     }
@@ -90,8 +92,10 @@ export default function MetricsBar() {
     <div className="flex flex-col gap-4">
       <div className="bg-white border border-gray-200 rounded-xl p-6">
         <div className="flex flex-col items-center justify-center text-center min-h-[120px]">
-          <div className="text-2xl font-semibold text-gray-900 truncate">{repoName || '—'}</div>
-          <div className="text-md text-gray-500 mt-1">App name</div>
+          <div className="text-2xl font-semibold text-gray-900 truncate">
+            {repoNames.length === 0 ? '—' : repoNames.length === 1 ? repoNames[0] : `${repoNames.length} repositories`}
+          </div>
+          <div className="text-md text-gray-500 mt-1">{repoNames.length <= 1 ? 'App name' : 'All repositories'}</div>
         </div>
       </div>
 

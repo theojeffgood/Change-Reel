@@ -41,11 +41,11 @@ export default function CommitCard({ commit, hasCredits = false, repositoryName 
             </span>
             <div className="flex flex-col text-sm text-gray-600 leading-tight">
               <span>Repo: {repositoryName || '—'}</span>
-              <span>At: {dateOnly}</span>
               <span>By: {commit.author}</span>
             </div>
           </div>
         </div>
+        <div className="text-sm text-gray-500 whitespace-nowrap">{dateOnly}</div>
       </div>
 
       <div className="mb-4">

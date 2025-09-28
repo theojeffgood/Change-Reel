@@ -6,6 +6,7 @@ import { useSession, signIn } from 'next-auth/react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import SiteHeader from '@/components/layout/SiteHeader'
 import SiteFooter from '@/components/layout/SiteFooter'
+import Link from 'next/link';
 
 interface GitHubStatus {
   connected: boolean;
@@ -51,48 +52,43 @@ function ConfigurationPageContent() {
   const [selectedInstallationId, setSelectedInstallationId] = useState<string>('');
   const [selectedRepository, setSelectedRepository] = useState<string>('');
   const [loadingRepos, setLoadingRepos] = useState(false);
-  const [loading, setLoading] = useState(false);
-  // Removed disconnect flow
   const [saveMessage, setSaveMessage] = useState('');
   const [saveError, setSaveError] = useState('');
   const [isLoadingConfiguration, setIsLoadingConfiguration] = useState(false);
   const [configurationLoaded, setConfigurationLoaded] = useState(false);
-  const [showInstallPicker, setShowInstallPicker] = useState(false);
   const [hasExistingConfiguration, setHasExistingConfiguration] = useState(false);
   const [installationError, setInstallationError] = useState('');
   const [saving, setSaving] = useState(false);
   const [installationsLoaded, setInstallationsLoaded] = useState(false);
   const [githubStatusLoading, setGithubStatusLoading] = useState(true);
-  const GITHUB_APP_INSTALL_URL = process.env.NEXT_PUBLIC_GITHUB_APP_INSTALL_URL;
   const stayOnConfig = ['1', 'true'].includes((searchParams?.get('stay') || '').toLowerCase());
   const hasRedirectedRef = useRef(false);
   const lastSavedRef = useRef<{ repo: string; installation: string } | null>(null);
   const savingRef = useRef(false);
-
-  const needsReauth = installationError ? installationError.toLowerCase().includes('refresh') : false;
-  const hasConfiguredRepo = hasExistingConfiguration || Boolean(selectedRepository);
-  const needsReconnect = Boolean(githubStatus?.connected) && installations.length === 0 && hasConfiguredRepo;
-  const showInstallPrompt = Boolean(githubStatus?.connected) && installations.length === 0 && !hasConfiguredRepo;
-  // const headerHasActiveConfiguration = hasExistingConfiguration && Boolean(selectedInstallationId && selectedInstallationId !== '0');
-
-  const handleGitHubConnect = async () => {
-    if (!GITHUB_APP_INSTALL_URL) return;
-
-    setLoading(true);
-    try {
-      // Direct redirect to GitHub App installation URL
-      window.location.href = GITHUB_APP_INSTALL_URL;
-    } catch (error) {
-      console.error('Error connecting to GitHub:', error);
-      setLoading(false);
-    }
-  };
+  const [showInstallPicker, setShowInstallPicker] = useState(false);
+  const [loading, setLoading] = useState(false);
+  const [repoError, setRepoError] = useState('');
 
   const handleReauthenticate = () => {
     hasRedirectedRef.current = true;
     void signIn('github', { callbackUrl: '/config?stay=1' });
   };
-  
+
+  // const hasConfiguredRepo = hasExistingConfiguration || Boolean(selectedRepository);
+  // const headerHasActiveConfiguration = hasExistingConfiguration && Boolean(selectedInstallationId && selectedInstallationId !== '0');
+
+  // const handleGitHubConnect = async () => {
+  //   if (!GITHUB_APP_INSTALL_URL) return;
+
+  //   setLoading(true);
+  //   try {
+  //     // Direct redirect to GitHub App installation URL
+  //     window.location.href = GITHUB_APP_INSTALL_URL;
+  //   } catch (error) {
+  //     console.error('Error connecting to GitHub:', error);
+  //     setLoading(false);
+  //   }
+  // };
 
   const checkGitHubStatus = useCallback(async () => {
     try {
@@ -158,11 +154,13 @@ function ConfigurationPageContent() {
         console.error('Failed to load repositories', data.error);
         setRepositories([]);
         setSelectedRepoFullNames([]);
+        setRepoError('Failed to load repositories');
       }
     } catch (e) {
       console.error('Error loading repositories', e);
       setRepositories([]);
       setSelectedRepoFullNames([]);
+      setRepoError('Failed to load repositories');
     } finally {
       setLoadingRepos(false);
     }
@@ -245,9 +243,7 @@ function ConfigurationPageContent() {
       githubStatusLoading ||
       !githubStatus?.connected ||
       !hasExistingConfiguration ||
-      !selectedRepository ||
-      needsReauth ||
-      needsReconnect
+      !selectedRepository
     ) {
       return;
     }
@@ -263,8 +259,6 @@ function ConfigurationPageContent() {
     githubStatus?.connected,
     hasExistingConfiguration,
     selectedRepository,
-    needsReauth,
-    needsReconnect,
     router,
   ]);
 
@@ -326,18 +320,11 @@ function ConfigurationPageContent() {
     }
   }, [selectedRepoFullNames]);
 
-  // Removed auto-save: selection is saved only when clicking "See Dashboard"
-
-  // Email recipients removed from scope
-
   const isInitializing = sessionStatus === 'loading' || githubStatusLoading || !configurationLoaded || !installationsLoaded;
 
   return (
     <div className="min-h-screen bg-gray-100">
-      <SiteHeader
-        isAuthenticated={Boolean(session)}
-        // hasActiveConfiguration={headerHasActiveConfiguration}
-      />
+      <SiteHeader isAuthenticated={Boolean(session)}/>
 
       {isInitializing ? (
         <div className="flex items-center justify-center py-24">
@@ -348,288 +335,175 @@ function ConfigurationPageContent() {
         </div>
       ) : (
         <>
-      {/* Disconnect dialog removed */}
 
       {/* Header */}
       <div className="px-4 sm:px-6 lg:px-8 py-12">
         <div className="max-w-4xl mx-auto text-center">
           <h1 className="text-4xl md:text-5xl font-bold text-gray-900 mt-4 mb-8">
-            Connect your GitHub
+            Select your repositories
           </h1>
           <p className="text-xl text-gray-600 max-w-2xl mx-auto mb-8">
-            Connect your development workflow to automatically get notifications when your product changes
+            Choose the repositories to track for product change summaries
           </p>
         </div>
       </div>
 
       <div className="max-w-3xl mx-auto px-4 sm:px-6 lg:px-8 pb-12 mb-20">
+        {(installationError || repoError) && (
+          <div className="mb-6 rounded-lg border border-yellow-200 bg-yellow-50 px-4 py-3 text-sm text-yellow-900">
+            <p>{installationError || repoError}</p>
+            <p className="mt-2">
+            <Link
+              href="/signin"
+              className="font-semibold underline"
+            >
+              Sign in again
+            </Link>
+            </p>
+          </div>
+        )}
         <div className="grid grid-cols-1 gap-8">
           {/* Configuration Form - simplified */}
           <div className="lg:col-span-1">
 
-              {/* GitHub Connection Status */}
-              <div className="mb-8">
-                  {githubStatus?.connected ? (
-                    /* Connected State */
-                    <div className="bg-white border border-gray-200 rounded-xl overflow-hidden">
-                      <div className="flex items-center justify-between p-6">
-                        <div className="flex items-center space-x-4">
-                          {githubStatus.user?.avatar_url && (
-                            <Image
-                              src={githubStatus.user.avatar_url}
-                              alt="Profile Avatar"
-                              width={40}
-                              height={40}
-                              className="rounded-full"
-                            />
-                          )}
-                          <div>
-                            <div className="flex items-center space-x-3">
-                              <p className="text-lg text-black font-semibold">Connected</p>
-                              <span className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-green-50 text-green-700">Active</span>
-                            </div>
-                            <p className="text-gray-600">
-                              {githubStatus.user?.name || githubStatus.user?.login}
-                            </p>
-                          </div>
-                           
-                         </div>
-                         <button
-                           onClick={() => setShowInstallPicker((v) => !v)}
-                           disabled={loading || installations.length <= 1}
-                           className="px-4 py-2 text-sm font-medium text-gray-700 border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors disabled:opacity-50"
-                         >
-                           Change
-                         </button>
-                       </div>
-                     </div>
-                  ) : (
-                    /* Disconnected State */
-                      <div className="text-center">
-                        <div className="inline-flex flex-col items-center space-y-3">
-                                                     <button
-                            onClick={handleGitHubConnect}
-                            disabled={loading || !GITHUB_APP_INSTALL_URL}
-                            className="inline-flex items-center mt-6 px-6 py-3 bg-black text-white rounded-lg hover:bg-gray-800 transition-colors font-semibold disabled:opacity-50"
-                          >
-                             {loading ? (
-                               <>
-                                 <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin mr-2"></div>
-                                 Connecting...
-                               </>
-                             ) : (
-                               <>
-                                 <svg className="mr-2 w-7 h-10" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
-                                   <path fillRule="evenodd" clipRule="evenodd" d="M12 2C6.477 2 2 6.484 2 12.018c0 4.424 2.865 8.176 6.839 9.504.5.092.682-.217.682-.483 0-.237-.009-.868-.013-1.703-2.782.605-3.369-1.342-3.369-1.342-.454-1.156-1.11-1.464-1.11-1.464-.908-.62.069-.608.069-.608 1.004.071 1.532 1.032 1.532 1.032.892 1.53 2.341 1.088 2.91.833.091-.647.35-1.088.636-1.339-2.221-.253-4.555-1.112-4.555-4.943 0-1.091.39-1.986 1.029-2.686-.103-.253-.446-1.272.098-2.65 0 0 .84-.27 2.75 1.026A9.564 9.564 0 0112 6.844c.851.004 1.707.115 2.506.337 1.909-1.296 2.748-1.026 2.748-1.026.546 1.378.202 2.397.099 2.65.64.7 1.028 1.595 1.028 2.686 0 3.841-2.337 4.687-4.565 4.936.359.31.678.923.678 1.861 0 1.343-.012 2.427-.012 2.758 0 .268.18.58.688.481A10.02 10.02 0 0022 12.018C22 6.484 17.523 2 12 2z"/>
-                                 </svg>
-                                 Connect Your Account
-                               </>
-                             )}
-                           </button>
-                           {!GITHUB_APP_INSTALL_URL && (
-                             <span className="text-sm text-gray-600 mt-2">Set NEXT_PUBLIC_GITHUB_APP_INSTALL_URL to enable installation</span>
-                           )}
-
-                          
-                        </div>
-                      </div>
-                  )}
-              </div>
-
               {githubStatus?.connected && (
-                <div>
-                  {showInstallPrompt ? (
-                    <div className="px-6 pb-6">
-                      <div className="p-4 border border-gray-200 rounded-xl bg-white flex items-center justify-between">
-                        <div>
-                          <p className="text-sm text-gray-500">{needsReauth ? 'Welcome back' : 'Next step'}</p>
-                          <p className="text-sm text-gray-800">
-                            {needsReauth
-                              ? 'Your GitHub session expired. Sign in again to refresh your connection.'
-                              : 'Install the Wins Column GitHub App to continue.'}
-                          </p>
-                        </div>
-                        {needsReauth ? (
-                          <button
-                            type="button"
-                            onClick={handleReauthenticate}
-                            className="ml-4 inline-flex items-center px-4 py-2 text-sm font-medium text-white bg-black rounded-lg hover:bg-gray-800"
-                          >
-                            Sign in again
-                          </button>
-                        ) : GITHUB_APP_INSTALL_URL ? (
-                          <a
-                            href={GITHUB_APP_INSTALL_URL}
-                            target="_blank"
-                            rel="noopener noreferrer"
-                            onClick={() => { try { sessionStorage.setItem('installIntent', '1'); } catch {} }}
-                            className="ml-4 inline-flex items-center px-4 py-2 text-sm font-medium text-white bg-black rounded-lg hover:bg-gray-800"
-                          >
-                            Install App
-                          </a>
-                        ) : (
-                          <span className="ml-4 text-xs text-gray-500">Set NEXT_PUBLIC_GITHUB_APP_INSTALL_URL</span>
-                        )}
+                <div className="bg-white border border-gray-200 rounded-xl overflow-hidden">
+                  <div className="flex items-center justify-between p-6">
+                    <div className="flex items-center space-x-4">
+                      {githubStatus.user?.avatar_url && (
+                      <Image
+                        src={githubStatus.user.avatar_url}
+                        alt="Profile Avatar"
+                        width={40}
+                        height={40}
+                        className="rounded-full"
+                      />
+                    )}
+                    <div>
+                      <div className="flex items-center space-x-3">
+                        <p className="text-lg text-black font-semibold">Connected</p>
+                        <span className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-green-50 text-green-700">Active</span>
                       </div>
+                      <p className="text-gray-600">
+                        {githubStatus.user?.name || githubStatus.user?.login}
+                      </p>
                     </div>
-                  ) : needsReconnect ? (
-                    <div className="px-6 pb-6">
-                      <div className="p-4 border border-gray-200 rounded-xl bg-white flex items-center justify-between">
-                        <div>
-                          <p className="text-sm text-gray-500">Welcome back</p>
-                          <p className="text-sm text-gray-800">We recognize your account, but need a quick sign-in to refresh access.</p>
-                        </div>
-                        <button
-                          type="button"
-                          onClick={handleReauthenticate}
-                          className="ml-4 inline-flex items-center px-4 py-2 text-sm font-medium text-white bg-black rounded-lg hover:bg-gray-800"
-                        >
-                          Sign in again
-                        </button>
-                      </div>
-                    </div>
-                  ) : (
-                    <div className="mb-8">
-                      {showInstallPicker && installations.length > 1 && (
-                        <select
-                          value={selectedInstallationId}
-                          onChange={(e) => {
-                            const id = e.target.value;
-                            setSelectedInstallationId(id);
-                            setSelectedRepository('');
-                            if (id) fetchRepositories(id);
-                            setShowInstallPicker(false);
-                          }}
-                          className="w-full rounded-xl border-gray-300 focus:border-black focus:ring-black text-gray-900 shadow-sm mb-6"
-                        >
-                          <option value="">Select an installation...</option>
-                          {installations.map((inst) => (
-                            <option key={inst.id} value={String(inst.id)}>
-                              {inst.account?.login || 'installation'} (ID {inst.id})
-                            </option>
-                          ))}
-                        </select>
-                      )}
+                     
+                   </div>
+                   <button
+                     onClick={() => setShowInstallPicker((v) => !v)}
+                     disabled={loading || installations.length <= 1}
+                     className="px-4 py-2 text-sm font-medium text-gray-700 border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors disabled:opacity-50"
+                   >
+                     Change
+                   </button>
+                 </div>
 
-                      {installations.length === 0 ? (
-                        <div className="px-6 pb-6">
-                          <div className="p-4 border border-gray-200 rounded-xl bg-white">
-                            <p className="text-sm text-gray-800">
-                              {selectedRepository
-                                ? `You're already connected to ${selectedRepository}.`
-                                : 'Your GitHub connection is active.'}
-                            </p>
-                            <p className="mt-2 text-sm text-gray-500">
-                              Continue to the dashboard, or reinstall the GitHub App if you need to change repositories.
-                            </p>
-                            {GITHUB_APP_INSTALL_URL && (
-                              <a
-                                href={GITHUB_APP_INSTALL_URL}
-                                target="_blank"
-                                rel="noopener noreferrer"
-                                onClick={() => { try { sessionStorage.setItem('installIntent', '1'); } catch {} }}
-                                className="mt-4 inline-flex items-center px-4 py-2 text-sm font-medium text-gray-700 border border-gray-300 rounded-lg hover:bg-gray-50"
-                              >
-                                Reinstall App
-                              </a>
+                <div>
+                  <div className="mb-8">
+                    {installations.length > 1 && (
+                      <select
+                        value={selectedInstallationId}
+                        onChange={(e) => {
+                          const id = e.target.value;
+                          setSelectedInstallationId(id);
+                          setSelectedRepository('');
+                          if (id) fetchRepositories(id);
+                        }}
+                        className="w-full rounded-xl border-gray-300 focus:border-black focus:ring-black text-gray-900 shadow-sm mb-6"
+                      >
+                        <option value="">Select an installation...</option>
+                        {installations.map((inst) => (
+                          <option key={inst.id} value={String(inst.id)}>
+                            {inst.account?.login || 'installation'} (ID {inst.id})
+                          </option>
+                        ))}
+                      </select>
+                    )}
+
+                    {installations.length === 0 ? (
+                      <div className="px-6 pb-6">
+                        <div className="p-4 border border-gray-200 rounded-xl bg-white">
+                          <p className="text-sm text-gray-800">No installations found.</p>
+                        </div>
+                      </div>
+                    ) : (
+                      <div className="bg-white border border-gray-200 rounded-xl overflow-hidden">
+                        <div className="p-6">
+                          <div className="flex items-center justify-between mb-4">
+                            <h3 className="text-sm font-medium text-gray-700">Repositories</h3>
+                            {loadingRepos && (
+                              <div className="flex items-center space-x-2 text-sm text-gray-600">
+                                <div className="w-4 h-4 border-2 border-black border-t-transparent rounded-full animate-spin"></div>
+                                <span>Loading…</span>
+                              </div>
                             )}
                           </div>
-                        </div>
-                      ) : (
-                        <div className="bg-white border border-gray-200 rounded-xl overflow-hidden">
-                          <div className="p-6">
-                            <div className="flex items-center justify-between mb-4">
-                              <h3 className="text-sm font-medium text-gray-700">Repositories</h3>
-                              {loadingRepos && (
-                                <div className="flex items-center space-x-2 text-sm text-gray-600">
-                                  <div className="w-4 h-4 border-2 border-black border-t-transparent rounded-full animate-spin"></div>
-                                  <span>Loading…</span>
-                                </div>
-                              )}
-                            </div>
-                            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                              {repositories.map((repo) => {
-                                const fullName = repo.full_name;
-                                const selected = selectedRepoFullNames.includes(fullName);
-                                return (
-                                  <button
-                                    key={repo.id}
-                                    type="button"
-                                    onClick={() => {
-                                      setSelectedRepoFullNames(prev =>
-                                        prev.includes(fullName)
-                                          ? prev.filter(n => n !== fullName)
-                                          : [...prev, fullName]
-                                      );
-                                      setSelectedRepository(fullName);
-                                    }}
-                                    className={`text-left p-4 rounded-xl border transition-colors ${selected ? 'border-green-600 bg-green-50' : 'border-gray-200 hover:bg-gray-50'}`}
-                                  >
-                                    <div className="flex items-start justify-between">
-                                      <div>
-                                        <div className="text-sm font-medium text-gray-900">{repo.full_name}</div>
-                                        <div className="text-xs text-gray-500 mt-1">{repo.private ? 'Private' : 'Public'}</div>
-                                      </div>
-                                      <div className={`w-5 h-5 rounded-full border flex items-center justify-center ${selected ? 'bg-green-600 border-green-600' : 'bg-white border-gray-300'}`}>
-                                        {selected ? (
-                                          <svg viewBox="0 0 16 16" className="w-3.5 h-3.5" aria-hidden="true">
-                                            <path d="M4 8.5 7 11l5-6" fill="none" stroke="white" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
-                                          </svg>
-                                        ) : null}
-                                      </div>
+                          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                            {repositories.map((repo) => {
+                              const fullName = repo.full_name;
+                              const selected = selectedRepoFullNames.includes(fullName);
+                              return (
+                                <button
+                                  key={repo.id}
+                                  type="button"
+                                  onClick={() => {
+                                    setSelectedRepoFullNames(prev =>
+                                      prev.includes(fullName)
+                                        ? prev.filter(n => n !== fullName)
+                                        : [...prev, fullName]
+                                    );
+                                    setSelectedRepository(fullName);
+                                  }}
+                                  className={`text-left p-4 rounded-xl border transition-colors ${selected ? 'border-green-600 bg-green-50' : 'border-gray-200 hover:bg-gray-50'}`}
+                                >
+                                  <div className="flex items-start justify-between">
+                                    <div>
+                                      <div className="text-sm font-medium text-gray-900">{repo.full_name}</div>
+                                      <div className="text-xs text-gray-500 mt-1">{repo.private ? 'Private' : 'Public'}</div>
                                     </div>
-                                  </button>
-                                );
-                              })}
-                            </div>
-                            <p className="mt-3 text-sm text-gray-500">Selected: {selectedRepoFullNames.length}</p>
+                                    <div className={`w-5 h-5 rounded-full border flex items-center justify-center ${selected ? 'bg-green-600 border-green-600' : 'bg-white border-gray-300'}`}>
+                                      {selected ? (
+                                        <svg viewBox="0 0 16 16" className="w-3.5 h-3.5" aria-hidden="true">
+                                          <path d="M4 8.5 7 11l5-6" fill="none" stroke="white" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+                                        </svg>
+                                      ) : null}
+                                    </div>
+                                  </div>
+                                </button>
+                              );
+                            })}
                           </div>
+                          <p className="mt-3 text-sm text-gray-500">Selected: {selectedRepoFullNames.length}</p>
                         </div>
-                      )}
-
-                      <div className="mt-4">
-                        <button
-                          onClick={async () => {
-                            if (selectedRepoFullNames.length === 0) {
-                              setSaveError('Please select at least one repository.');
-                              return;
-                            }
-                            if (!selectedInstallationId || selectedInstallationId === '0') {
-                              setSaveError('Select a GitHub installation to continue.');
-                              return;
-                            }
-                            const primaryRepo = selectedRepository || selectedRepoFullNames[0];
-                            const saved = await saveConfiguration(primaryRepo, selectedInstallationId, { silent: false });
-                            if (saved) {
-                              hasRedirectedRef.current = true;
-                              router.push('/admin');
-                            }
-                          }}
-                          disabled={saving}
-                          className="inline-flex items-center px-6 py-4 text-md font-medium text-white bg-black rounded-lg hover:bg-gray-800 transition-colors disabled:opacity-50"
-                        >
-                          See Dashboard →
-                        </button>
                       </div>
-                    </div>
-                  )}
+                    )}
 
-                  {(installationError && !needsReconnect) && (
-                    <div className="mx-6 mt-4 rounded-lg border border-yellow-200 bg-yellow-50 px-4 py-3 text-sm text-yellow-900">
-                      <p>{needsReauth ? 'Welcome back! Your GitHub session expired. Sign in again to refresh your connection.' : installationError}</p>
-                      {needsReauth && (
-                        <p className="mt-2 text-yellow-800">
-                          <button
-                            type="button"
-                            className="font-semibold underline"
-                            onClick={handleReauthenticate}
-                          >
-                            Sign in again
-                          </button>
-                        </p>
-                      )}
+                    <div className="mt-4">
+                      <button
+                        onClick={async () => {
+                          if (selectedRepoFullNames.length === 0) {
+                            setSaveError('Please select at least one repository.');
+                            return;
+                          }
+                          if (!selectedInstallationId || selectedInstallationId === '0') {
+                            setSaveError('Select a GitHub installation to continue.');
+                            return;
+                          }
+                          const primaryRepo = selectedRepository || selectedRepoFullNames[0];
+                          const saved = await saveConfiguration(primaryRepo, selectedInstallationId, { silent: false });
+                          if (saved) {
+                            hasRedirectedRef.current = true;
+                            router.push('/admin');
+                          }
+                        }}
+                        disabled={saving}
+                        className="inline-flex items-center px-6 py-4 text-md font-medium text-white bg-black rounded-lg hover:bg-gray-800 transition-colors disabled:opacity-50"
+                      >
+                        See Dashboard →
+                      </button>
                     </div>
-                  )}
+                  </div>
 
                   {saveMessage && (
                     <div className="mt-6 p-4 border border-gray-200 rounded-xl bg-white">
@@ -642,6 +516,7 @@ function ConfigurationPageContent() {
                       <p className="text-red-700">{saveError}</p>
                     </div>
                   )}
+                </div>
                 </div>
               )}
           </div>

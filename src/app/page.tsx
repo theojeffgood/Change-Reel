@@ -24,7 +24,7 @@ export default function Home() {
           </p>
           <div className="flex flex-col sm:flex-row gap-4 justify-center">
             <Link 
-              href="/config" 
+              href="/signup" 
               className="inline-flex items-center px-8 py-4 bg-black text-white text-lg font-semibold rounded-xl hover:bg-gray-800 transition-colors shadow-lg"
             >
               <svg className="mr-2 w-7 h-7" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
@@ -294,7 +294,7 @@ export default function Home() {
               </ul>
 
               <Link 
-                href="/config" 
+                href="/signup" 
                 className="w-full inline-flex items-center justify-center px-6 py-3 bg-white text-black font-semibold rounded-lg border-black border-1 hover:bg-gray-200 transition-colors"
               >
                 Get Started
@@ -341,7 +341,7 @@ export default function Home() {
               </ul>
 
               <Link 
-                href="/config" 
+                href="/signup" 
                 className="w-full inline-flex items-center justify-center px-6 py-3 bg-black text-white font-semibold rounded-lg hover:bg-blue-700 transition-colors"
               >
                 Start Free
@@ -411,7 +411,7 @@ export default function Home() {
           </p>
           <div className="flex flex-col sm:flex-row gap-4 justify-center">
             <Link 
-              href="/config" 
+              href="/signup" 
               className="inline-flex items-center px-8 py-4 bg-white text-black text-lg font-semibold rounded-xl hover:bg-gray-50 transition-colors shadow-lg"
             >
               <svg className="mr-2 w-7 h-7" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">

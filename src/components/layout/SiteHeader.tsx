@@ -11,7 +11,7 @@ const SiteHeader = ({
   className = '',
   isAuthenticated = false,
 }: SiteHeaderProps) => {
-  const ctaLink = isAuthenticated ? '/config?stay=1' : '/config';
+  const ctaLink = isAuthenticated ? '/config?stay=1' : '/signin';
   const ctaLabel = isAuthenticated ? 'Settings' : 'Sign In';
 
   return (
@@ -30,7 +30,7 @@ const SiteHeader = ({
           </Link>
           {!isAuthenticated && (
             <Link
-              href="/admin"
+              href="/signup"
               className="inline-flex items-center px-4 py-2 bg-black text-white rounded-lg hover:bg-gray-800 transition-colors"
             >
               Get Started

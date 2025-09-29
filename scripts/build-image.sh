@@ -1,10 +1,10 @@
 #!/usr/bin/env bash
-# Build the Wins Column Docker image locally, forwarding all variables in .env
+# Build the Change Reel Docker image locally, forwarding all variables in .env
 # to the Docker builder as --build-arg so the Next.js compile succeeds.
 # The image is built for linux/amd64 to match the EC2 environment.
 #
 # Usage: ./scripts/build-image.sh [image-tag]
-#   image-tag (optional) – Defaults to wins-column:latest
+#   image-tag (optional) – Defaults to change-reel:latest
 #
 # The script:
 #   1. Exports every non-comment line in .env to the current shell
@@ -22,7 +22,7 @@
 
 set -euo pipefail
 
-IMAGE_TAG="${1:-wins-column:latest}"
+IMAGE_TAG="${1:-change-reel:latest}"
 
 # Check if we're in a CI environment (GitHub Actions)
 if [[ -n "${CI:-}" ]]; then

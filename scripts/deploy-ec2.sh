@@ -1,15 +1,15 @@
 #!/bin/bash
 
-# Wins Column - AWS EC2 Deployment Script
-# This script deploys the Wins Column application to AWS EC2
+# Change Reel - AWS EC2 Deployment Script
+# This script deploys the Change Reel application to AWS EC2
 # Note: Nginx should be configured separately on the EC2 instance
 
 set -e
 
 # Configuration
-APP_NAME="wins-column"
-DOCKER_IMAGE="wins-column:latest"
-CONTAINER_NAME="wins-column-app"
+APP_NAME="change-reel"
+DOCKER_IMAGE="change-reel:latest"
+CONTAINER_NAME="change-reel-app"
 APP_PORT=3001
 
 # Colors for output

@@ -4,7 +4,7 @@ Follow these steps to migrate from classic OAuth to a GitHub App. This App will 
 
 1) Create the GitHub App
 - Go to `[Settings → Developer settings → GitHub Apps → New GitHub App]` (`https://github.com/settings/apps/new`).
-- App name: Wins Column (or your preferred name)
+- App name: Change Reel (or your preferred name)
 - Homepage URL: your production URL (use `http://localhost:3000` for development)
 - Callback URL (for OAuth with NextAuth): `${NEXTAUTH_URL}/api/auth/callback/github`
 - Webhook URL: `${NEXTAUTH_URL}/api/webhooks/github`

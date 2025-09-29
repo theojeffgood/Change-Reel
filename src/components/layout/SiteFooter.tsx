@@ -9,17 +9,17 @@ export default function SiteFooter({ className = '' }: { className?: string }) {
             {/* <div className="w-8 h-8 bg-black rounded-lg flex items-center justify-center">
               <span className="text-white font-bold">⚡</span>
             </div> */}
-            <span className="text-xl font-bold text-black">Wins Column</span>
+            <span className="text-xl font-bold text-black">Change Reel</span>
           </Link>
           <div className="flex space-x-6">
             <Link href="/config" className="hover:text-gray-700 transition-colors">Get Started</Link>
             <Link href="/admin" className="hover:text-gray-700 transition-colors">Dashboard</Link>
-            <a href="mailto:support@winscolumn.com" className="hover:text-gray-700 transition-colors">Support</a>
+            <a href="mailto:support@changereel.com" className="hover:text-gray-700 transition-colors">Support</a>
           </div>
         </div>
         <div className="border-t border-gray-300 mt-8 pt-8 text-center">
           <p className="text-sm text-gray-600">
-            © {new Date().getFullYear()} Wins Column. Transform your product updates into professional communication.
+            © {new Date().getFullYear()} Change Reel. Transform your product updates into professional communication.
           </p>
         </div>
       </div>

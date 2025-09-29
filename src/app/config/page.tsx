@@ -367,6 +367,7 @@ function ConfigurationPageContent() {
           <div className="lg:col-span-1">
 
               {githubStatus?.connected && (
+                <>
                 <div className="bg-white border border-gray-200 rounded-xl overflow-hidden">
                   <div className="flex items-center justify-between p-6">
                     <div className="flex items-center space-x-4">
@@ -398,6 +399,7 @@ function ConfigurationPageContent() {
                      Change
                    </button>
                  </div>
+                </div>
 
                 <div>
                   <div className="mb-8">
@@ -517,7 +519,7 @@ function ConfigurationPageContent() {
                     </div>
                   )}
                 </div>
-                </div>
+                </>
               )}
           </div>
         </div>

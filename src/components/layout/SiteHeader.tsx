@@ -12,7 +12,7 @@ const SiteHeader = ({
   isAuthenticated = false,
 }: SiteHeaderProps) => {
   const ctaLink = isAuthenticated ? '/config?stay=1' : '/signin';
-  const ctaLabel = isAuthenticated ? 'Settings' : 'Sign In';
+  const ctaLabel = isAuthenticated ? 'Settings' : 'Login';
 
   return (
     <nav className={`relative px-4 sm:px-6 lg:px-8 py-6 ${className}`}>
@@ -33,7 +33,7 @@ const SiteHeader = ({
               href="/signup"
               className="inline-flex items-center px-4 py-2 bg-black text-white rounded-lg hover:bg-gray-800 transition-colors"
             >
-              Get Started
+              Sign Up
             </Link>
           )}
         </div>

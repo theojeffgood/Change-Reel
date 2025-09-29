@@ -47,6 +47,9 @@
     "ts-jest": "^29.2.5",
     "typescript": "^5"
   },
+  "optionalDependencies": {
+    "@parcel/watcher-linux-x64-musl": "^2.4.1"
+  },
   "jest": {
     "preset": "ts-jest",
     "testEnvironment": "jsdom",

@@ -96,20 +96,79 @@ export const authConfig: NextAuthOptions = {
   session: {
     strategy: 'jwt',
   },
+  // Configure cookies for the new domain (migration from winscolumn.com to changereel.com)
+  cookies: {
+    sessionToken: {
+      name: `__Secure-next-auth.session-token`,
+      options: {
+        httpOnly: true,
+        sameSite: 'lax',
+        path: '/',
+        secure: true,
+        domain: process.env.NODE_ENV === 'production' ? '.changereel.com' : undefined,
+      },
+    },
+    callbackUrl: {
+      name: `__Secure-next-auth.callback-url`,
+      options: {
+        httpOnly: true,
+        sameSite: 'lax',
+        path: '/',
+        secure: true,
+        domain: process.env.NODE_ENV === 'production' ? '.changereel.com' : undefined,
+      },
+    },
+    csrfToken: {
+      name: `__Host-next-auth.csrf-token`,
+      options: {
+        httpOnly: true,
+        sameSite: 'lax',
+        path: '/',
+        secure: true,
+      },
+    },
+  },
+  // Enable debug logging in production for OAuth troubleshooting
+  debug: true,
+  logger: {
+    error(code, metadata) {
+      console.error('[NextAuth Error]', code, metadata);
+    },
+    warn(code) {
+      console.warn('[NextAuth Warn]', code);
+    },
+    debug(code, metadata) {
+      console.log('[NextAuth Debug]', code, metadata);
+    },
+  },
   // Use NextAuth defaults for cookies/state handling
-  debug: process.env.NODE_ENV === 'development',
   callbacks: {
     async jwt({ token, account, profile }) {
+      console.log('[Auth] JWT callback triggered', {
+        hasAccount: !!account,
+        hasProfile: !!profile,
+        provider: account?.provider,
+        profileId: profile?.id,
+        profileLogin: (profile as any)?.login,
+      });
+
       const githubToken = token as GithubJwt;
 
       if (profile?.id) {
         githubToken.githubId = profile.id;
+        console.log('[Auth] Set githubId from profile:', profile.id);
       }
       if (profile?.login) {
         githubToken.login = profile.login;
+        console.log('[Auth] Set login from profile:', profile.login);
       }
 
       if (account?.provider === 'github') {
+        console.log('[Auth] Processing GitHub account', {
+          accessToken: account.access_token ? 'present' : 'missing',
+          expiresAt: (account as any)?.expires_at,
+          refreshToken: (account as any)?.refresh_token ? 'present' : 'missing',
+        });
         const expiresAtMs = typeof (account as any)?.expires_at === 'number'
           ? ((account as any).expires_at as number) * 1000
           : undefined;
@@ -159,6 +218,13 @@ export const authConfig: NextAuthOptions = {
       return refreshGitHubAccessToken(githubToken);
     },
     async session({ session, token }) {
+      console.log('[Auth] Session callback triggered', {
+        hasUser: !!session.user,
+        githubId: token.githubId,
+        login: token.login,
+        hasAccessTokenError: !!(token as GithubJwt).accessTokenError,
+      });
+
       // Send properties to the client
       if (session.user) {
         session.user.githubId = token.githubId;
@@ -170,23 +236,38 @@ export const authConfig: NextAuthOptions = {
       }
       if ((token as GithubJwt).accessTokenError) {
         (session as any).error = (token as GithubJwt).accessTokenError;
+        console.log('[Auth] Access token error:', (token as GithubJwt).accessTokenError);
       }
       // Intentionally DO NOT add accessToken to the session object to avoid exposing it to the client.
       return session;
     },
     async redirect({ url, baseUrl }) {
+      console.log('[Auth] Redirect callback triggered', { url, baseUrl });
       try {
         // Always land users on /config after auth/install flows
         // unless an internal non-auth page was explicitly requested.
         const to = new URL(url, baseUrl)
         const isInternal = to.origin === baseUrl
+        console.log('[Auth] Redirect analysis', { 
+          isInternal, 
+          pathname: to.pathname,
+          targetOrigin: to.origin,
+          baseUrl,
+        });
         if (isInternal) {
           const p = to.pathname
           // Redirect away from root and auth routes to /config
-          if (p === '/' || p.startsWith('/api/auth')) return `${baseUrl}/config`
+          if (p === '/' || p.startsWith('/api/auth')) {
+            console.log('[Auth] Redirecting to /config');
+            return `${baseUrl}/config`;
+          }
+          console.log('[Auth] Redirecting to internal URL:', to.toString());
           return to.toString()
         }
-      } catch {}
+      } catch (err) {
+        console.error('[Auth] Redirect URL parsing failed:', err);
+      }
+      console.log('[Auth] Defaulting to /config');
       return `${baseUrl}/config`
     },
   },
@@ -196,8 +277,17 @@ export const authConfig: NextAuthOptions = {
   },
   events: {
     async signIn({ user, account, profile, isNewUser }) {
+      console.log('[Auth] SignIn event triggered', {
+        userId: user?.id,
+        userEmail: user?.email,
+        provider: account?.provider,
+        profileId: profile?.id,
+        isNewUser,
+      });
+
       // Create user record on first sign-in (OAuth used for identity only)
       if (account?.provider === 'github' && profile?.id) {
+        console.log('[Auth] Processing GitHub sign-in for profile:', profile.id);
         try {
           // Import Supabase service (use service role for server-side operations)
           const { getServiceRoleSupabaseService } = await import('@/lib/supabase/client');

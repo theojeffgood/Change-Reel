@@ -19,7 +19,12 @@ async function loggedHandler(req: NextRequest, context: any) {
 
   try {
     const response = await handler(req, context);
-    console.log('[Auth Route] Response status:', response?.status);
+    const location = response?.headers?.get('location');
+    console.log('[Auth Route] Response:', {
+      status: response?.status,
+      location: location || 'none',
+      isRedirect: response?.status === 302 || response?.status === 307,
+    });
     return response;
   } catch (error) {
     console.error('[Auth Route] Error:', error);

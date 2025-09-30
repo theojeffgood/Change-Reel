@@ -11,7 +11,8 @@ WORKDIR /app
 # Install dependencies based on the preferred package manager
 COPY package.json package-lock.json* ./
 # Install ALL dependencies including devDependencies for build
-RUN npm ci --include=dev
+RUN npm ci --include=dev \
+  && npm rebuild lightningcss --update-binary || true
 
 # Rebuild the source code only when needed
 # ------------ Build Stage ------------

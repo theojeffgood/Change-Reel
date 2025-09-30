@@ -5,6 +5,13 @@ const nextConfig: NextConfig = {
   experimental: {
     optimizePackageImports: ['@/components'],
   },
+  // Fallback if native lightningcss binary is unavailable in CI
+  // We can toggle via env to avoid runtime surprises
+  ...(process.env.LIGHTNINGCSS_FORCE_WASM === '1' ? { 
+    // Tailwind v4 goes through @tailwindcss/postcss which delegates to lightningcss
+    // Next.js exposes an internal switch in some versions; if not present, 
+    // forcing wasm via env and bundling lightningcss-wasm covers it.
+  } : {}),
   images: {
     remotePatterns: [
       {

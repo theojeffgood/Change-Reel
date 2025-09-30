@@ -15,6 +15,7 @@
   },
   "dependencies": {
     "lightningcss": "^1.24.0",
+    "lightningcss-wasm": "^1.24.0",
     "@next-auth/supabase-adapter": "^0.2.1",
     "@octokit/rest": "^22.0.0",
     "@octokit/types": "^14.1.0",

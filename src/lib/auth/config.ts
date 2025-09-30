@@ -243,32 +243,23 @@ export const authConfig: NextAuthOptions = {
     },
     async redirect({ url, baseUrl }) {
       console.log('[Auth] Redirect callback triggered', { url, baseUrl });
-      try {
-        // Always land users on /config after auth/install flows
-        // unless an internal non-auth page was explicitly requested.
-        const to = new URL(url, baseUrl)
-        const isInternal = to.origin === baseUrl
-        console.log('[Auth] Redirect analysis', { 
-          isInternal, 
-          pathname: to.pathname,
-          targetOrigin: to.origin,
-          baseUrl,
-        });
-        if (isInternal) {
-          const p = to.pathname
-          // Redirect away from root and auth routes to /config
-          if (p === '/' || p.startsWith('/api/auth')) {
-            console.log('[Auth] Redirecting to /config');
-            return `${baseUrl}/config`;
-          }
-          console.log('[Auth] Redirecting to internal URL:', to.toString());
-          return to.toString()
+      
+      // If url is a relative path (like '/admin'), it's the callbackUrl
+      // We should NOT interfere - let NextAuth handle the OAuth redirect first
+      if (url.startsWith('/') || url.startsWith(baseUrl)) {
+        console.log('[Auth] Internal callback URL, preserving:', url);
+        // Only redirect to /config for auth routes, preserve other internal URLs
+        if (url === '/' || url.startsWith('/api/auth') || url === baseUrl || url === `${baseUrl}/`) {
+          console.log('[Auth] Auth route detected, redirecting to /config');
+          return `${baseUrl}/config`;
         }
-      } catch (err) {
-        console.error('[Auth] Redirect URL parsing failed:', err);
+        // For other internal URLs (like /admin), return as-is
+        return url;
       }
-      console.log('[Auth] Defaulting to /config');
-      return `${baseUrl}/config`
+      
+      // If it's an external URL (like GitHub OAuth), allow it through
+      console.log('[Auth] External URL detected, allowing:', url);
+      return url;
     },
   },
   pages: {

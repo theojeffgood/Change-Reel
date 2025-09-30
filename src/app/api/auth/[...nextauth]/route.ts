@@ -2,7 +2,10 @@ import NextAuth from 'next-auth';
 import { authConfig } from '@/lib/auth/config';
 import { NextRequest } from 'next/server';
 
-// Intercept and log before NextAuth processes
+// Create handler once at module level (NextAuth best practice)
+const handler = NextAuth(authConfig);
+
+// Wrapper to add diagnostics
 async function loggedHandler(req: NextRequest, context: any) {
   const { nextauth } = context.params;
   const isSignIn = nextauth?.[0] === 'signin';
@@ -30,7 +33,6 @@ async function loggedHandler(req: NextRequest, context: any) {
   }
 
   try {
-    const handler = NextAuth(authConfig);
     const response = await handler(req, context);
     const location = response?.headers?.get('location');
     

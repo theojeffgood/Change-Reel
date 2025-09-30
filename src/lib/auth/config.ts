@@ -66,15 +66,6 @@ async function refreshGitHubAccessToken(token: GithubJwt): Promise<GithubJwt> {
   }
 }
 
-console.log('[Auth Config] Initializing with:', {
-  hasClientId: !!process.env.OAUTH_CLIENT_ID,
-  clientIdLength: process.env.OAUTH_CLIENT_ID?.length,
-  hasClientSecret: !!process.env.OAUTH_CLIENT_SECRET,
-  hasNextAuthSecret: !!process.env.NEXTAUTH_SECRET,
-  nextAuthUrl: process.env.NEXTAUTH_URL,
-  authTrustHost: process.env.AUTH_TRUST_HOST, // Check if this is loaded
-});
-
 if (!process.env.OAUTH_CLIENT_ID) {
   throw new Error('Missing OAUTH_CLIENT_ID environment variable');
 }
@@ -88,8 +79,6 @@ if (!process.env.NEXTAUTH_SECRET) {
 }
 
 export const authConfig: NextAuthOptions = {
-  // Trust proxy headers via environment variable (required for Nginx/Docker)
-  // Set AUTH_TRUST_HOST=true in .env to enable
   providers: [
     GitHubProvider({
       clientId: process.env.OAUTH_CLIENT_ID,
@@ -99,69 +88,28 @@ export const authConfig: NextAuthOptions = {
           scope: 'read:user user:email read:org',
         },
       },
-      // Use NextAuth defaults for state validation (OAuth 2.0 best practice)
-      // Previously disabled with checks: [] which caused "state argument is missing" error
-      profile(profile) {
-        console.log('[Auth] GitHub profile received:', {
-          id: profile.id,
-          login: profile.login,
-          email: profile.email,
-        });
-        return {
-          id: profile.id.toString(),
-          name: profile.name || profile.login,
-          email: profile.email,
-          image: profile.avatar_url,
-        };
-      },
+      // Disable state/PKCE checks to support GitHub App-initiated OAuth during installation
+      // (GitHub provides the state, not NextAuth; this prevents state mismatch)
+      checks: [],
     }),
   ],
   session: {
     strategy: 'jwt',
   },
-  // Removed custom cookie config - using NextAuth defaults
-  // Custom cookies were causing CSRF validation failures
-  // Enable debug logging in production for OAuth troubleshooting
-  debug: true,
-  logger: {
-    error(code, metadata) {
-      console.error('[NextAuth Error]', code, JSON.stringify(metadata, null, 2));
-    },
-    warn(code) {
-      console.warn('[NextAuth Warn]', code);
-    },
-    debug(code, metadata) {
-      console.log('[NextAuth Debug]', code, JSON.stringify(metadata, null, 2));
-    },
-  },
   // Use NextAuth defaults for cookies/state handling
+  debug: process.env.NODE_ENV === 'development',
   callbacks: {
     async jwt({ token, account, profile }) {
-      console.log('[Auth] JWT callback triggered', {
-        hasAccount: !!account,
-        hasProfile: !!profile,
-        provider: account?.provider,
-        profileId: profile?.id,
-        profileLogin: (profile as any)?.login,
-      });
-
       const githubToken = token as GithubJwt;
 
       if (profile?.id) {
         githubToken.githubId = profile.id;
-        console.log('[Auth] Set githubId from profile:', profile.id);
       }
       if (profile?.login) {
         githubToken.login = profile.login;
-        console.log('[Auth] Set login from profile:', profile.login);
       }
 
       if (account?.provider === 'github') {
-        console.log('[Auth] Processing GitHub account', {
-          accessToken: account.access_token ? 'present' : 'missing',
-          expiresAt: (account as any)?.expires_at,
-          refreshToken: (account as any)?.refresh_token ? 'present' : 'missing',
-        });
         const expiresAtMs = typeof (account as any)?.expires_at === 'number'
           ? ((account as any).expires_at as number) * 1000
           : undefined;
@@ -211,13 +159,6 @@ export const authConfig: NextAuthOptions = {
       return refreshGitHubAccessToken(githubToken);
     },
     async session({ session, token }) {
-      console.log('[Auth] Session callback triggered', {
-        hasUser: !!session.user,
-        githubId: token.githubId,
-        login: token.login,
-        hasAccessTokenError: !!(token as GithubJwt).accessTokenError,
-      });
-
       // Send properties to the client
       if (session.user) {
         session.user.githubId = token.githubId;
@@ -229,13 +170,25 @@ export const authConfig: NextAuthOptions = {
       }
       if ((token as GithubJwt).accessTokenError) {
         (session as any).error = (token as GithubJwt).accessTokenError;
-        console.log('[Auth] Access token error:', (token as GithubJwt).accessTokenError);
       }
       // Intentionally DO NOT add accessToken to the session object to avoid exposing it to the client.
       return session;
     },
-    // Removed custom redirect callback - it was interfering with OAuth flow
-    // NextAuth will handle redirects using the callbackUrl parameter
+    async redirect({ url, baseUrl }) {
+      try {
+        // Always land users on /config after auth/install flows
+        // unless an internal non-auth page was explicitly requested.
+        const to = new URL(url, baseUrl)
+        const isInternal = to.origin === baseUrl
+        if (isInternal) {
+          const p = to.pathname
+          // Redirect away from root and auth routes to /config
+          if (p === '/' || p.startsWith('/api/auth')) return `${baseUrl}/config`
+          return to.toString()
+        }
+      } catch {}
+      return `${baseUrl}/config`
+    },
   },
   pages: {
     signIn: '/config',
@@ -243,17 +196,8 @@ export const authConfig: NextAuthOptions = {
   },
   events: {
     async signIn({ user, account, profile, isNewUser }) {
-      console.log('[Auth] SignIn event triggered', {
-        userId: user?.id,
-        userEmail: user?.email,
-        provider: account?.provider,
-        profileId: profile?.id,
-        isNewUser,
-      });
-
       // Create user record on first sign-in (OAuth used for identity only)
       if (account?.provider === 'github' && profile?.id) {
-        console.log('[Auth] Processing GitHub sign-in for profile:', profile.id);
         try {
           // Import Supabase service (use service role for server-side operations)
           const { getServiceRoleSupabaseService } = await import('@/lib/supabase/client');

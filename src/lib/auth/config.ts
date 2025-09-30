@@ -72,6 +72,7 @@ console.log('[Auth Config] Initializing with:', {
   hasClientSecret: !!process.env.OAUTH_CLIENT_SECRET,
   hasNextAuthSecret: !!process.env.NEXTAUTH_SECRET,
   nextAuthUrl: process.env.NEXTAUTH_URL,
+  authTrustHost: process.env.AUTH_TRUST_HOST, // Check if this is loaded
 });
 
 if (!process.env.OAUTH_CLIENT_ID) {

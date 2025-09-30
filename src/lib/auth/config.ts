@@ -87,6 +87,9 @@ if (!process.env.NEXTAUTH_SECRET) {
 }
 
 export const authConfig: NextAuthOptions = {
+  // CRITICAL: Trust proxy headers (required for Nginx/Docker setup)
+  // Without this, NextAuth rejects requests from proxied hosts
+  trustHost: true,
   providers: [
     GitHubProvider({
       clientId: process.env.OAUTH_CLIENT_ID,

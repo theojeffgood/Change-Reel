@@ -62,6 +62,7 @@ function ConfigurationPageContent() {
   const [installationsLoaded, setInstallationsLoaded] = useState(false);
   const [githubStatusLoading, setGithubStatusLoading] = useState(true);
   const stayOnConfig = ['1', 'true'].includes((searchParams?.get('stay') || '').toLowerCase());
+  const authError = searchParams?.get('error');
   const hasRedirectedRef = useRef(false);
   const lastSavedRef = useRef<{ repo: string; installation: string } | null>(null);
   const savingRef = useRef(false);
@@ -349,9 +350,13 @@ function ConfigurationPageContent() {
       </div>
 
       <div className="max-w-3xl mx-auto px-4 sm:px-6 lg:px-8 pb-12 mb-20">
-        {(installationError || repoError) && (
+        {(authError || installationError || repoError) && (
           <div className="mb-6 rounded-lg border border-yellow-200 bg-yellow-50 px-4 py-3 text-sm text-yellow-900">
-            <p>{installationError || repoError}</p>
+            <p>
+              {authError === 'github' 
+                ? 'GitHub authentication failed. Please check your OAuth credentials and try again.' 
+                : (installationError || repoError)}
+            </p>
             <p className="mt-2">
             <Link
               href="/signin"

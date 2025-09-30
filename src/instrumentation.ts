@@ -18,7 +18,7 @@ export async function register() {
   }
 
   try {
-    console.log('🚀 [Instrumentation] Starting Change Reel job processing system...')
+    console.log('🚀 [Instrumentation] Starting Wins Column job processing system...')
     await initializeJobSystem()
     console.log('✅ [Instrumentation] Job processing system started successfully')
   } catch (error) {

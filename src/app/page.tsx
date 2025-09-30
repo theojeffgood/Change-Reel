@@ -153,7 +153,7 @@ export default function Home() {
               Insights at your fingertips. All without asking
             </h2>
             <p className="text-xl text-gray-600 max-w-3xl mx-auto">
-            When someone pushes to GitHub, Change Reel sends out an update. Keep your sales team aligned.
+            When someone pushes to GitHub, Wins Column sends out an update. Keep your sales team aligned.
             </p>
           </div>
 
@@ -384,7 +384,7 @@ export default function Home() {
               </ul>
 
               <Link 
-                href="mailto:theo@changereel.com" 
+                href="mailto:theo@winscolumn.com" 
                 className="w-full inline-flex items-center justify-center px-6 py-3 bg-white text-black font-semibold rounded-lg border-gray-500 border-1 hover:bg-gray-200 transition-colors"
               >
                 Contact Sales

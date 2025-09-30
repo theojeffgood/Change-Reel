@@ -1,30 +1,21 @@
-# Use the official Node.js image as base (Debian/glibc)
-FROM node:20-bookworm-slim AS base
+# Use the official Node.js image as base
+FROM node:20-alpine AS base
 
 # Install dependencies only when needed
 FROM base AS deps
-ARG CACHE_BUSTER
-ARG LIGHTNINGCSS_FORCE_WASM
-ENV LIGHTNINGCSS_FORCE_WASM=${LIGHTNINGCSS_FORCE_WASM}
-RUN echo "CacheBuster=$CACHE_BUSTER" && \
-    apt-get update && \
-    apt-get install -y --no-install-recommends dumb-init && \
-    rm -rf /var/lib/apt/lists/*
+# Check https://github.com/nodejs/docker-node/tree/b4117f9333da4138b03a546ec926ef50a31506c3#nodealpine to understand why libc6-compat might be needed.
+RUN apk add --no-cache libc6-compat dumb-init
 WORKDIR /app
 
 # Install dependencies based on the preferred package manager
 COPY package.json package-lock.json* ./
 # Install ALL dependencies including devDependencies for build
-RUN npm ci --include=dev \
-  && npm rebuild lightningcss --update-binary || true
+RUN npm ci --include=dev
 
 # Rebuild the source code only when needed
 # ------------ Build Stage ------------
 FROM base AS builder
 WORKDIR /app
-ARG CACHE_BUSTER
-ARG LIGHTNINGCSS_FORCE_WASM
-ENV LIGHTNINGCSS_FORCE_WASM=${LIGHTNINGCSS_FORCE_WASM}
 
 # Accept build-time secrets (available **only** during build; they do **not** persist to runtime)
 ARG TOKEN_ENCRYPTION_KEY
@@ -74,9 +65,7 @@ ENV PORT=3001
 ENV HOSTNAME=0.0.0.0
 
 # Install dumb-init for proper signal handling
-RUN apt-get update && \
-    apt-get install -y --no-install-recommends dumb-init && \
-    rm -rf /var/lib/apt/lists/*
+RUN apk add --no-cache dumb-init
 
 RUN addgroup --system --gid 1001 nodejs
 RUN adduser --system --uid 1001 nextjs

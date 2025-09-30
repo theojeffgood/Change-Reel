@@ -35,7 +35,7 @@ export async function POST(request: NextRequest) {
   try {
     const supa = getServiceRoleSupabaseService()
 
-    // Ensure Change Reel user exists for the session
+    // Ensure Wins Column user exists for the session
     const userResult = await supa.users.getUserByGithubId(String(session.user.githubId))
     let user = userResult.data
     if (!user) {

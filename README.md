@@ -1,8 +1,8 @@
-# Change Reel
+# Wins Column
 
 **Automated Git Commit Changelogs with AI-Powered Summaries**
 
-Change Reel helps engineering teams, product managers, and stakeholders gain visibility into ongoing development without reading raw commit messages or diffs. It integrates with GitHub using secure OAuth, processes commits with AI, and delivers clear, professional updates via email or public changelog.
+Wins Column helps engineering teams, product managers, and stakeholders gain visibility into ongoing development without reading raw commit messages or diffs. It integrates with GitHub using secure OAuth, processes commits with AI, and delivers clear, professional updates via email or public changelog.
 
 ## 🚀 Features
 
@@ -15,13 +15,13 @@ Change Reel helps engineering teams, product managers, and stakeholders gain vis
 
 ## 📋 Prerequisites
 
-Before installing Change Reel, you need to create a GitHub OAuth App:
+Before installing Wins Column, you need to create a GitHub OAuth App:
 
 ### GitHub OAuth App Setup
 
 1. Go to [GitHub Developer Settings > OAuth Apps](https://github.com/settings/applications/new)
 2. Create a new OAuth app with these settings:
-   - **Application name**: `Change Reel - Git Commit Changelog`
+   - **Application name**: `Wins Column - Git Commit Changelog`
    - **Homepage URL**: `http://localhost:3000` (for development)
    - **Authorization callback URL**: `http://localhost:3000/api/auth/callback/github`
 3. Save the **Client ID** and **Client Secret** for later
@@ -117,7 +117,7 @@ docker-compose -f docker-compose.prod.yml up -d
 
 ### Email Configuration
 
-Change Reel uses your email service provider to send updates. Configure SMTP settings in your environment file.
+Wins Column uses your email service provider to send updates. Configure SMTP settings in your environment file.
 
 ## 🧪 Testing
 
@@ -185,7 +185,7 @@ This project is licensed under the MIT License - see the [LICENSE](LICENSE) file
 
 - **Documentation**: Check this README and inline code comments
 - **Issues**: Create an issue on GitHub for bugs or feature requests
-- **Email**: Contact us at support@changereel.com
+- **Email**: Contact us at support@winscolumn.com
 
 ## 🗺️ Roadmap
 
@@ -198,4 +198,4 @@ This project is licensed under the MIT License - see the [LICENSE](LICENSE) file
 
 ---
 
-**Change Reel** - Transform your development updates into professional communication.
+**Wins Column** - Transform your development updates into professional communication.

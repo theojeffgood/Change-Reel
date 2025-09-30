@@ -1,5 +1,5 @@
 -- Migration: 010_create_installations
--- Description: Create installations table to map GitHub App installations to Change Reel users
+-- Description: Create installations table to map GitHub App installations to Wins Column users
 
 CREATE TABLE IF NOT EXISTS installations (
   installation_id BIGINT PRIMARY KEY,
@@ -31,5 +31,5 @@ CREATE TRIGGER update_installations_updated_at
   FOR EACH ROW
   EXECUTE FUNCTION set_updated_at_installations();
 
-COMMENT ON TABLE installations IS 'Maps GitHub App installations to Change Reel users and metadata';
+COMMENT ON TABLE installations IS 'Maps GitHub App installations to Wins Column users and metadata';
 

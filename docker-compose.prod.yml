@@ -1,14 +1,8 @@
 version: '3.8'
 
 services:
-  change-reel:
-    image: change-reel:latest
-    build:
-      context: .
-      dockerfile: Dockerfile.prod
-      args:
-        CACHE_BUSTER: ${CACHE_BUSTER:-manual}
-        LIGHTNINGCSS_FORCE_WASM: "1"
+  wins-column:
+    image: wins-column:latest
     logging:
       driver: "json-file"
       options:

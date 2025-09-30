@@ -38,7 +38,7 @@ describe('ConfigPage', () => {
         },
         accessToken: 'mock-access-token',
         expires: '2024-12-31T23:59:59.999Z'
-      } as any,
+      },
       status: 'authenticated',
       update: jest.fn()
     });
@@ -86,7 +86,7 @@ describe('ConfigPage', () => {
     });
 
     await waitFor(() => {
-      expect(screen.getByText('Connect to Start Your Change Reel')).toBeInTheDocument();
+      expect(screen.getByText('Connect to Start Your Wins Column')).toBeInTheDocument();
     });
   });
 

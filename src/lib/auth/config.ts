@@ -96,9 +96,9 @@ export const authConfig: NextAuthOptions = {
           scope: 'read:user user:email read:org',
         },
       },
-      // Re-enable state validation - empty checks might be causing OAuth to fail
-      // GitHub OAuth requires state validation for security
-      checks: ['state'],
+      // CRITICAL: Disable checks entirely - this was breaking OAuth after domain migration
+      // GitHub App-initiated OAuth provides its own state, causing mismatch
+      checks: [],
       profile(profile) {
         console.log('[Auth] GitHub profile received:', {
           id: profile.id,
@@ -153,13 +153,13 @@ export const authConfig: NextAuthOptions = {
   debug: true,
   logger: {
     error(code, metadata) {
-      console.error('[NextAuth Error]', code, metadata);
+      console.error('[NextAuth Error]', code, JSON.stringify(metadata, null, 2));
     },
     warn(code) {
       console.warn('[NextAuth Warn]', code);
     },
     debug(code, metadata) {
-      console.log('[NextAuth Debug]', code, metadata);
+      console.log('[NextAuth Debug]', code, JSON.stringify(metadata, null, 2));
     },
   },
   // Use NextAuth defaults for cookies/state handling

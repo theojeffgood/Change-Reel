@@ -4,7 +4,11 @@ FROM node:20-bookworm-slim AS base
 # Install dependencies only when needed
 FROM base AS deps
 # Install all dependencies including devDependencies for build
-RUN apt-get update && \
+ARG CACHE_BUSTER
+ARG LIGHTNINGCSS_FORCE_WASM
+ENV LIGHTNINGCSS_FORCE_WASM=${LIGHTNINGCSS_FORCE_WASM}
+RUN echo "CacheBuster=$CACHE_BUSTER" && \
+    apt-get update && \
     apt-get install -y --no-install-recommends dumb-init && \
     rm -rf /var/lib/apt/lists/*
 WORKDIR /app
@@ -20,6 +24,9 @@ RUN npm ci \
 # Rebuild the source code only when needed
 FROM base AS builder
 WORKDIR /app
+ARG CACHE_BUSTER
+ARG LIGHTNINGCSS_FORCE_WASM
+ENV LIGHTNINGCSS_FORCE_WASM=${LIGHTNINGCSS_FORCE_WASM}
 COPY --from=deps /app/node_modules ./node_modules
 COPY . .
 

@@ -3,7 +3,11 @@ FROM node:20-bookworm-slim AS base
 
 # Install dependencies only when needed
 FROM base AS deps
-RUN apt-get update && \
+ARG CACHE_BUSTER
+ARG LIGHTNINGCSS_FORCE_WASM
+ENV LIGHTNINGCSS_FORCE_WASM=${LIGHTNINGCSS_FORCE_WASM}
+RUN echo "CacheBuster=$CACHE_BUSTER" && \
+    apt-get update && \
     apt-get install -y --no-install-recommends dumb-init && \
     rm -rf /var/lib/apt/lists/*
 WORKDIR /app
@@ -18,6 +22,9 @@ RUN npm ci --include=dev \
 # ------------ Build Stage ------------
 FROM base AS builder
 WORKDIR /app
+ARG CACHE_BUSTER
+ARG LIGHTNINGCSS_FORCE_WASM
+ENV LIGHTNINGCSS_FORCE_WASM=${LIGHTNINGCSS_FORCE_WASM}
 
 # Accept build-time secrets (available **only** during build; they do **not** persist to runtime)
 ARG TOKEN_ENCRYPTION_KEY

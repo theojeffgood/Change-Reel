@@ -1,8 +1,13 @@
 version: '3.8'
 
 services:
-  wins-column:
-    build: .
+  change-reel:
+    build:
+      context: .
+      dockerfile: Dockerfile
+      args:
+        CACHE_BUSTER: ${CACHE_BUSTER:-manual}
+        LIGHTNINGCSS_FORCE_WASM: "1"
     ports:
       - "3001:3001"
     env_file:

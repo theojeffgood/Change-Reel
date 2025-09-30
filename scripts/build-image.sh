@@ -88,6 +88,9 @@ else
 fi
 
 # shellcheck disable=SC2086  # we want word splitting in $BUILD_ARGS
-docker build --platform=linux/amd64 $BUILD_ARGS -t "$IMAGE_TAG" .
+docker build --pull --no-cache --platform=linux/amd64 \
+  --build-arg CACHE_BUSTER=$(date +%s) \
+  --build-arg LIGHTNINGCSS_FORCE_WASM=1 \
+  $BUILD_ARGS -t "$IMAGE_TAG" .
 
 echo "✓ Image built: $IMAGE_TAG" 

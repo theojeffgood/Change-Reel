@@ -66,6 +66,14 @@ async function refreshGitHubAccessToken(token: GithubJwt): Promise<GithubJwt> {
   }
 }
 
+console.log('[Auth Config] Initializing with:', {
+  hasClientId: !!process.env.OAUTH_CLIENT_ID,
+  clientIdLength: process.env.OAUTH_CLIENT_ID?.length,
+  hasClientSecret: !!process.env.OAUTH_CLIENT_SECRET,
+  hasNextAuthSecret: !!process.env.NEXTAUTH_SECRET,
+  nextAuthUrl: process.env.NEXTAUTH_URL,
+});
+
 if (!process.env.OAUTH_CLIENT_ID) {
   throw new Error('Missing OAUTH_CLIENT_ID environment variable');
 }
@@ -88,9 +96,22 @@ export const authConfig: NextAuthOptions = {
           scope: 'read:user user:email read:org',
         },
       },
-      // Disable state/PKCE checks to support GitHub App-initiated OAuth during installation
-      // (GitHub provides the state, not NextAuth; this prevents state mismatch)
-      checks: [],
+      // Re-enable state validation - empty checks might be causing OAuth to fail
+      // GitHub OAuth requires state validation for security
+      checks: ['state'],
+      profile(profile) {
+        console.log('[Auth] GitHub profile received:', {
+          id: profile.id,
+          login: profile.login,
+          email: profile.email,
+        });
+        return {
+          id: profile.id.toString(),
+          name: profile.name || profile.login,
+          email: profile.email,
+          image: profile.avatar_url,
+        };
+      },
     }),
   ],
   session: {

@@ -117,38 +117,8 @@ export const authConfig: NextAuthOptions = {
   session: {
     strategy: 'jwt',
   },
-  // Configure cookies for the new domain (migration from winscolumn.com to changereel.com)
-  cookies: {
-    sessionToken: {
-      name: `__Secure-next-auth.session-token`,
-      options: {
-        httpOnly: true,
-        sameSite: 'lax',
-        path: '/',
-        secure: true,
-        domain: process.env.NODE_ENV === 'production' ? '.changereel.com' : undefined,
-      },
-    },
-    callbackUrl: {
-      name: `__Secure-next-auth.callback-url`,
-      options: {
-        httpOnly: true,
-        sameSite: 'lax',
-        path: '/',
-        secure: true,
-        domain: process.env.NODE_ENV === 'production' ? '.changereel.com' : undefined,
-      },
-    },
-    csrfToken: {
-      name: `__Host-next-auth.csrf-token`,
-      options: {
-        httpOnly: true,
-        sameSite: 'lax',
-        path: '/',
-        secure: true,
-      },
-    },
-  },
+  // Removed custom cookie config - using NextAuth defaults
+  // Custom cookies were causing CSRF validation failures
   // Enable debug logging in production for OAuth troubleshooting
   debug: true,
   logger: {

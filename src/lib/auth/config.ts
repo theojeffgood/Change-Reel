@@ -96,9 +96,8 @@ export const authConfig: NextAuthOptions = {
           scope: 'read:user user:email read:org',
         },
       },
-      // CRITICAL: Disable checks entirely - this was breaking OAuth after domain migration
-      // GitHub App-initiated OAuth provides its own state, causing mismatch
-      checks: [],
+      // Use NextAuth defaults for state validation (OAuth 2.0 best practice)
+      // Previously disabled with checks: [] which caused "state argument is missing" error
       profile(profile) {
         console.log('[Auth] GitHub profile received:', {
           id: profile.id,

@@ -55,7 +55,7 @@ async function createInstallationAccessToken(installationId) {
     headers: {
       Authorization: `Bearer ${jwt}`,
       Accept: 'application/vnd.github.v3+json',
-      'User-Agent': 'wins-column/backfill'
+      'User-Agent': 'change-reel/backfill'
     },
   })
   const data = await res.json()
@@ -71,7 +71,7 @@ async function listInstallationRepositories(installationId) {
     headers: {
       Authorization: `token ${token}`,
       Accept: 'application/vnd.github.v3+json',
-      'User-Agent': 'wins-column/backfill'
+      'User-Agent': 'change-reel/backfill'
     },
   })
   const data = await res.json()

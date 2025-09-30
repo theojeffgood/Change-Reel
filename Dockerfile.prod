@@ -113,9 +113,9 @@ HEALTHCHECK --interval=15s --timeout=5s --start-period=10s --retries=3 \
   CMD node /app/healthcheck.js
 
 # Security labels
-LABEL maintainer="Wins Column Team" \
+LABEL maintainer="Change Reel Team" \
       version="1.0" \
-      description="Wins Column Next.js Application - Production" \
+      description="Change Reel Next.js Application - Production" \
       security.non-root="true" \
       security.user="nextjs:1001"
 

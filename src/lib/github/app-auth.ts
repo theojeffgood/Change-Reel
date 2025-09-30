@@ -59,7 +59,7 @@ export async function createInstallationAccessToken(installationId: number): Pro
     headers: {
       Authorization: `Bearer ${jwt}`,
       Accept: 'application/vnd.github.v3+json',
-      'User-Agent': 'wins-column/1.0.0'
+      'User-Agent': 'change-reel/1.0.0'
     },
   });
   const data = await res.json();
@@ -83,7 +83,7 @@ export async function listAppInstallations(): Promise<AppInstallation[]> {
     headers: {
       Authorization: `Bearer ${jwt}`,
       Accept: 'application/vnd.github.v3+json',
-      'User-Agent': 'wins-column/1.0.0'
+      'User-Agent': 'change-reel/1.0.0'
     },
   });
   if (!res.ok) {
@@ -107,7 +107,7 @@ export async function listInstallationRepositories(installationId: number): Prom
     headers: {
       Authorization: `token ${token}`,
       Accept: 'application/vnd.github.v3+json',
-      'User-Agent': 'wins-column/1.0.0'
+      'User-Agent': 'change-reel/1.0.0'
     },
   });
   const data = await res.json();
@@ -123,7 +123,7 @@ export async function listUserInstallations(userAccessToken: string): Promise<Ap
     headers: {
       Authorization: `token ${userAccessToken}`,
       Accept: 'application/vnd.github.v3+json',
-      'User-Agent': 'wins-column/1.0.0'
+      'User-Agent': 'change-reel/1.0.0'
     },
   });
   if (!res.ok) {

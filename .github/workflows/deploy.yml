@@ -32,15 +32,15 @@ jobs:
         NEXTAUTH_URL: ${{ secrets.NEXTAUTH_URL }}
       run: |
         echo "Building Docker image using build-image.sh script..."
-        ./scripts/build-image.sh wins-column:latest
+        ./scripts/build-image.sh change-reel:latest
         echo "✅ Docker image built successfully"
 
     - name: Save Docker image as tar
       run: |
         echo "Saving Docker image as tar file..."
-        docker save wins-column:latest | gzip > wins-column.tar.gz
-        ls -la wins-column.tar.gz
-        echo "✅ Docker image saved as wins-column.tar.gz"
+        docker save change-reel:latest | gzip > change-reel.tar.gz
+        ls -la change-reel.tar.gz
+        echo "✅ Docker image saved as change-reel.tar.gz"
 
     - name: Upload Docker image and compose files to EC2
       uses: appleboy/scp-action@v0.1.4
@@ -48,8 +48,8 @@ jobs:
         host: ${{ secrets.EC2_HOST }}
         username: ${{ secrets.EC2_USER }}
         key: ${{ secrets.EC2_SSH_KEY }}
-        source: "wins-column.tar.gz,docker-compose.prod.yml"
-        target: "~/apps/wins-column"
+        source: "change-reel.tar.gz,docker-compose.prod.yml"
+        target: "~/apps/change-reel"
         strip_components: 0
         overwrite: true
         timeout: 60s
@@ -62,10 +62,10 @@ jobs:
         key: ${{ secrets.EC2_SSH_KEY }}
         script: |
           set -e  # Exit on any error
-          cd ~/apps/wins-column
+          cd ~/apps/change-reel
           
           echo "Loading Docker image from tar file..."
-          if ! gunzip -c wins-column.tar.gz | docker load; then
+          if ! gunzip -c change-reel.tar.gz | docker load; then
             echo "❌ Failed to load Docker image"
             exit 1
           fi
@@ -76,8 +76,8 @@ jobs:
           
           # Stop and remove any manually created containers that might be using port 3001
           echo "Stopping any manually created containers..."
-          docker stop winscolumn-image 2>/dev/null || true
-          docker rm winscolumn-image 2>/dev/null || true
+          docker stop changereel-image 2>/dev/null || true
+          docker rm changereel-image 2>/dev/null || true
           
           echo "Starting containers with new image..."
           if ! docker-compose -f docker-compose.prod.yml up -d; then

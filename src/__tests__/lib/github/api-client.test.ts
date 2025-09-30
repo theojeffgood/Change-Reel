@@ -90,7 +90,7 @@ describe('GitHubApiClient', () => {
       const { Octokit } = require('@octokit/rest');
       expect(Octokit).toHaveBeenCalledWith({
         auth: minimalConfig.auth,
-        userAgent: 'wins-column/1.0.0',
+        userAgent: 'change-reel/1.0.0',
         baseUrl: undefined,
         request: {
           timeout: 10000,

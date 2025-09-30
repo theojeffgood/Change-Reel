@@ -1,7 +1,7 @@
 version: '3.8'
 
 services:
-  wins-column:
+  change-reel:
     build: .
     ports:
       - "3001:3001"

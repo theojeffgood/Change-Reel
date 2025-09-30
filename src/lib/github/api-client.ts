@@ -42,7 +42,7 @@ export class GitHubApiClient implements IGitHubApiClient {
     
     this.octokit = new Octokit({
       auth: config.auth,
-      userAgent: config.userAgent || 'wins-column/1.0.0',
+      userAgent: config.userAgent || 'change-reel/1.0.0',
       baseUrl: config.baseUrl,
       request: {
         timeout: config.timeout || 10000,
@@ -173,7 +173,7 @@ export function createGitHubClientFromEnv(): IGitHubApiClient {
 
   return createGitHubClient({
     auth: token,
-    userAgent: 'wins-column/1.0.0',
+    userAgent: 'change-reel/1.0.0',
     timeout: 10000,
     retries: 3,
   });

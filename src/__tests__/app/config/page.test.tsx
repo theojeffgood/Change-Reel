@@ -86,7 +86,7 @@ describe('ConfigPage', () => {
     });
 
     await waitFor(() => {
-      expect(screen.getByText('Connect to Start Your Wins Column')).toBeInTheDocument();
+      expect(screen.getByText('Connect to Start Your Change Reel')).toBeInTheDocument();
     });
   });
 

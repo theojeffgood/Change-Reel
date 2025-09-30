@@ -1,8 +1,8 @@
-# Wins Column
+# Change Reel
 
 **Automated Git Commit Changelogs with AI-Powered Summaries**
 
-Wins Column helps engineering teams, product managers, and stakeholders gain visibility into ongoing development without reading raw commit messages or diffs. It integrates with GitHub using secure OAuth, processes commits with AI, and delivers clear, professional updates via email or public changelog.
+Change Reel helps engineering teams, product managers, and stakeholders gain visibility into ongoing development without reading raw commit messages or diffs. It integrates with GitHub using secure OAuth, processes commits with AI, and delivers clear, professional updates via email or public changelog.
 
 ## 🚀 Features
 
@@ -15,13 +15,13 @@ Wins Column helps engineering teams, product managers, and stakeholders gain vis
 
 ## 📋 Prerequisites
 
-Before installing Wins Column, you need to create a GitHub OAuth App:
+Before installing Change Reel, you need to create a GitHub OAuth App:
 
 ### GitHub OAuth App Setup
 
 1. Go to [GitHub Developer Settings > OAuth Apps](https://github.com/settings/applications/new)
 2. Create a new OAuth app with these settings:
-   - **Application name**: `Wins Column - Git Commit Changelog`
+   - **Application name**: `Change Reel - Git Commit Changelog`
    - **Homepage URL**: `http://localhost:3000` (for development)
    - **Authorization callback URL**: `http://localhost:3000/api/auth/callback/github`
 3. Save the **Client ID** and **Client Secret** for later
@@ -32,8 +32,8 @@ Before installing Wins Column, you need to create a GitHub OAuth App:
 
 ```bash
 # Clone the repository
-git clone https://github.com/yourusername/wins-column.git
-cd wins-column
+git clone https://github.com/theojeffgood/change-reel.git
+cd change-reel
 
 # Install dependencies
 npm install
@@ -117,7 +117,7 @@ docker-compose -f docker-compose.prod.yml up -d
 
 ### Email Configuration
 
-Wins Column uses your email service provider to send updates. Configure SMTP settings in your environment file.
+Change Reel uses your email service provider to send updates. Configure SMTP settings in your environment file.
 
 ## 🧪 Testing
 
@@ -185,7 +185,7 @@ This project is licensed under the MIT License - see the [LICENSE](LICENSE) file
 
 - **Documentation**: Check this README and inline code comments
 - **Issues**: Create an issue on GitHub for bugs or feature requests
-- **Email**: Contact us at support@winscolumn.com
+- **Email**: Contact us at support@changereel.com
 
 ## 🗺️ Roadmap
 
@@ -198,4 +198,4 @@ This project is licensed under the MIT License - see the [LICENSE](LICENSE) file
 
 ---
 
-**Wins Column** - Transform your development updates into professional communication.
+**Change Reel** - Transform your development updates into professional communication.

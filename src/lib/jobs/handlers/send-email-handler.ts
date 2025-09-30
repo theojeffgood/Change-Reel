@@ -198,7 +198,7 @@ A new commit has been made to ${projectName}:
 🔗 SHA: ${commit.sha}
 📅 Date: ${new Date(commit.timestamp).toLocaleDateString()}
 
-This is an automated notification from Wins Column.
+This is an automated notification from Change Reel.
       `.trim(),
     }
   }
@@ -215,7 +215,7 @@ ${commits.length} new commits have been made to ${projectName}:
 
 ${commitList}
 
-This is your automated digest from Wins Column.
+This is your automated digest from Change Reel.
       `.trim(),
     }
   }
@@ -238,7 +238,7 @@ This is your automated digest from Wins Column.
       body += '\n'
     })
 
-    body += 'This is your weekly summary from Wins Column.'
+    body += 'This is your weekly summary from Change Reel.'
 
     return {
       subject: `${projectName}: Weekly Summary (${commits.length} commits)`,

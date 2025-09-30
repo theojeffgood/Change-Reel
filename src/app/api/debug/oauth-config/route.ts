@@ -1,11 +1,14 @@
 import { NextResponse } from 'next/server';
+import { NextRequest } from 'next/server';
 
-export async function GET() {
-  // Only show config in non-production or when explicitly enabled
-  const allowDebug = process.env.NODE_ENV !== 'production' || process.env.ALLOW_DEBUG === 'true';
+export async function GET(request: NextRequest) {
+  // Require a secret key to access debug info
+  const { searchParams } = new URL(request.url);
+  const key = searchParams.get('key');
   
-  if (!allowDebug) {
-    return NextResponse.json({ error: 'Debug endpoint disabled in production' }, { status: 403 });
+  // Use NEXTAUTH_SECRET as the debug key (already secret, already set)
+  if (key !== process.env.NEXTAUTH_SECRET) {
+    return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
   }
 
   const config = {

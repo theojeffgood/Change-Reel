@@ -7,6 +7,7 @@ import { OpenAIError } from '@/lib/openai/error-handler';
 import { createCommitWorkflow } from '@/lib/jobs/setup';
 import { GenerateSummaryHandler } from '@/lib/jobs/handlers/generate-summary-handler';
 import { FetchDiffHandler } from '@/lib/jobs/handlers/fetch-diff-handler';
+import { FetchDiffJobData, GenerateSummaryJobData } from '@/lib/types/jobs';
 
 let summarizationService: SummarizationService | null = null;
 
@@ -97,7 +98,7 @@ export async function POST() {
             supabaseService.projects,
             supabaseService.users
           );
-          const result = await handler.handle(job as any, job.data);
+          const result = await handler.handle(job as any, job.data as FetchDiffJobData);
           if (result.success) {
             await supabaseService.jobs.markJobAsCompleted(job.id, result);
             processed++;
@@ -113,9 +114,9 @@ export async function POST() {
             getSummarizationService(),
             supabaseService.commits,
             supabaseService.jobs,
-            supabaseService.client
+            supabaseService.getClient()
           );
-          const result = await handler.handle(job as any, job.data);
+          const result = await handler.handle(job as any, job.data as GenerateSummaryJobData);
           
           if (result.success) {
             await supabaseService.jobs.markJobAsCompleted(job.id, result);

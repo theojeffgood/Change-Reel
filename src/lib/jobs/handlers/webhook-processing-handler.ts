@@ -10,6 +10,7 @@ import { IJobService } from '../../supabase/services/jobs'
 import { ICommitService } from '../../supabase/services/commits'
 import { IProjectService } from '../../supabase/services/projects'
 import { IUserService } from '../../supabase/services/users'
+import { runInstallationBackfill } from '@/lib/github/installation-backfill'
 
 /**
  * Handler for processing GitHub webhook events
@@ -54,19 +55,44 @@ export class WebhookProcessingHandler implements JobHandler<WebhookProcessingJob
         pusher: data.payload?.pusher?.name || data.payload?.sender?.login,
       })
 
-      // Only process push events for MVP
-      if (data.webhook_event !== 'push') {
-        return {
-          success: true,
-          data: {
-            event: data.webhook_event,
-            action: 'ignored',
-            reason: 'not_a_push_event',
-          },
-          metadata: {
-            event: data.webhook_event,
-            deliveryId: data.delivery_id,
-          },
+      // Support installation.created by delegating to shared backfill flow
+      if (data.webhook_event === 'installation') {
+        const payload: any = data.payload || {}
+        const action: string | undefined = payload.action
+        if (action !== 'created') {
+          return {
+            success: true,
+            data: { event: 'installation', action: 'ignored' },
+            metadata: { event: 'installation', deliveryId: data.delivery_id },
+          }
+        }
+        const installationId: number | undefined = payload.installation?.id
+        const senderId: number | undefined = payload.sender?.id
+        if (!installationId) {
+          return { success: false, error: 'installation event missing installation id', metadata: { reason: 'missing_installation_id' } }
+        }
+        try {
+          const res = await runInstallationBackfill(
+            {
+              jobs: this.jobQueueService,
+              commits: this.commitService,
+              projects: this.projectService,
+              users: this.userService,
+            },
+            installationId,
+            senderId
+          )
+          return {
+            success: true,
+            data: {
+              event: 'installation',
+              action: 'created',
+              ...res,
+            },
+            metadata: { deliveryId: data.delivery_id },
+          }
+        } catch (e: any) {
+          return { success: false, error: e?.message || String(e), metadata: { reason: 'installation_backfill_failed' } }
         }
       }
 

@@ -63,7 +63,7 @@ export async function GET(request: Request) {
     const commitsWithoutSummary = (commits || []).filter((c: any) => !c.summary);
     const commitIds = commitsWithoutSummary.map((c: any) => c.id);
     
-    let failedJobsMap: Record<string, any> = {};
+    let insufficientCreditsCommitIds = new Set<string>();
     if (commitIds.length > 0) {
       const { data: failedJobs } = await supabaseService
         .getClient()
@@ -75,22 +75,27 @@ export async function GET(request: Request) {
         .eq('error_message', 'Insufficient credits')
         .order('created_at', { ascending: false });
       
-      // Map commit_id to its most recent failed job
+      // Track which commits failed due to insufficient credits
       if (failedJobs) {
-        failedJobsMap = Object.fromEntries(
-          failedJobs.map((job: any) => [job.commit_id, job])
-        );
+        insufficientCreditsCommitIds = new Set(failedJobs.map((job: any) => job.commit_id));
       }
     }
 
-    // Enrich with repository_name and job failure info per commit for UI convenience
-    const enriched = (commits || []).map((c: any) => ({
+    // Filter to only show commits that either:
+    // 1. Have a summary, OR
+    // 2. Failed specifically due to insufficient credits
+    const visibleCommits = (commits || []).filter((c: any) => 
+      c.summary || insufficientCreditsCommitIds.has(c.id)
+    );
+
+    // Enrich with repository_name and insufficient credits flag
+    const enriched = visibleCommits.map((c: any) => ({
       ...c,
       repository_name: projectIdToRepoName[c.project_id] || '',
-      failed_job: failedJobsMap[c.id] || null,
+      failed_job: insufficientCreditsCommitIds.has(c.id) ? { error_message: 'Insufficient credits' } : null,
     }));
 
-    return NextResponse.json({ commits: enriched, count: count || 0 });
+    return NextResponse.json({ commits: enriched, count: visibleCommits.length });
   } catch (error) {
     const errorMessage = error instanceof Error ? error.message : 'An unknown error occurred';
     return NextResponse.json({ error: errorMessage }, { status: 500 });

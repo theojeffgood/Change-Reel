@@ -86,7 +86,7 @@ export class OpenAIClient implements IOpenAIClient {
 
     this.model = config.model || process.env.OPENAI_MODEL || 'gpt-5';
     const envMax = parseInt(process.env.OPENAI_MAX_TOKENS || '', 10);
-    this.maxTokens = config.maxTokens || (Number.isFinite(envMax) ? envMax : 1000);
+    this.maxTokens = config.maxTokens || (Number.isFinite(envMax) ? envMax : 2000);
     this.templateEngine = config.templateEngine || new PromptTemplateEngine();
     this.rateLimiter = config.rateLimiter || defaultRateLimiter;
     this.errorHandler = config.errorHandler || defaultErrorHandler;

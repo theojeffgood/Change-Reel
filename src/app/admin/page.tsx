@@ -66,7 +66,7 @@ export default async function AdminPage() {
             {/* Timeline Panel */}
             <div className="space-y-6">
               <ErrorBoundary>
-                <CommitHistoryPanel hasCredits={hasCredits} repositoryName={repositoryName} />
+                <CommitHistoryPanel repositoryName={repositoryName} />
               </ErrorBoundary>
             </div>
           </section>

@@ -3,7 +3,6 @@ import { Commit } from '@/lib/types/supabase';
 
 interface CommitCardProps {
   commit: Commit;
-  hasCredits?: boolean;
   repositoryName?: string;
 }
 
@@ -24,12 +23,16 @@ const getUpdateTypeLabel = (type: string) => {
   return 'Update';
 };
 
-export default function CommitCard({ commit, hasCredits = false, repositoryName }: CommitCardProps) {
+export default function CommitCard({ commit, repositoryName }: CommitCardProps) {
   const dateOnly = new Date(commit.timestamp).toLocaleDateString(undefined, {
     year: 'numeric',
     month: 'short',
     day: '2-digit',
   });
+
+  // Check if this commit failed due to insufficient credits
+  // (failed_job only exists if error_message === 'Insufficient credits')
+  const failedDueToInsufficientCredits = !commit.summary && (commit as any).failed_job;
 
   return (
     <div className="bg-white border border-gray-200 rounded-xl p-6 hover:shadow-md transition-shadow">
@@ -54,18 +57,7 @@ export default function CommitCard({ commit, hasCredits = false, repositoryName 
             {/* <h3 className="text-lg font-semibold text-gray-900 mb-2">What Changed:</h3> */}
             <p className="text-gray-800 leading-relaxed">{commit.summary}</p>
           </div>
-        ) : hasCredits ? (
-          <div className="text-center">
-            <form action={`/api/commits/${commit.id}/queue-summary`} method="post">
-              <button
-                type="submit"
-                className="inline-flex items-center px-3 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors text-lg"
-              >
-                Create summary →
-              </button>
-            </form>
-          </div>
-        ) : (
+        ) : failedDueToInsufficientCredits ? (
           <div className="bg-yellow-50 rounded-lg p-8 border border-yellow-200">
             <p className="text-xl text-yellow-800 text-center font-medium">Not Enough Credits</p>
             <p className="text-lg text-yellow-700 text-center mt-2">
@@ -76,11 +68,11 @@ export default function CommitCard({ commit, hasCredits = false, repositoryName 
                 href="/billing"
                 className="inline-flex items-center px-3 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors text-lg"
               >
-                Create summary →
+                Add Credits →
               </a>
             </div>
           </div>
-        )}
+        ) : null}
       </div>
     </div>
   );

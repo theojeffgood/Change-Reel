@@ -43,7 +43,7 @@ export async function GET(request: Request) {
       tracked.map(p => [p.id, p.repo_name || p.name || ''])
     );
 
-    // Paginated commits across all projects with summaries only
+    // Paginated commits across all projects (including those without summaries)
     const from = (page - 1) * pageSize;
     const to = from + pageSize - 1;
 
@@ -52,7 +52,6 @@ export async function GET(request: Request) {
       .from('commits')
       .select('*', { count: 'exact' })
       .in('project_id', projectIds)
-      .not('summary', 'is', null)
       .order('timestamp', { ascending: false })
       .range(from, to);
 
@@ -60,10 +59,35 @@ export async function GET(request: Request) {
       return NextResponse.json({ error: queryError.message }, { status: 500 });
     }
 
-    // Enrich with repository_name per commit for UI convenience
+    // For commits without summaries, fetch the latest failed generate_summary job to get error info
+    const commitsWithoutSummary = (commits || []).filter((c: any) => !c.summary);
+    const commitIds = commitsWithoutSummary.map((c: any) => c.id);
+    
+    let failedJobsMap: Record<string, any> = {};
+    if (commitIds.length > 0) {
+      const { data: failedJobs } = await supabaseService
+        .getClient()
+        .from('jobs')
+        .select('commit_id, error_message, status')
+        .in('commit_id', commitIds)
+        .eq('type', 'generate_summary')
+        .eq('status', 'failed')
+        .eq('error_message', 'Insufficient credits')
+        .order('created_at', { ascending: false });
+      
+      // Map commit_id to its most recent failed job
+      if (failedJobs) {
+        failedJobsMap = Object.fromEntries(
+          failedJobs.map((job: any) => [job.commit_id, job])
+        );
+      }
+    }
+
+    // Enrich with repository_name and job failure info per commit for UI convenience
     const enriched = (commits || []).map((c: any) => ({
       ...c,
       repository_name: projectIdToRepoName[c.project_id] || '',
+      failed_job: failedJobsMap[c.id] || null,
     }));
 
     return NextResponse.json({ commits: enriched, count: count || 0 });

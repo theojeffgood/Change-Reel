@@ -6,7 +6,7 @@ import CommitCard from './CommitCard';
 import LoadingSpinner from './LoadingSpinner';
 import PaginationControls from './PaginationControls';
 
-export default function CommitHistoryPanel({ hasCredits, repositoryName }: { hasCredits: boolean; repositoryName?: string }) {
+export default function CommitHistoryPanel({ repositoryName }: { repositoryName?: string }) {
   const { commits, isLoading, error, page, totalPages, setPage } = useCommitHistory();
 
   return (
@@ -34,7 +34,6 @@ export default function CommitHistoryPanel({ hasCredits, repositoryName }: { has
                 <CommitCard
                   key={commit.id}
                   commit={commit}
-                  hasCredits={hasCredits}
                   repositoryName={(commit as any).repository_name || repositoryName}
                 />
               ))}

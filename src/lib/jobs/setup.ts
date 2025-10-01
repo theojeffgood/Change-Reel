@@ -171,13 +171,27 @@ export const DEVELOPMENT_CONFIG = {
  * Utility function to create commit processing workflow jobs
  * This is the main entry point for processing new commits
  */
+export interface CommitWorkflowOptions {
+  commit_message?: string
+  author?: string
+  branch?: string
+  pull_request?: {
+    title?: string
+    description?: string
+    number?: number | string
+    url?: string
+  }
+  issue_references?: string[]
+}
+
 export async function createCommitWorkflow(
   jobQueueService: IJobQueueService,
   commitId: string,
   projectId: string,
   repositoryOwner: string,
   repositoryName: string,
-  commitSha: string
+  commitSha: string,
+  options?: CommitWorkflowOptions
 ) {
   try {
     // Create fetch diff job (first in the workflow)
@@ -204,6 +218,12 @@ export async function createCommitWorkflow(
       data: {
         commit_id: commitId,
         diff_content: '', // Will be filled after fetch diff completes
+        // Optional context to improve summarization quality
+        commit_message: options?.commit_message,
+        author: options?.author,
+        branch: options?.branch,
+        pull_request: options?.pull_request,
+        issue_references: options?.issue_references,
       },
       commit_id: commitId,
       project_id: projectId,

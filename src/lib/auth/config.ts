@@ -180,16 +180,19 @@ export const authConfig: NextAuthOptions = {
         // unless an internal non-auth page was explicitly requested.
         const base = new URL(baseUrl);
         const to = new URL(url, base);
+        const configUrl = new URL('/config', base).toString();
         const isInternal = to.origin === base.origin;
         if (isInternal) {
           const p = to.pathname;
           // Redirect away from root and auth routes to /config
-          if (p === '/' || p.startsWith('/api/auth')) return '/config';
-          const relative = `${to.pathname}${to.search}${to.hash}`;
-          return relative || '/config';
+          if (p === '/' || p.startsWith('/api/auth')) return configUrl;
+          return to.toString();
         }
-      } catch {}
-      return '/config';
+        return configUrl;
+      } catch (error) {
+        console.warn('[auth] redirect callback failed, defaulting to /config', error);
+        return `${baseUrl.replace(/\/$/, '')}/config`;
+      }
     },
   },
   pages: {

@@ -21,6 +21,18 @@ const fetcher = async (page: number, pageSize: number): Promise<{ commits: Commi
   return res.json();
 };
 
+const fetchUserProjects = async (): Promise<string[]> => {
+  try {
+    const res = await fetch('/api/projects');
+    if (!res.ok) return [];
+    const data = await res.json();
+    const projects = data.projects || [];
+    return projects.map((p: any) => p.id).filter(Boolean);
+  } catch {
+    return [];
+  }
+};
+
 export function useCommitHistory(pageSize: number = 10) {
   const [state, setState] = useState<CommitHistoryState>({
     commits: [],
@@ -41,12 +53,6 @@ export function useCommitHistory(pageSize: number = 10) {
     try {
       const { commits, count } = await fetcher(currentPage, pageSize);
       
-      // Extract unique project IDs from the returned commits for realtime filtering
-      if (commits && commits.length > 0 && userProjectIds.length === 0) {
-        const projectIds = [...new Set(commits.map((c: any) => c.project_id))];
-        setUserProjectIds(projectIds);
-      }
-      
       setState(prevState => ({
         ...prevState,
         commits,
@@ -62,12 +68,18 @@ export function useCommitHistory(pageSize: number = 10) {
         error: error instanceof Error ? error.message : 'An unknown error occurred',
       }));
     }
-  }, [pageSize, userProjectIds.length]);
+  }, [pageSize]);
+
+  // Fetch user's project IDs on mount for realtime filtering
+  useEffect(() => {
+    fetchUserProjects().then(setUserProjectIds);
+  }, []);
 
   // Set up Supabase Realtime subscription for commit updates
-  // Only subscribes to commits for the current user's projects
+  // User-scoped: only listens to commits for the current user's projects
   useEffect(() => {
-    // Don't subscribe until we know which projects belong to this user
+    // Wait until we have the user's project IDs
+    // New users will have projects created during installation (before commits)
     if (userProjectIds.length === 0) return;
 
     const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
@@ -80,25 +92,31 @@ export function useCommitHistory(pageSize: number = 10) {
 
     const supabase = createClient(supabaseUrl, supabaseKey);
 
-    // Create a subscription for each user project
-    // This ensures we only get notified about commits relevant to this user
+    // Create a filtered subscription for each user project
+    // This ensures we only receive updates for commits belonging to this user
     const channels = userProjectIds.map((projectId) => {
       return supabase
         .channel(`commit-updates-${projectId}`)
         .on(
           'postgres_changes',
           {
-            event: '*', // Listen to all events (INSERT, UPDATE, DELETE)
+            event: '*', // Listen to INSERT, UPDATE, DELETE
             schema: 'public',
             table: 'commits',
-            filter: `project_id=eq.${projectId}`, // CRITICAL: Only listen to this user's projects
+            filter: `project_id=eq.${projectId}`, // Only this project's commits
           },
-          () => {
-            // When a relevant commit changes, silently refresh the current page
+          (payload) => {
+            const commitId = (payload.new as any)?.id || 'unknown';
+            console.log('🔔 Realtime event received:', payload.eventType, 'commit:', commitId, 'project:', projectId);
+            // Silently refresh - will only show commits for this user's projects
             fetchCommits(state.page, true);
           }
         )
-        .subscribe();
+        .subscribe((status) => {
+          if (status === 'SUBSCRIBED') {
+            console.log('📡 Subscribed to project:', projectId);
+          }
+        });
     });
 
     return () => {

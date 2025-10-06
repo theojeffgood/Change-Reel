@@ -222,11 +222,14 @@ function ConfigurationPageContent() {
 
   // Kick off initial data loading once session state is known
   useEffect(() => {
+    console.log('[config session effect]', { sessionStatus });
     if (sessionStatus === 'authenticated') {
+      console.log('[config] session authenticated, loading data');
       void checkGitHubStatus();
       void fetchInstallations();
       void loadExistingConfiguration();
     } else if (sessionStatus === 'unauthenticated') {
+      console.log('[config] session unauthenticated, setting defaults');
       setGithubStatusLoading(false);
       setInstallationsLoaded(true);
       setConfigurationLoaded(true);

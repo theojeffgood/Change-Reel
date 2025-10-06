@@ -199,10 +199,6 @@ export const authConfig: NextAuthOptions = {
       return `${baseUrl}/config`
     },
   },
-  pages: {
-    signIn: '/config',
-    error: '/config',
-  },
   events: {
     async signIn({ user, account, profile, isNewUser }) {
       console.log('[auth signIn event]', { 

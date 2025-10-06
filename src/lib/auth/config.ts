@@ -177,6 +177,15 @@ export const authConfig: NextAuthOptions = {
     async redirect({ url, baseUrl }) {
       const base = baseUrl.replace(/\/$/, '');
       const configUrl = `${base}/config`;
+      const parsedUrl = new URL(url, baseUrl);
+      const searchParamTarget = parsedUrl.searchParams.get('callbackUrl');
+      if (searchParamTarget) {
+        const requestedTarget = new URL(searchParamTarget, baseUrl);
+        const requestedInternal = requestedTarget.origin === parsedUrl.origin;
+        if (requestedInternal && !requestedTarget.pathname.startsWith('/api/auth')) {
+          return requestedTarget.toString();
+        }
+      }
       let outcome = configUrl;
       try {
         const origin = new URL(baseUrl).origin;
@@ -201,7 +210,8 @@ export const authConfig: NextAuthOptions = {
       }
 
       console.info('[auth] redirect resolved', { url, baseUrl, outcome });
-      return outcome;
+      const nextResponse = outcome;
+      return nextResponse;
     },
   },
   pages: {

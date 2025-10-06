@@ -11,7 +11,7 @@ const SiteHeader = ({
   className = '',
   isAuthenticated = false,
 }: SiteHeaderProps) => {
-  const ctaLink = isAuthenticated ? '/config?stay=1' : '/signin';
+  const ctaLink = isAuthenticated ? '/config' : '/signin';
   const ctaLabel = isAuthenticated ? 'Settings' : 'Login';
 
   return (

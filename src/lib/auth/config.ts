@@ -177,30 +177,31 @@ export const authConfig: NextAuthOptions = {
     async redirect({ url, baseUrl }) {
       const base = baseUrl.replace(/\/$/, '');
       const configUrl = `${base}/config`;
+      let outcome = configUrl;
       try {
+        const origin = new URL(baseUrl).origin;
         const target = new URL(url, baseUrl);
-        const isInternal = target.origin === new URL(baseUrl).origin;
+        const isInternal = target.origin === origin;
 
         if (!isInternal) {
-          return target.toString();
-        }
+          outcome = target.toString();
+        } else {
+          const path = target.pathname || '/';
+          const shouldForceConfig =
+            path === '/' ||
+            path.startsWith('/api/auth') ||
+            path === '/config' ||
+            path.startsWith('/config/');
 
-        const path = target.pathname || '/';
-        // Treat homepage, auth internals, and config variants as special cases
-        if (
-          path === '/' ||
-          path.startsWith('/api/auth') ||
-          path === '/config' ||
-          path.startsWith('/config?')
-        ) {
-          return configUrl;
+          outcome = shouldForceConfig ? configUrl : target.toString();
         }
-
-        return target.toString();
       } catch (error) {
         console.warn('[auth] redirect callback failed, defaulting to /config', error);
-        return configUrl;
+        outcome = configUrl;
       }
+
+      console.info('[auth] redirect resolved', { url, baseUrl, outcome });
+      return outcome;
     },
   },
   pages: {

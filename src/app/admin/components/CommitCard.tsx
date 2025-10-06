@@ -31,8 +31,10 @@ export default function CommitCard({ commit, repositoryName }: CommitCardProps) 
   });
 
   // Check if this commit failed due to insufficient credits
-  // (failed_job only exists if error_message === 'Insufficient credits')
   const failedDueToInsufficientCredits = !commit.summary && (commit as any).failed_job;
+  
+  // Check if this commit is currently being processed
+  const isProcessing = !commit.summary && (commit as any).processing;
 
   return (
     <div className="bg-white border border-gray-200 rounded-xl p-6 hover:shadow-md transition-shadow">
@@ -54,8 +56,14 @@ export default function CommitCard({ commit, repositoryName }: CommitCardProps) 
       <div className="mb-4">
         {commit.summary ? (
           <div className="">
-            {/* <h3 className="text-lg font-semibold text-gray-900 mb-2">What Changed:</h3> */}
             <p className="text-gray-800 leading-relaxed">{commit.summary}</p>
+          </div>
+        ) : isProcessing ? (
+          <div className="bg-blue-50 rounded-lg p-8 border border-blue-200">
+            <div className="flex items-center justify-center space-x-3">
+              <div className="w-5 h-5 border-2 border-blue-600 border-t-transparent rounded-full animate-spin"></div>
+              <p className="text-lg text-blue-800 font-medium">Generating summary...</p>
+            </div>
           </div>
         ) : failedDueToInsufficientCredits ? (
           <div className="bg-yellow-50 rounded-lg p-8 border border-yellow-200">
@@ -68,7 +76,7 @@ export default function CommitCard({ commit, repositoryName }: CommitCardProps) 
                 href="/billing"
                 className="inline-flex items-center px-3 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors text-lg"
               >
-                Add Credits →
+                Create Summary →
               </a>
             </div>
           </div>

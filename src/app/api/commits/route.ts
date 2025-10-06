@@ -59,12 +59,15 @@ export async function GET(request: Request) {
       return NextResponse.json({ error: queryError.message }, { status: 500 });
     }
 
-    // For commits without summaries, fetch the latest failed generate_summary job to get error info
+    // For commits without summaries, check job status to determine state
     const commitsWithoutSummary = (commits || []).filter((c: any) => !c.summary);
     const commitIds = commitsWithoutSummary.map((c: any) => c.id);
     
     let insufficientCreditsCommitIds = new Set<string>();
+    let processingCommitIds = new Set<string>();
+    
     if (commitIds.length > 0) {
+      // Check for failed jobs (insufficient credits)
       const { data: failedJobs } = await supabaseService
         .getClient()
         .from('jobs')
@@ -75,24 +78,39 @@ export async function GET(request: Request) {
         .eq('error_message', 'Insufficient credits')
         .order('created_at', { ascending: false });
       
-      // Track which commits failed due to insufficient credits
       if (failedJobs) {
         insufficientCreditsCommitIds = new Set(failedJobs.map((job: any) => job.commit_id));
+      }
+
+      // Check for pending/in_progress jobs (still processing)
+      const { data: pendingJobs } = await supabaseService
+        .getClient()
+        .from('jobs')
+        .select('commit_id, status')
+        .in('commit_id', commitIds)
+        .eq('type', 'generate_summary')
+        .in('status', ['pending', 'in_progress'])
+        .order('created_at', { ascending: false });
+      
+      if (pendingJobs) {
+        processingCommitIds = new Set(pendingJobs.map((job: any) => job.commit_id));
       }
     }
 
     // Filter to only show commits that either:
     // 1. Have a summary, OR
-    // 2. Failed specifically due to insufficient credits
+    // 2. Failed specifically due to insufficient credits, OR
+    // 3. Are currently being processed
     const visibleCommits = (commits || []).filter((c: any) => 
-      c.summary || insufficientCreditsCommitIds.has(c.id)
+      c.summary || insufficientCreditsCommitIds.has(c.id) || processingCommitIds.has(c.id)
     );
 
-    // Enrich with repository_name and insufficient credits flag
+    // Enrich with repository_name and job status flags
     const enriched = visibleCommits.map((c: any) => ({
       ...c,
       repository_name: projectIdToRepoName[c.project_id] || '',
       failed_job: insufficientCreditsCommitIds.has(c.id) ? { error_message: 'Insufficient credits' } : null,
+      processing: processingCommitIds.has(c.id),
     }));
 
     return NextResponse.json({ commits: enriched, count: visibleCommits.length });

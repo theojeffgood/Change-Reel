@@ -45,6 +45,12 @@ function ConfigurationPageContent() {
   const { data: session, status: sessionStatus } = useSession();
   const router = useRouter();
   const searchParams = useSearchParams();
+
+  console.log('[config mount]', { 
+    sessionStatus, 
+    hasSession: !!session,
+    userId: session?.user?.id
+  });
   const [githubStatus, setGithubStatus] = useState<GitHubStatus | null>(null);
   const [repositories, setRepositories] = useState<Repository[]>([]);
   const [selectedRepoFullNames, setSelectedRepoFullNames] = useState<string[]>([]);
@@ -235,6 +241,18 @@ function ConfigurationPageContent() {
   ]);
 
   useEffect(() => {
+    console.log('[config redirect check]', {
+      shouldRedirect,
+      hasRedirected: hasRedirectedRef.current,
+      isLoadingConfiguration,
+      configurationLoaded,
+      installationsLoaded,
+      githubStatusLoading,
+      githubConnected: githubStatus?.connected,
+      hasExistingConfiguration,
+      selectedRepository
+    });
+
     if (
       !shouldRedirect ||
       hasRedirectedRef.current ||
@@ -249,6 +267,7 @@ function ConfigurationPageContent() {
       return;
     }
 
+    console.log('[config] TRIGGERING REDIRECT TO /admin');
     hasRedirectedRef.current = true;
     router.replace('/admin');
   }, [
@@ -322,6 +341,8 @@ function ConfigurationPageContent() {
   }, [selectedRepoFullNames]);
 
   const isInitializing = sessionStatus === 'loading' || githubStatusLoading || !configurationLoaded || !installationsLoaded;
+
+  console.log('[config render]', { isInitializing, sessionStatus });
 
   return (
     <div className="min-h-screen bg-gray-100">

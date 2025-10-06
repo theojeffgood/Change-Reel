@@ -175,23 +175,25 @@ export const authConfig: NextAuthOptions = {
       return session;
     },
     async redirect({ url, baseUrl }) {
+      const configUrl = `${baseUrl.replace(/\/$/, '')}/config`;
       try {
-        // Always land users on /config after auth/install flows
-        // unless an internal non-auth page was explicitly requested.
         const base = new URL(baseUrl);
-        const to = new URL(url, base);
-        const configUrl = new URL('/config', base).toString();
-        const isInternal = to.origin === base.origin;
-        if (isInternal) {
-          const p = to.pathname;
-          // Redirect away from root and auth routes to /config
-          if (p === '/' || p.startsWith('/api/auth')) return configUrl;
-          return to.toString();
+        const target = new URL(url, base);
+        const isInternal = target.origin === base.origin;
+
+        if (!isInternal) {
+          return target.toString();
         }
-        return configUrl;
+
+        const path = target.pathname || '/';
+        if (path === '/' || path.startsWith('/api/auth')) {
+          return configUrl;
+        }
+
+        return target.toString();
       } catch (error) {
         console.warn('[auth] redirect callback failed, defaulting to /config', error);
-        return `${baseUrl.replace(/\/$/, '')}/config`;
+        return configUrl;
       }
     },
   },

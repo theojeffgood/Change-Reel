@@ -105,8 +105,6 @@ export async function POST(request: NextRequest): Promise<NextResponse<WebhookRe
     const jobService = new JobQueueService(supabase);
     
     // Create a webhook_processing job instead of processing directly
-    // All webhooks (including installation.created) are queued for async processing
-    // Realtime subscriptions ensure the UI updates when commits are created
     const jobResult = await jobService.createJob({
       type: 'webhook_processing',
       priority: 90, // High priority for webhook events

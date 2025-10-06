@@ -34,7 +34,6 @@ interface Repository {
 // Removed Disconnect flow and dialog
 
 export default function ConfigurationPage() {
-  console.log('[config page] Server component rendering');
   return (
     <Suspense fallback={null}>
       <ConfigurationPageContent />
@@ -46,12 +45,6 @@ function ConfigurationPageContent() {
   const { data: session, status: sessionStatus } = useSession();
   const router = useRouter();
   const searchParams = useSearchParams();
-
-  console.log('[config mount]', { 
-    sessionStatus, 
-    hasSession: !!session,
-    userId: session?.user?.id
-  });
   const [githubStatus, setGithubStatus] = useState<GitHubStatus | null>(null);
   const [repositories, setRepositories] = useState<Repository[]>([]);
   const [selectedRepoFullNames, setSelectedRepoFullNames] = useState<string[]>([]);
@@ -68,7 +61,7 @@ function ConfigurationPageContent() {
   const [saving, setSaving] = useState(false);
   const [installationsLoaded, setInstallationsLoaded] = useState(false);
   const [githubStatusLoading, setGithubStatusLoading] = useState(true);
-  const shouldRedirect = ['1', 'true'].includes((searchParams?.get('redirect') || '').toLowerCase());
+  const stayOnConfig = ['1', 'true'].includes((searchParams?.get('stay') || '').toLowerCase());
   const authError = searchParams?.get('error');
   const hasRedirectedRef = useRef(false);
   const lastSavedRef = useRef<{ repo: string; installation: string } | null>(null);
@@ -79,7 +72,7 @@ function ConfigurationPageContent() {
 
   const handleReauthenticate = () => {
     hasRedirectedRef.current = true;
-    void signIn('github', { callbackUrl: '/config' });
+    void signIn('github', { callbackUrl: '/config?stay=1' });
   };
 
   // const hasConfiguredRepo = hasExistingConfiguration || Boolean(selectedRepository);
@@ -223,14 +216,11 @@ function ConfigurationPageContent() {
 
   // Kick off initial data loading once session state is known
   useEffect(() => {
-    console.log('[config session effect]', { sessionStatus });
     if (sessionStatus === 'authenticated') {
-      console.log('[config] session authenticated, loading data');
       void checkGitHubStatus();
       void fetchInstallations();
       void loadExistingConfiguration();
     } else if (sessionStatus === 'unauthenticated') {
-      console.log('[config] session unauthenticated, setting defaults');
       setGithubStatusLoading(false);
       setInstallationsLoaded(true);
       setConfigurationLoaded(true);
@@ -245,20 +235,8 @@ function ConfigurationPageContent() {
   ]);
 
   useEffect(() => {
-    console.log('[config redirect check]', {
-      shouldRedirect,
-      hasRedirected: hasRedirectedRef.current,
-      isLoadingConfiguration,
-      configurationLoaded,
-      installationsLoaded,
-      githubStatusLoading,
-      githubConnected: githubStatus?.connected,
-      hasExistingConfiguration,
-      selectedRepository
-    });
-
     if (
-      !shouldRedirect ||
+      stayOnConfig ||
       hasRedirectedRef.current ||
       isLoadingConfiguration ||
       !configurationLoaded ||
@@ -271,11 +249,10 @@ function ConfigurationPageContent() {
       return;
     }
 
-    console.log('[config] TRIGGERING REDIRECT TO /admin');
     hasRedirectedRef.current = true;
     router.replace('/admin');
   }, [
-    shouldRedirect,
+    stayOnConfig,
     isLoadingConfiguration,
     configurationLoaded,
     installationsLoaded,
@@ -346,8 +323,6 @@ function ConfigurationPageContent() {
 
   const isInitializing = sessionStatus === 'loading' || githubStatusLoading || !configurationLoaded || !installationsLoaded;
 
-  console.log('[config render]', { isInitializing, sessionStatus });
-
   return (
     <div className="min-h-screen bg-gray-100">
       <SiteHeader isAuthenticated={Boolean(session)}/>
@@ -366,10 +341,10 @@ function ConfigurationPageContent() {
       <div className="px-4 sm:px-6 lg:px-8 py-12">
         <div className="max-w-4xl mx-auto text-center">
           <h1 className="text-4xl md:text-5xl font-bold text-gray-900 mt-4 mb-8">
-            Choose your Repositories
+            Select your repositories
           </h1>
           <p className="text-xl text-gray-600 max-w-2xl mx-auto mb-8">
-            We monitor & create plain-English summaries of changes to your repositories.
+            Choose the repositories to track for product change summaries
           </p>
         </div>
       </div>
@@ -460,7 +435,7 @@ function ConfigurationPageContent() {
                         </div>
                       </div>
                     ) : (
-                      <div className="bg-white border border-gray-200 mt-2 rounded-xl overflow-hidden">
+                      <div className="bg-white border border-gray-200 rounded-xl overflow-hidden">
                         <div className="p-6">
                           <div className="flex items-center justify-between mb-4">
                             <h3 className="text-sm font-medium text-gray-700">Repositories</h3>
@@ -492,6 +467,7 @@ function ConfigurationPageContent() {
                                   <div className="flex items-start justify-between">
                                     <div>
                                       <div className="text-sm font-medium text-gray-900">{repo.full_name}</div>
+                                      <div className="text-xs text-gray-500 mt-1">{repo.private ? 'Private' : 'Public'}</div>
                                     </div>
                                     <div className={`w-5 h-5 rounded-full border flex items-center justify-center ${selected ? 'bg-green-600 border-green-600' : 'bg-white border-gray-300'}`}>
                                       {selected ? (

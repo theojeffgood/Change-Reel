@@ -175,23 +175,27 @@ export const authConfig: NextAuthOptions = {
       return session;
     },
     async redirect({ url, baseUrl }) {
-      console.log('[auth redirect] CALLED', { url, baseUrl });
-      const targetUrl = `${baseUrl}/config`;
-      console.log('[auth redirect] RETURNING', targetUrl);
-      return targetUrl;
+      try {
+        // Always land users on /config after auth/install flows
+        // unless an internal non-auth page was explicitly requested.
+        const to = new URL(url, baseUrl)
+        const isInternal = to.origin === baseUrl
+        if (isInternal) {
+          const p = to.pathname
+          // Redirect away from root and auth routes to /config
+          if (p === '/' || p.startsWith('/api/auth')) return `${baseUrl}/config`
+          return to.toString()
+        }
+      } catch {}
+      return `${baseUrl}/config`
     },
   },
   pages: {
-    signIn: '/signin',
+    signIn: '/config',
+    error: '/config',
   },
   events: {
     async signIn({ user, account, profile, isNewUser }) {
-      console.log('[auth signIn event]', { 
-        userId: user?.id, 
-        profileId: profile?.id, 
-        provider: account?.provider,
-        isNewUser 
-      });
       // Create user record on first sign-in (OAuth used for identity only)
       if (account?.provider === 'github' && profile?.id) {
         try {

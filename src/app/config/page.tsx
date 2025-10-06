@@ -34,6 +34,7 @@ interface Repository {
 // Removed Disconnect flow and dialog
 
 export default function ConfigurationPage() {
+  console.log('[config page] Server component rendering');
   return (
     <Suspense fallback={null}>
       <ConfigurationPageContent />

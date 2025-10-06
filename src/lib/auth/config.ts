@@ -178,16 +178,18 @@ export const authConfig: NextAuthOptions = {
       try {
         // Always land users on /config after auth/install flows
         // unless an internal non-auth page was explicitly requested.
-        const to = new URL(url, baseUrl)
-        const isInternal = to.origin === baseUrl
+        const base = new URL(baseUrl);
+        const to = new URL(url, base);
+        const isInternal = to.origin === base.origin;
         if (isInternal) {
-          const p = to.pathname
+          const p = to.pathname;
           // Redirect away from root and auth routes to /config
-          if (p === '/' || p.startsWith('/api/auth')) return `${baseUrl}/config`
-          return to.toString()
+          if (p === '/' || p.startsWith('/api/auth')) return '/config';
+          const relative = `${to.pathname}${to.search}${to.hash}`;
+          return relative || '/config';
         }
       } catch {}
-      return `${baseUrl}/config`
+      return '/config';
     },
   },
   pages: {

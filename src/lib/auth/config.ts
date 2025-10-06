@@ -175,18 +175,24 @@ export const authConfig: NextAuthOptions = {
       return session;
     },
     async redirect({ url, baseUrl }) {
-      const configUrl = `${baseUrl.replace(/\/$/, '')}/config`;
+      const base = baseUrl.replace(/\/$/, '');
+      const configUrl = `${base}/config`;
       try {
-        const base = new URL(baseUrl);
-        const target = new URL(url, base);
-        const isInternal = target.origin === base.origin;
+        const target = new URL(url, baseUrl);
+        const isInternal = target.origin === new URL(baseUrl).origin;
 
         if (!isInternal) {
           return target.toString();
         }
 
         const path = target.pathname || '/';
-        if (path === '/' || path.startsWith('/api/auth')) {
+        // Treat homepage, auth internals, and config variants as special cases
+        if (
+          path === '/' ||
+          path.startsWith('/api/auth') ||
+          path === '/config' ||
+          path.startsWith('/config?')
+        ) {
           return configUrl;
         }
 

@@ -61,7 +61,7 @@ function ConfigurationPageContent() {
   const [saving, setSaving] = useState(false);
   const [installationsLoaded, setInstallationsLoaded] = useState(false);
   const [githubStatusLoading, setGithubStatusLoading] = useState(true);
-  const stayOnConfig = ['1', 'true'].includes((searchParams?.get('stay') || '').toLowerCase());
+  const shouldRedirect = ['1', 'true'].includes((searchParams?.get('redirect') || '').toLowerCase());
   const authError = searchParams?.get('error');
   const hasRedirectedRef = useRef(false);
   const lastSavedRef = useRef<{ repo: string; installation: string } | null>(null);
@@ -72,7 +72,7 @@ function ConfigurationPageContent() {
 
   const handleReauthenticate = () => {
     hasRedirectedRef.current = true;
-    void signIn('github', { callbackUrl: '/config?stay=1' });
+    void signIn('github', { callbackUrl: '/config' });
   };
 
   // const hasConfiguredRepo = hasExistingConfiguration || Boolean(selectedRepository);
@@ -236,7 +236,7 @@ function ConfigurationPageContent() {
 
   useEffect(() => {
     if (
-      stayOnConfig ||
+      !shouldRedirect ||
       hasRedirectedRef.current ||
       isLoadingConfiguration ||
       !configurationLoaded ||
@@ -252,7 +252,7 @@ function ConfigurationPageContent() {
     hasRedirectedRef.current = true;
     router.replace('/admin');
   }, [
-    stayOnConfig,
+    shouldRedirect,
     isLoadingConfiguration,
     configurationLoaded,
     installationsLoaded,
@@ -344,7 +344,7 @@ function ConfigurationPageContent() {
             Choose your Repositories
           </h1>
           <p className="text-xl text-gray-600 max-w-2xl mx-auto mb-8">
-            We watch your repos for changes, and create plain-English descriptions of what changed.
+            We monitor & create plain-English summaries of changes to your repositories.
           </p>
         </div>
       </div>
@@ -435,7 +435,7 @@ function ConfigurationPageContent() {
                         </div>
                       </div>
                     ) : (
-                      <div className="bg-white border border-gray-200 mt-4 rounded-xl overflow-hidden">
+                      <div className="bg-white border border-gray-200 mt-2 rounded-xl overflow-hidden">
                         <div className="p-6">
                           <div className="flex items-center justify-between mb-4">
                             <h3 className="text-sm font-medium text-gray-700">Repositories</h3>

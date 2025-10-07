@@ -11,12 +11,7 @@ export default async function SignUpPage() {
     redirect('/config');
   }
 
-  const installBase = process.env.NEXT_PUBLIC_GITHUB_APP_INSTALL_URL;
-  const baseUrl = (process.env.NEXTAUTH_URL || 'https://www.changereel.com').replace(/\/$/, '');
-  const returnTo = encodeURIComponent(`${baseUrl}/config`);
-  const installUrl = installBase
-    ? `${installBase}${installBase.includes('?') ? '&' : '?'}redirect_url=${returnTo}`
-    : undefined;
+  const installUrl = process.env.NEXT_PUBLIC_GITHUB_APP_INSTALL_URL;
 
   return (
     <div className="min-h-screen bg-gray-100">
@@ -61,3 +56,5 @@ export default async function SignUpPage() {
     </div>
   );
 }
+
+

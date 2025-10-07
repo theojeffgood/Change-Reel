@@ -175,43 +175,19 @@ export const authConfig: NextAuthOptions = {
       return session;
     },
     async redirect({ url, baseUrl }) {
-      const base = baseUrl.replace(/\/$/, '');
-      const configUrl = `${base}/config`;
-      const parsedUrl = new URL(url, baseUrl);
-      const searchParamTarget = parsedUrl.searchParams.get('callbackUrl');
-      if (searchParamTarget) {
-        const requestedTarget = new URL(searchParamTarget, baseUrl);
-        const requestedInternal = requestedTarget.origin === parsedUrl.origin;
-        if (requestedInternal && !requestedTarget.pathname.startsWith('/api/auth')) {
-          return requestedTarget.toString();
-        }
-      }
-      let outcome = configUrl;
       try {
-        const origin = new URL(baseUrl).origin;
-        const target = new URL(url, baseUrl);
-        const isInternal = target.origin === origin;
-
-        if (!isInternal) {
-          outcome = target.toString();
-        } else {
-          const path = target.pathname || '/';
-          const shouldForceConfig =
-            path === '/' ||
-            path.startsWith('/api/auth') ||
-            path === '/config' ||
-            path.startsWith('/config/');
-
-          outcome = shouldForceConfig ? configUrl : target.toString();
+        // Always land users on /config after auth/install flows
+        // unless an internal non-auth page was explicitly requested.
+        const to = new URL(url, baseUrl)
+        const isInternal = to.origin === baseUrl
+        if (isInternal) {
+          const p = to.pathname
+          // Redirect away from root and auth routes to /config
+          if (p === '/' || p.startsWith('/api/auth')) return `${baseUrl}/config`
+          return to.toString()
         }
-      } catch (error) {
-        console.warn('[auth] redirect callback failed, defaulting to /config', error);
-        outcome = configUrl;
-      }
-
-      console.info('[auth] redirect resolved', { url, baseUrl, outcome });
-      const nextResponse = outcome;
-      return nextResponse;
+      } catch {}
+      return `${baseUrl}/config`
     },
   },
   pages: {

@@ -127,9 +127,10 @@ export async function runInstallationBackfill(
         sha: c.sha,
         author: c.author_name && c.author_email ? `${c.author_name} <${c.author_email}>` : (c.author_name || c.author_email || 'Unknown'),
         timestamp: c.date,
+        installation_id: installationId,
         is_published: false,
         email_sent: false,
-      } as any)
+      })
       if (created.error) {
         if (created.error.message?.includes('already exists')) continue
         continue

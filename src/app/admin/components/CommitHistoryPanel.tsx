@@ -6,8 +6,13 @@ import CommitCard from './CommitCard';
 import LoadingSpinner from './LoadingSpinner';
 import PaginationControls from './PaginationControls';
 
-export default function CommitHistoryPanel({ repositoryName }: { repositoryName?: string }) {
-  const { commits, isLoading, error, page, totalPages, setPage } = useCommitHistory();
+interface CommitHistoryPanelProps {
+  repositoryName?: string;
+  initialInstallationIds?: number[];
+}
+
+export default function CommitHistoryPanel({ repositoryName, initialInstallationIds = [] }: CommitHistoryPanelProps) {
+  const { commits, isLoading, error, page, totalPages, setPage } = useCommitHistory(10, initialInstallationIds);
 
   return (
       <div>

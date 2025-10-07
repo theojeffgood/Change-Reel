@@ -279,6 +279,7 @@ async function processWebhookJob(job: any, supabaseService: any): Promise<{ succ
         sha: commitData.id,
         author: commitData.author?.name || commitData.author?.email || 'Unknown',
         timestamp: commitData.timestamp,
+        installation_id: (project as any).installation_id,
         is_published: false,
         email_sent: false
       });

@@ -31,6 +31,7 @@ export interface Commit {
   sha: string
   author: string
   timestamp: string
+  installation_id: number // GitHub App installation ID for realtime filtering
   summary?: string // AI-generated summary
   type?: 'feature' | 'fix' | 'refactor' | 'chore'
   is_published: boolean
@@ -113,6 +114,7 @@ export interface CreateCommitData {
   sha: string
   author: string
   timestamp: string
+  installation_id: number // Required for realtime filtering
   summary?: string
   type?: 'feature' | 'fix' | 'refactor' | 'chore'
   is_published?: boolean

@@ -21,19 +21,7 @@ const fetcher = async (page: number, pageSize: number): Promise<{ commits: Commi
   return res.json();
 };
 
-const fetchUserProjects = async (): Promise<string[]> => {
-  try {
-    const res = await fetch('/api/projects');
-    if (!res.ok) return [];
-    const data = await res.json();
-    const projects = data.projects || [];
-    return projects.map((p: any) => p.id).filter(Boolean);
-  } catch {
-    return [];
-  }
-};
-
-export function useCommitHistory(pageSize: number = 10) {
+export function useCommitHistory(pageSize: number = 10, initialInstallationIds: number[] = []) {
   const [state, setState] = useState<CommitHistoryState>({
     commits: [],
     isLoading: true,
@@ -41,8 +29,6 @@ export function useCommitHistory(pageSize: number = 10) {
     page: 1,
     totalPages: 1,
   });
-
-  const [userProjectIds, setUserProjectIds] = useState<string[]>([]);
 
   const fetchCommits = useCallback(async (currentPage: number, silent = false) => {
     // Only show loading state if not silent (to avoid flickering on realtime updates)
@@ -70,17 +56,11 @@ export function useCommitHistory(pageSize: number = 10) {
     }
   }, [pageSize]);
 
-  // Fetch user's project IDs on mount for realtime filtering
-  useEffect(() => {
-    fetchUserProjects().then(setUserProjectIds);
-  }, []);
-
   // Set up Supabase Realtime subscription for commit updates
-  // User-scoped: only listens to commits for the current user's projects
+  // Installation-scoped: filters by installation_id (timing-independent)
   useEffect(() => {
-    // Wait until we have the user's project IDs
-    // New users will have projects created during installation (before commits)
-    if (userProjectIds.length === 0) return;
+    // No installation IDs provided (e.g., user not logged in)
+    if (initialInstallationIds.length === 0) return;
 
     const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
     const supabaseKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
@@ -92,29 +72,30 @@ export function useCommitHistory(pageSize: number = 10) {
 
     const supabase = createClient(supabaseUrl, supabaseKey);
 
-    // Create a filtered subscription for each user project
-    // This ensures we only receive updates for commits belonging to this user
-    const channels = userProjectIds.map((projectId) => {
+    // Create a filtered subscription for each user installation
+    // Installation IDs are stable and known immediately (created during OAuth)
+    // This makes realtime timing-independent - no race conditions
+    const channels = initialInstallationIds.map((installationId) => {
       return supabase
-        .channel(`commit-updates-${projectId}`)
+        .channel(`commit-updates-install-${installationId}`)
         .on(
           'postgres_changes',
           {
             event: '*', // Listen to INSERT, UPDATE, DELETE
             schema: 'public',
             table: 'commits',
-            filter: `project_id=eq.${projectId}`, // Only this project's commits
+            filter: `installation_id=eq.${installationId}`, // Only this installation's commits
           },
           (payload) => {
             const commitId = (payload.new as any)?.id || 'unknown';
-            console.log('🔔 Realtime event received:', payload.eventType, 'commit:', commitId, 'project:', projectId);
-            // Silently refresh - will only show commits for this user's projects
+            console.log('🔔 Realtime event received:', payload.eventType, 'commit:', commitId, 'installation:', installationId);
+            // Silently refresh when commits change
             fetchCommits(state.page, true);
           }
         )
         .subscribe((status) => {
           if (status === 'SUBSCRIBED') {
-            console.log('📡 Subscribed to project:', projectId);
+            console.log('✅ Subscribed to installation:', installationId);
           }
         });
     });
@@ -125,7 +106,7 @@ export function useCommitHistory(pageSize: number = 10) {
         supabase.removeChannel(channel);
       });
     };
-  }, [userProjectIds, state.page, fetchCommits]);
+  }, [initialInstallationIds, state.page, fetchCommits]);
 
   // Initial fetch
   useEffect(() => {

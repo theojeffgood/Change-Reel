@@ -132,6 +132,7 @@ export class WebhookProcessingHandler implements JobHandler<WebhookProcessingJob
           sha: commitData.id,
           author: commitData.author.name || commitData.author.email,
           timestamp: commitData.timestamp,
+          installation_id: (project as any).installation_id,
           is_published: false,
           email_sent: false,
         })

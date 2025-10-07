@@ -11,9 +11,11 @@ import SiteFooter from '@/components/layout/SiteFooter'
 import MetricsBar from './components/MetricsBar'
 
 export default async function AdminPage() {
-  // Determine if current user has credits
+  // Determine if current user has credits and get installation IDs
   let hasCredits = false;
   let repositoryName: string = '';
+  let userInstallationIds: number[] = [];
+  
   try {
     const session = await getServerSession(authConfig);
     if (session?.user?.githubId) {
@@ -25,6 +27,19 @@ export default async function AdminPage() {
         hasCredits = await billing.hasCredits(user.id);
 
         try {
+          // Fetch user's installation IDs for realtime subscriptions
+          // Installation IDs are stable and exist before commits/projects
+          const { data: installations } = await supaService.getClient()
+            .from('installations')
+            .select('installation_id')
+            .eq('user_id', user.id);
+          
+          if (installations) {
+            userInstallationIds = installations
+              .map((i: any) => i.installation_id)
+              .filter(Boolean);
+          }
+          
           const latestProject = await supaService.projects.getLatestProjectForUser(user.id);
           if (latestProject) {
             repositoryName = latestProject.repo_name || latestProject.name || '';
@@ -66,7 +81,10 @@ export default async function AdminPage() {
             {/* Timeline Panel */}
             <div className="space-y-6">
               <ErrorBoundary>
-                <CommitHistoryPanel repositoryName={repositoryName} />
+                <CommitHistoryPanel 
+                  repositoryName={repositoryName}
+                  initialInstallationIds={userInstallationIds}
+                />
               </ErrorBoundary>
             </div>
           </section>

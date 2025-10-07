@@ -108,7 +108,7 @@ export class WebhookProcessingService {
   /**
    * Process commits from the parsed webhook payload
    */
-  async processCommits(commits: any[], projectId: string): Promise<{
+  async processCommits(commits: any[], projectId: string, installationId: number): Promise<{
     processed: number;
     errors: string[];
   }> {
@@ -122,6 +122,7 @@ export class WebhookProcessingService {
           sha: commitData.sha,
           author: `${commitData.author_name} <${commitData.author_email}>`,
           timestamp: commitData.timestamp,
+          installation_id: installationId,
           summary: undefined, // Leave empty for AI to generate
           type: undefined, // Leave empty for AI to categorize
           is_published: false,
@@ -223,7 +224,11 @@ export class WebhookProcessingService {
       let processingErrors: string[] = [];
 
       if (parseResult.commits && parseResult.commits.length > 0) {
-        const result = await this.processCommits(parseResult.commits, project.id);
+        const result = await this.processCommits(
+          parseResult.commits, 
+          project.id, 
+          (project as any).installation_id
+        );
         processedCount = result.processed;
         processingErrors = result.errors;
       }

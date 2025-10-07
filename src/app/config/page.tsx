@@ -75,22 +75,6 @@ function ConfigurationPageContent() {
     void signIn('github', { callbackUrl: '/config' });
   };
 
-  // const hasConfiguredRepo = hasExistingConfiguration || Boolean(selectedRepository);
-  // const headerHasActiveConfiguration = hasExistingConfiguration && Boolean(selectedInstallationId && selectedInstallationId !== '0');
-
-  // const handleGitHubConnect = async () => {
-  //   if (!GITHUB_APP_INSTALL_URL) return;
-
-  //   setLoading(true);
-  //   try {
-  //     // Direct redirect to GitHub App installation URL
-  //     window.location.href = GITHUB_APP_INSTALL_URL;
-  //   } catch (error) {
-  //     console.error('Error connecting to GitHub:', error);
-  //     setLoading(false);
-  //   }
-  // };
-
   const checkGitHubStatus = useCallback(async () => {
     try {
       const response = await fetch('/api/auth/github/status');
@@ -344,7 +328,7 @@ function ConfigurationPageContent() {
             Choose your Repositories
           </h1>
           <p className="text-xl text-gray-600 max-w-2xl mx-auto mb-8">
-            We monitor & create plain-English summaries of changes to your repositories.
+            We watch your repos & create plain-English summaries when things change.
           </p>
         </div>
       </div>
@@ -368,7 +352,6 @@ function ConfigurationPageContent() {
           </div>
         )}
         <div className="grid grid-cols-1 gap-8">
-          {/* Configuration Form - simplified */}
           <div className="lg:col-span-1">
 
               {githubStatus?.connected && (
@@ -480,7 +463,6 @@ function ConfigurationPageContent() {
                               );
                             })}
                           </div>
-                          <p className="mt-3 text-sm text-gray-500">Selected: {selectedRepoFullNames.length}</p>
                         </div>
                       </div>
                     )}
@@ -510,12 +492,6 @@ function ConfigurationPageContent() {
                       </button>
                     </div>
                   </div>
-
-                  {saveMessage && (
-                    <div className="mt-6 p-4 border border-gray-200 rounded-xl bg-white">
-                      <p className="text-gray-800">{saveMessage}</p>
-                    </div>
-                  )}
 
                   {saveError && (
                     <div className="mt-6 p-4 border border-gray-200 rounded-xl bg-white">

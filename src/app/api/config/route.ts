@@ -38,15 +38,14 @@ export async function POST(request: NextRequest): Promise<NextResponse<ConfigRes
     const body: ConfigRequest = await request.json();
     // Normalize/validate emails server-side (accept array or comma-separated string)
     const rawEmailsValue = (body as any)?.emailRecipients;
-    console.log('[config] incoming emailRecipients:', rawEmailsValue);
     const rawEmails = Array.isArray(rawEmailsValue)
       ? rawEmailsValue
       : (typeof rawEmailsValue === 'string' ? rawEmailsValue.split(',') : []);
     const normalizedEmails = rawEmails
       .map((e: any) => (typeof e === 'string' ? e.trim() : ''))
       .filter((e: string) => e.length > 0);
-    console.log('[config] normalizedEmails:', normalizedEmails);
     const { repositoryFullName, installationId, trackedRepositories = [] } = body; // Default to empty array
+    const hasEmailField = Object.prototype.hasOwnProperty.call(body, 'emailRecipients');
 
     if (!repositoryFullName) {
       return NextResponse.json(
@@ -119,10 +118,10 @@ export async function POST(request: NextRequest): Promise<NextResponse<ConfigRes
       provider: 'github' as const,
       installation_id: installationId,
     };
-    if (normalizedEmails.length > 0) {
+    if (hasEmailField) {
+      // Explicit email field present: set as provided (even empty to allow clearing)
       projectData.email_distribution_list = normalizedEmails;
     }
-    console.log('[config] will set email_distribution_list:', normalizedEmails.length > 0);
     console.log('Project data prepared:', projectData);
 
     // Check if project already exists for this user and repository
@@ -149,7 +148,6 @@ export async function POST(request: NextRequest): Promise<NextResponse<ConfigRes
       }
       project = updateResult.data;
       console.log('Project updated successfully:', project?.id);
-      console.log('[config] project email_distribution_list after update:', (project as any)?.email_distribution_list);
     } else {
       console.log('Creating new project...');
       // Create new project
@@ -164,19 +162,8 @@ export async function POST(request: NextRequest): Promise<NextResponse<ConfigRes
       }
       project = createResult.data;
       console.log('Project created successfully:', project?.id);
-      console.log('[config] project email_distribution_list after create:', (project as any)?.email_distribution_list);
     }
 
-    // Ensure email list persisted explicitly only when provided (defensive)
-    if (project?.id && normalizedEmails.length > 0) {
-      const ensureEmail = await supabaseService.projects.updateProject(project.id, {
-        email_distribution_list: normalizedEmails,
-      } as any);
-      if (!ensureEmail.error && ensureEmail.data) {
-        project = ensureEmail.data;
-      }
-      console.log('[config] project email_distribution_list after ensure step:', (project as any)?.email_distribution_list);
-    }
     // Update tracked flag across user's repos if provided (guard against accidental clearing)
     try {
       const hasTrackedField = Object.prototype.hasOwnProperty.call(body, 'trackedRepositories');

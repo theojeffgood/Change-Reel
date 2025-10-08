@@ -70,7 +70,7 @@ function ConfigurationPageContent() {
   const [loading, setLoading] = useState(false);
   const [repoError, setRepoError] = useState('');
   const [emailRecipientsInput, setEmailRecipientsInput] = useState('');
-  const [emailsEnabled, setEmailsEnabled] = useState(false);
+  const [emails, setEmails] = useState<string[]>([]);
   const [balance, setBalance] = useState<number | null>(null);
   const [balanceLoading, setBalanceLoading] = useState(false);
   const [balanceError, setBalanceError] = useState('');
@@ -178,11 +178,11 @@ function ConfigurationPageContent() {
         setHasExistingConfiguration(true);
         const repoName = result.configuration.repositoryFullName || '';
         const installationId = result.configuration.installationId;
-        const emails: string[] = Array.isArray(result.configuration.emailRecipients) ? result.configuration.emailRecipients : [];
+        const emailsArr: string[] = Array.isArray(result.configuration.emailRecipients) ? result.configuration.emailRecipients : [];
 
         setSelectedRepository(repoName);
-        setEmailRecipientsInput(emails.join(', '));
-        setEmailsEnabled(emails.length > 0);
+        setEmailRecipientsInput('');
+        setEmails(emailsArr);
 
         if (installationId) {
           const idString = String(installationId);
@@ -320,7 +320,6 @@ function ConfigurationPageContent() {
           repositoryFullName: repoName,
           installationId: Number(installationIdValue),
           emailRecipients: parsedEmails,
-          sendEmailsOnSummary: emailsEnabled,
           trackedRepositories: selectedRepoFullNames,
         }),
       });
@@ -346,7 +345,51 @@ function ConfigurationPageContent() {
       savingRef.current = false;
       setSaving(false);
     }
-  }, [selectedRepoFullNames, emailRecipientsInput, emailsEnabled]);
+  }, [selectedRepoFullNames, emailRecipientsInput]);
+
+  const addEmail = useCallback(async () => {
+    const val = emailRecipientsInput.trim();
+    if (!val) return;
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!emailRegex.test(val)) return;
+    if (emails.includes(val)) {
+      setEmailRecipientsInput('');
+      return;
+    }
+    const next = [...emails, val];
+    setEmails(next);
+    setEmailRecipientsInput('');
+    // Immediate save if we have enough context
+    if (selectedInstallationId && (selectedRepository || selectedRepoFullNames[0])) {
+      const repoName = selectedRepository || selectedRepoFullNames[0];
+      void fetch('/api/config', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          repositoryFullName: repoName,
+          installationId: Number(selectedInstallationId),
+          emailRecipients: next,
+        }),
+      });
+    }
+  }, [emailRecipientsInput, emails, selectedInstallationId, selectedRepository, selectedRepoFullNames]);
+
+  const removeEmail = useCallback(async (toRemove: string) => {
+    const next = emails.filter(e => e !== toRemove);
+    setEmails(next);
+    if (selectedInstallationId && (selectedRepository || selectedRepoFullNames[0])) {
+      const repoName = selectedRepository || selectedRepoFullNames[0];
+      void fetch('/api/config', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          repositoryFullName: repoName,
+          installationId: Number(selectedInstallationId),
+          emailRecipients: next,
+        }),
+      });
+    }
+  }, [emails, selectedInstallationId, selectedRepository, selectedRepoFullNames]);
 
   const isInitializing = sessionStatus === 'loading' || githubStatusLoading || !configurationLoaded || !installationsLoaded;
 
@@ -513,37 +556,45 @@ function ConfigurationPageContent() {
                     <div className="mt-4 grid grid-cols-1 md:grid-cols-2 gap-6">
                       <div className="p-4 border border-gray-200 rounded-xl bg-white">
                         <div className="flex items-center justify-between mb-3">
-                        <label className="block text-sm font-medium text-gray-700 mb-2">
-                          Get Change Summaries in your Inbox
-                        </label>
-                          <button
-                            type="button"
-                            onClick={() => setEmailsEnabled(v => !v)}
-                            className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors ${emailsEnabled ? 'bg-black' : 'bg-gray-300'}`}
-                            aria-pressed={emailsEnabled}
-                            aria-label="Toggle email notifications"
-                          >
-                            <span
-                              className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${emailsEnabled ? 'translate-x-6' : 'translate-x-1'}`}
-                            />
-                          </button>
-                        </div>
-                        <input
-                          type="text"
-                          value={emailRecipientsInput}
-                          onChange={(e) => {
-                            const val = e.target.value;
-                            setEmailRecipientsInput(val);
-                            if (!emailsEnabled && val.trim().length > 0) {
-                              setEmailsEnabled(true);
-                            }
-                          }}
-                          placeholder="team@example.com"
-                          className="w-full rounded-lg border-gray-300 focus:border-black focus:ring-black text-gray-900 shadow-sm"
-                        />
-                        <p className="mt-2 text-xs text-gray-500">
+                          <label className="block text-sm font-medium text-gray-700 mb-2">Get Change Summaries in your Inbox</label>
+                          <p className="mt-2 text-xs text-gray-500">
                           We send emails when new summaries are created. We don't send spam. 
                         </p>
+                        </div>
+                        <div className="flex items-center gap-2">
+                          <input
+                            type="text"
+                            value={emailRecipientsInput}
+                            onChange={(e) => setEmailRecipientsInput(e.target.value)}
+                            placeholder="team@example.com"
+                            className="flex-1 rounded-lg border-gray-300 focus:border-black focus:ring-black text-gray-900 shadow-sm"
+                            onKeyDown={(e) => { if (e.key === 'Enter') { e.preventDefault(); void addEmail(); } }}
+                          />
+                          <button
+                            type="button"
+                            onClick={() => void addEmail()}
+                            className="px-3 py-2 text-sm font-medium text-white bg-black rounded-lg hover:bg-gray-800"
+                          >
+                            Add
+                          </button>
+                        </div>
+                        {emails.length > 0 && (
+                          <div className="mt-3 flex flex-wrap gap-2">
+                            {emails.map(email => (
+                              <span key={email} className="inline-flex items-center gap-2 px-2.5 py-1 text-xs bg-gray-100 border border-gray-200 text-gray-800 rounded-full">
+                                {email}
+                                <button
+                                  type="button"
+                                  aria-label={`Remove ${email}`}
+                                  onClick={() => void removeEmail(email)}
+                                  className="ml-1 text-gray-500 hover:text-black"
+                                >
+                                  ×
+                                </button>
+                              </span>
+                            ))}
+                          </div>
+                        )}
                       </div>
 
                       {/* Credits Remaining */}

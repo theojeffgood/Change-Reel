@@ -50,9 +50,7 @@ function ConfigurationPageContent() {
   const [selectedRepoFullNames, setSelectedRepoFullNames] = useState<string[]>([]);
   const [installations, setInstallations] = useState<Array<{ id: number; account?: { login: string } }>>([]);
   const [selectedInstallationId, setSelectedInstallationId] = useState<string>('');
-  const [selectedRepository, setSelectedRepository] = useState<string>('');
   const [loadingRepos, setLoadingRepos] = useState(false);
-  const [saveMessage, setSaveMessage] = useState('');
   const [saveError, setSaveError] = useState('');
   const [isLoadingConfiguration, setIsLoadingConfiguration] = useState(false);
   const [configurationLoaded, setConfigurationLoaded] = useState(false);
@@ -64,7 +62,6 @@ function ConfigurationPageContent() {
   const shouldRedirect = ['1', 'true'].includes((searchParams?.get('redirect') || '').toLowerCase());
   const authError = searchParams?.get('error');
   const hasRedirectedRef = useRef(false);
-  const lastSavedRef = useRef<{ repo: string; installation: string } | null>(null);
   const savingRef = useRef(false);
   const [showInstallPicker, setShowInstallPicker] = useState(false);
   const [loading, setLoading] = useState(false);
@@ -176,11 +173,15 @@ function ConfigurationPageContent() {
 
       if (response.ok && result.configuration) {
         setHasExistingConfiguration(true);
-        const repoName = result.configuration.repositoryFullName || '';
+        const repoNames: string[] = Array.isArray(result.configuration.repositories)
+          ? result.configuration.repositories.filter((name: unknown): name is string => typeof name === 'string')
+          : [];
         const installationId = result.configuration.installationId;
-        const emailsArr: string[] = Array.isArray(result.configuration.emailRecipients) ? result.configuration.emailRecipients : [];
+        const emailsArr: string[] = Array.isArray(result.configuration.emailRecipients)
+          ? result.configuration.emailRecipients
+          : [];
 
-        setSelectedRepository(repoName);
+        setSelectedRepoFullNames(repoNames);
         setEmailRecipientsInput('');
         setEmails(emailsArr);
 
@@ -188,14 +189,13 @@ function ConfigurationPageContent() {
           const idString = String(installationId);
           setSelectedInstallationId(idString);
           void fetchRepositories(idString);
-          lastSavedRef.current = repoName
-            ? { repo: repoName, installation: idString }
-            : null;
         } else {
           setSelectedInstallationId('');
         }
       } else {
         setHasExistingConfiguration(false);
+        setSelectedRepoFullNames([]);
+        setEmails([]);
       }
     } catch (error) {
       console.error('Error loading existing configuration:', error);
@@ -265,7 +265,7 @@ function ConfigurationPageContent() {
       githubStatusLoading ||
       !githubStatus?.connected ||
       !hasExistingConfiguration ||
-      !selectedRepository
+      selectedRepoFullNames.length === 0
     ) {
       return;
     }
@@ -280,14 +280,14 @@ function ConfigurationPageContent() {
     githubStatusLoading,
     githubStatus?.connected,
     hasExistingConfiguration,
-    selectedRepository,
+    selectedRepoFullNames,
     router,
   ]);
 
   const saveConfiguration = useCallback(async (
-    repoName: string,
+    repositoriesToSave: string[],
     installationIdValue: string,
-    options?: { silent?: boolean }
+    options?: { silent?: boolean; emails?: string[] }
   ): Promise<boolean> => {
     if (savingRef.current) {
       return false;
@@ -298,29 +298,34 @@ function ConfigurationPageContent() {
       return false;
     }
 
+    if (repositoriesToSave.length === 0) {
+      setSaveError('Please select at least one repository.');
+      return false;
+    }
+
     if (!options?.silent) {
-      setSaveMessage('');
       setSaveError('');
     }
     savingRef.current = true;
     setSaving(true);
 
     try {
-      const parsedEmails = emailRecipientsInput
+      const manualEntry = emailRecipientsInput
         .split(',')
         .map(s => s.trim())
         .filter(Boolean);
-      // Persist tracked repos selection
+      const baselineEmails = options?.emails ?? emails;
+      const combinedEmails = Array.from(new Set([...baselineEmails, ...manualEntry]));
+
       const response = await fetch('/api/config', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
         },
         body: JSON.stringify({
-          repositoryFullName: repoName,
+          repositories: repositoriesToSave,
           installationId: Number(installationIdValue),
-          emailRecipients: parsedEmails,
-          trackedRepositories: selectedRepoFullNames,
+          emailRecipients: combinedEmails,
         }),
       });
 
@@ -328,10 +333,8 @@ function ConfigurationPageContent() {
 
       if (response.ok) {
         setSaveError('');
-        lastSavedRef.current = { repo: repoName, installation: installationIdValue };
-        if (!options?.silent) {
-          setSaveMessage(`Configuration saved! ${selectedRepoFullNames.length} repositories selected.`);
-        }
+        setEmails(combinedEmails);
+        setEmailRecipientsInput('');
         return true;
       }
 
@@ -345,7 +348,7 @@ function ConfigurationPageContent() {
       savingRef.current = false;
       setSaving(false);
     }
-  }, [selectedRepoFullNames, emailRecipientsInput]);
+  }, [emails, emailRecipientsInput]);
 
   const addEmail = useCallback(async () => {
     const val = emailRecipientsInput.trim();
@@ -359,37 +362,18 @@ function ConfigurationPageContent() {
     const next = [...emails, val];
     setEmails(next);
     setEmailRecipientsInput('');
-    // Immediate save if we have enough context
-    if (selectedInstallationId && (selectedRepository || selectedRepoFullNames[0])) {
-      const repoName = selectedRepository || selectedRepoFullNames[0];
-      void fetch('/api/config', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          repositoryFullName: repoName,
-          installationId: Number(selectedInstallationId),
-          emailRecipients: next,
-        }),
-      });
+    if (selectedInstallationId && selectedRepoFullNames.length > 0) {
+      void saveConfiguration(selectedRepoFullNames, selectedInstallationId, { silent: true, emails: next });
     }
-  }, [emailRecipientsInput, emails, selectedInstallationId, selectedRepository, selectedRepoFullNames]);
+  }, [emailRecipientsInput, emails, selectedInstallationId, selectedRepoFullNames, saveConfiguration]);
 
   const removeEmail = useCallback(async (toRemove: string) => {
     const next = emails.filter(e => e !== toRemove);
     setEmails(next);
-    if (selectedInstallationId && (selectedRepository || selectedRepoFullNames[0])) {
-      const repoName = selectedRepository || selectedRepoFullNames[0];
-      void fetch('/api/config', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          repositoryFullName: repoName,
-          installationId: Number(selectedInstallationId),
-          emailRecipients: next,
-        }),
-      });
+    if (selectedInstallationId && selectedRepoFullNames.length > 0) {
+      void saveConfiguration(selectedRepoFullNames, selectedInstallationId, { silent: true, emails: next });
     }
-  }, [emails, selectedInstallationId, selectedRepository, selectedRepoFullNames]);
+  }, [emails, selectedInstallationId, selectedRepoFullNames, saveConfiguration]);
 
   const isInitializing = sessionStatus === 'loading' || githubStatusLoading || !configurationLoaded || !installationsLoaded;
 
@@ -483,7 +467,7 @@ function ConfigurationPageContent() {
                         onChange={(e) => {
                           const id = e.target.value;
                           setSelectedInstallationId(id);
-                          setSelectedRepository('');
+                          setSelectedRepoFullNames([]);
                           if (id) fetchRepositories(id);
                         }}
                         className="w-full rounded-xl border-gray-300 focus:border-black focus:ring-black text-gray-900 shadow-sm mb-6"
@@ -529,7 +513,6 @@ function ConfigurationPageContent() {
                                         ? prev.filter(n => n !== fullName)
                                         : [...prev, fullName]
                                     );
-                                    setSelectedRepository(fullName);
                                   }}
                                   className={`text-left p-4 rounded-xl border transition-colors ${selected ? 'border-green-600 bg-green-50' : 'border-gray-200 hover:bg-gray-50'}`}
                                 >
@@ -624,8 +607,7 @@ function ConfigurationPageContent() {
                             setSaveError('Select a GitHub installation to continue.');
                             return;
                           }
-                          const primaryRepo = selectedRepository || selectedRepoFullNames[0];
-                          const saved = await saveConfiguration(primaryRepo, selectedInstallationId, { silent: false });
+                          const saved = await saveConfiguration(selectedRepoFullNames, selectedInstallationId, { silent: false });
                           if (saved) {
                             hasRedirectedRef.current = true;
                             router.push('/admin');

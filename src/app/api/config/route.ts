@@ -4,10 +4,9 @@ import { authConfig } from '@/lib/auth/config';
 import { getServiceRoleSupabaseService } from '@/lib/supabase/client';
 
 interface ConfigRequest {
-  repositoryFullName: string;
   installationId?: number;
-  emailRecipients?: string[]; // Made optional
-  trackedRepositories?: string[]; // New: list of repo full_names to track
+  emailRecipients?: string[];
+  repositories?: string[];
 }
 
 interface ConfigResponse {
@@ -36,6 +35,32 @@ export async function POST(request: NextRequest): Promise<NextResponse<ConfigRes
 
     // Parse request body
     const body: ConfigRequest = await request.json();
+    const { installationId } = body;
+
+    const repositories = Array.from(
+      new Set(
+        Array.isArray(body.repositories)
+          ? body.repositories
+          .map(repo => (typeof repo === 'string' ? repo.trim() : ''))
+          .filter(repo => repo.includes('/'))
+          : []
+      )
+    );
+
+    if (repositories.length === 0) {
+      return NextResponse.json(
+        { success: false, message: 'Missing required fields', error: 'At least one repository must be selected' },
+        { status: 400 }
+      );
+    }
+
+    if (!installationId) {
+      return NextResponse.json(
+        { success: false, message: 'Missing required fields', error: 'Installation ID is required' },
+        { status: 400 }
+      );
+    }
+
     // Normalize/validate emails server-side (accept array or comma-separated string)
     const rawEmailsValue = (body as any)?.emailRecipients;
     const rawEmails = Array.isArray(rawEmailsValue)
@@ -44,15 +69,7 @@ export async function POST(request: NextRequest): Promise<NextResponse<ConfigRes
     const normalizedEmails = rawEmails
       .map((e: any) => (typeof e === 'string' ? e.trim() : ''))
       .filter((e: string) => e.length > 0);
-    const { repositoryFullName, installationId, trackedRepositories = [] } = body; // Default to empty array
     const hasEmailField = Object.prototype.hasOwnProperty.call(body, 'emailRecipients');
-
-    if (!repositoryFullName) {
-      return NextResponse.json(
-        { success: false, message: 'Missing required fields', error: 'Repository is required' },
-        { status: 400 }
-      );
-    }
 
     // Get Supabase service (using service role for server-side operations)
     const supabaseService = getServiceRoleSupabaseService();
@@ -97,90 +114,87 @@ export async function POST(request: NextRequest): Promise<NextResponse<ConfigRes
       );
     }
 
-    // Parse repository name from full name (owner/repo)
-    console.log('Parsing repository name:', repositoryFullName);
-    const [owner, repoName] = repositoryFullName.split('/');
-    if (!owner || !repoName) {
-      console.error('Invalid repository format:', repositoryFullName);
-      return NextResponse.json(
-        { success: false, message: 'Invalid repository format', error: 'Repository should be in format owner/repo' },
-        { status: 400 }
-      );
+    // Fetch all projects owned by the user once for reuse
+    const userProjectsResult = await supabaseService.projects.getProjectsByUser(user.id);
+    if (userProjectsResult.error) {
+      console.error('Failed to load existing projects:', userProjectsResult.error.message);
     }
-    console.log('Repository parsed successfully:', { owner, repoName });
-
-    // Create or update project (webhook secrets handled at app level in GitHub App model)
-    // IMPORTANT: Only set email_distribution_list when we actually have emails to avoid clearing existing values.
-    const projectData: any = {
-      user_id: user.id,
-      name: `${owner}/${repoName}`,
-      repo_name: repositoryFullName,
-      provider: 'github' as const,
-      installation_id: installationId,
-    };
-    if (hasEmailField) {
-      // Explicit email field present: set as provided (even empty to allow clearing)
-      projectData.email_distribution_list = normalizedEmails;
+    const userProjects = userProjectsResult.data || [];
+    const projectMap = new Map<string, any>();
+    for (const project of userProjects) {
+      if (project?.repo_name) {
+        projectMap.set(project.repo_name, project);
+      }
     }
-    console.log('Project data prepared:', projectData);
 
-    // Check if project already exists for this user and repository
-    console.log('Checking for existing project for user:', user.id, 'and repository:', repositoryFullName);
-    const existingProjectResult = await supabaseService.projects.getProjectByUserAndRepository(user.id, repositoryFullName);
-    console.log('Existing project lookup result:', { data: !!existingProjectResult.data, error: existingProjectResult.error?.message });
-    const existingProject = existingProjectResult.data;
-    
-    let project;
-    if (existingProject) {
-      console.log('Updating existing project:', existingProject.id);
-      // Update existing project
-      const updateResult = await supabaseService.projects.updateProject(
-        existingProject.id,
-        projectData
-      );
-      console.log('Project update result:', { data: !!updateResult.data, error: updateResult.error?.message });
-      if (updateResult.error) {
-        console.error('Project update failed:', updateResult.error);
+    const updatedProjects: string[] = [];
+
+    for (const repositoryFullName of repositories) {
+      const [owner, repoName] = repositoryFullName.split('/');
+      if (!owner || !repoName) {
+        console.error('Invalid repository format:', repositoryFullName);
         return NextResponse.json(
-          { success: false, message: 'Failed to update project', error: updateResult.error.message },
-          { status: 500 }
+          { success: false, message: 'Invalid repository format', error: 'Repository should be in format owner/repo' },
+          { status: 400 }
         );
       }
-      project = updateResult.data;
-      console.log('Project updated successfully:', project?.id);
-    } else {
-      console.log('Creating new project...');
-      // Create new project
-      const createResult = await supabaseService.projects.createProject(projectData);
-      console.log('Project creation result:', { data: !!createResult.data, error: createResult.error?.message });
-      if (createResult.error) {
-        console.error('Project creation failed:', createResult.error);
-        return NextResponse.json(
-          { success: false, message: 'Failed to create project', error: createResult.error.message },
-          { status: 500 }
-        );
+
+      // Prepare project payload
+      const baseProjectData: any = {
+        name: `${owner}/${repoName}`,
+        repo_name: repositoryFullName,
+        provider: 'github' as const,
+        installation_id: installationId,
+        is_tracked: true,
+      };
+
+      if (hasEmailField) {
+        baseProjectData.email_distribution_list = normalizedEmails;
       }
-      project = createResult.data;
-      console.log('Project created successfully:', project?.id);
+
+      const existingProject = projectMap.get(repositoryFullName);
+      if (existingProject) {
+        const updateResult = await supabaseService.projects.updateProject(
+          existingProject.id,
+          baseProjectData
+        );
+        if (updateResult.error) {
+          console.error('Project update failed:', updateResult.error);
+          return NextResponse.json(
+            { success: false, message: 'Failed to update project', error: updateResult.error.message },
+            { status: 500 }
+          );
+        }
+      } else {
+        const createResult = await supabaseService.projects.createProject({
+          ...baseProjectData,
+          user_id: user.id,
+          email_distribution_list: hasEmailField ? normalizedEmails : [],
+        });
+        if (createResult.error) {
+          console.error('Project creation failed:', createResult.error);
+          return NextResponse.json(
+            { success: false, message: 'Failed to create project', error: createResult.error.message },
+            { status: 500 }
+          );
+        }
+      }
+
+      updatedProjects.push(repositoryFullName);
     }
 
-    // Update tracked flag across user's repos if provided (guard against accidental clearing)
+    // Update tracked flag across user's repos to match selection
     try {
-      const hasTrackedField = Object.prototype.hasOwnProperty.call(body, 'trackedRepositories');
-      if (hasTrackedField && Array.isArray(trackedRepositories)) {
-        // Fetch all user projects
-        const { data: userProjects } = await supabaseService.projects.getProjectsByUser(user.id);
-        if (Array.isArray(userProjects)) {
-          for (const p of userProjects) {
-            const shouldTrack = trackedRepositories.includes(p.repo_name || p.name);
-            if ((p as any).is_tracked !== shouldTrack) {
-              await supabaseService.projects.updateProject(p.id, { is_tracked: shouldTrack } as any);
-            }
-          }
+      for (const project of projectMap.values()) {
+        const repoName = project.repo_name || project.name;
+        if (!repoName) continue;
+        const shouldTrack = repositories.includes(repoName);
+        if ((project as any).is_tracked !== shouldTrack) {
+          await supabaseService.projects.updateProject(project.id, { is_tracked: shouldTrack } as any);
         }
       }
     } catch (e) {
-      console.warn('[config] failed to update tracked flags', (e as any)?.message)
+      console.warn('[config] failed to update tracked flags', (e as any)?.message);
     }
 
     // Automatically upsert installation mapping and register all repos for this installation
@@ -223,7 +237,7 @@ export async function POST(request: NextRequest): Promise<NextResponse<ConfigRes
     return NextResponse.json({
       success: true,
       message: 'Configuration saved successfully! Webhooks are automatically handled by the GitHub App.',
-      project,
+      repositories: updatedProjects,
     });
 
   } catch (error) {
@@ -265,9 +279,10 @@ export async function GET(): Promise<NextResponse> {
       });
     }
 
-    const latestProject = await supabaseService.projects.getLatestProjectForUser(user.id);
+    const projectsResult = await supabaseService.projects.getProjectsByUser(user.id);
+    const projects = projectsResult.data || [];
 
-    if (!latestProject) {
+    if (!projects || projects.length === 0) {
       return NextResponse.json({
         success: true,
         configuration: null,
@@ -275,16 +290,27 @@ export async function GET(): Promise<NextResponse> {
       });
     }
 
+    const latestProject = await supabaseService.projects.getLatestProjectForUser(user.id);
+    const trackedProjects = projects.filter((project: any) => project.is_tracked !== false);
+    const selectedRepos = trackedProjects.length > 0 ? trackedProjects : projects;
+    const uniqueEmails = Array.from(
+      new Set(
+        selectedRepos.flatMap((project: any) => Array.isArray(project.email_distribution_list) ? project.email_distribution_list : [])
+      )
+    );
+    const installationId = selectedRepos.find(project => project.installation_id)?.installation_id ?? null;
+    const referenceProject = latestProject ?? selectedRepos[0];
+
     // Return configuration (without sensitive data)
     return NextResponse.json({
       success: true,
       configuration: {
-        repositoryFullName: latestProject.repo_name || latestProject.name,
-        emailRecipients: latestProject.email_distribution_list || [],
-        provider: latestProject.provider,
-        createdAt: latestProject.created_at,
-        updatedAt: latestProject.updated_at,
-        installationId: latestProject.installation_id ?? null,
+        repositories: selectedRepos.map(project => project.repo_name || project.name).filter(Boolean),
+        emailRecipients: uniqueEmails,
+        provider: referenceProject?.provider,
+        createdAt: referenceProject?.created_at,
+        updatedAt: referenceProject?.updated_at,
+        installationId,
       }
     });
 

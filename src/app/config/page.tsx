@@ -346,7 +346,7 @@ function ConfigurationPageContent() {
       savingRef.current = false;
       setSaving(false);
     }
-  }, [selectedRepoFullNames]);
+  }, [selectedRepoFullNames, emailRecipientsInput, emailsEnabled]);
 
   const isInitializing = sessionStatus === 'loading' || githubStatusLoading || !configurationLoaded || !installationsLoaded;
 

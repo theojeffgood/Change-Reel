@@ -106,14 +106,17 @@ export async function POST(request: NextRequest): Promise<NextResponse<ConfigRes
     console.log('Repository parsed successfully:', { owner, repoName });
 
     // Create or update project (webhook secrets handled at app level in GitHub App model)
-    const projectData = {
+    // IMPORTANT: Only set email_distribution_list when we actually have emails to avoid clearing existing values.
+    const projectData: any = {
       user_id: user.id,
       name: `${owner}/${repoName}`,
       repo_name: repositoryFullName,
       provider: 'github' as const,
       installation_id: installationId,
-      email_distribution_list: normalizedEmails,
     };
+    if (normalizedEmails.length > 0) {
+      projectData.email_distribution_list = normalizedEmails;
+    }
     console.log('Project data prepared:', projectData);
 
     // Check if project already exists for this user and repository
@@ -156,8 +159,8 @@ export async function POST(request: NextRequest): Promise<NextResponse<ConfigRes
       console.log('Project created successfully:', project?.id);
     }
 
-    // Ensure email list persisted explicitly (defensive in case of future changes)
-    if (project?.id) {
+    // Ensure email list persisted explicitly only when provided (defensive)
+    if (project?.id && normalizedEmails.length > 0) {
       const ensureEmail = await supabaseService.projects.updateProject(project.id, {
         email_distribution_list: normalizedEmails,
       } as any);

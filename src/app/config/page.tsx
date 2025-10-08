@@ -70,6 +70,9 @@ function ConfigurationPageContent() {
   const [loading, setLoading] = useState(false);
   const [repoError, setRepoError] = useState('');
   const [emailRecipientsInput, setEmailRecipientsInput] = useState('');
+  const [balance, setBalance] = useState<number | null>(null);
+  const [balanceLoading, setBalanceLoading] = useState(false);
+  const [balanceError, setBalanceError] = useState('');
 
   const handleReauthenticate = () => {
     hasRedirectedRef.current = true;
@@ -221,6 +224,35 @@ function ConfigurationPageContent() {
     loadExistingConfiguration,
   ]);
 
+  // Load credit balance when authenticated
+  useEffect(() => {
+    const fetchBalance = async () => {
+      try {
+        setBalanceLoading(true);
+        setBalanceError('');
+        const me = await fetch('/api/users/me');
+        if (!me.ok) throw new Error('Failed to resolve user');
+        const meJson = await me.json();
+        const userId = meJson?.id;
+        if (!userId) throw new Error('Failed to resolve user');
+        const res = await fetch('/api/billing/balance', {
+          method: 'GET',
+          headers: { 'x-user-id': String(userId) },
+        });
+        const data = await res.json();
+        if (!res.ok) throw new Error(data?.error || 'Failed to fetch balance');
+        setBalance(typeof data.balance === 'number' ? data.balance : Number(data.balance) || 0);
+      } catch (e: any) {
+        setBalanceError(e?.message || 'Failed to fetch balance');
+      } finally {
+        setBalanceLoading(false);
+      }
+    };
+    if (sessionStatus === 'authenticated') {
+      void fetchBalance();
+    }
+  }, [sessionStatus]);
+
   useEffect(() => {
     if (
       !shouldRedirect ||
@@ -342,6 +374,22 @@ function ConfigurationPageContent() {
       </div>
 
       <div className="max-w-3xl mx-auto px-4 sm:px-6 lg:px-8 pb-12 mb-20">
+        {/* Credits Remaining */}
+        <div className="bg-white border border-gray-200 rounded-xl p-6 mb-6">
+          <div className="flex items-center justify-between">
+            <div>
+              <div className="text-sm font-medium text-gray-700">Credits Remaining</div>
+              {balanceLoading ? (
+                <div className="text-gray-600 mt-1">Loading…</div>
+              ) : balanceError ? (
+                <div className="text-red-700 mt-1 text-sm">{balanceError}</div>
+              ) : (
+                <div className="text-2xl font-semibold text-gray-900 mt-1">{balance ?? '—'}</div>
+              )}
+            </div>
+          </div>
+        </div>
+
         {(authError || installationError || repoError) && (
           <div className="mb-6 rounded-lg border border-yellow-200 bg-yellow-50 px-4 py-3 text-sm text-yellow-900">
             <p>
@@ -478,17 +526,17 @@ function ConfigurationPageContent() {
                     <div className="mt-4">
                       <div className="p-4 mb-4 border border-gray-200 rounded-xl bg-white">
                         <label className="block text-sm font-medium text-gray-700 mb-2">
-                          Email Recipients (comma-separated)
+                          Get Change Summaries in your Inbox
                         </label>
                         <input
                           type="text"
                           value={emailRecipientsInput}
                           onChange={(e) => setEmailRecipientsInput(e.target.value)}
-                          placeholder="team@example.com, you@example.com"
+                          placeholder="team@example.com"
                           className="w-full rounded-lg border-gray-300 focus:border-black focus:ring-black text-gray-900 shadow-sm"
                         />
                         <p className="mt-2 text-xs text-gray-500">
-                          We’ll send daily digests to these addresses. You can update anytime.
+                          We send emails when new summaries are created. No spam ever. You can cancel anytime.
                         </p>
                       </div>
                       <button

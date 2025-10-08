@@ -1,8 +1,6 @@
 'use client'
 
 import { useEffect, useState } from 'react'
-import { useSession } from 'next-auth/react'
-import Link from 'next/link'
 
 type Commit = {
   id: string
@@ -17,12 +15,8 @@ type CommitsResponse = {
 }
 
 export default function MetricsBar() {
-  const { data: session } = useSession()
   const [commits, setCommits] = useState<Commit[]>([])
   const [repoNames, setRepoNames] = useState<string[]>([])
-  const [balance, setBalance] = useState<number | null>(null)
-  const [balanceLoading, setBalanceLoading] = useState<boolean>(false)
-  const [balanceError, setBalanceError] = useState<string | null>(null)
 
   useEffect(() => {
     const load = async () => {
@@ -50,34 +44,6 @@ export default function MetricsBar() {
     load()
   }, [])
 
-  // Load credit balance for authenticated user
-  useEffect(() => {
-    const fetchBalance = async () => {
-      try {
-        setBalanceLoading(true)
-        setBalanceError(null)
-        // Resolve internal UUID via server
-        const me = await fetch('/api/users/me')
-        if (!me.ok) throw new Error('Failed to resolve user')
-        const meJson = await me.json()
-        const userId = meJson?.id
-        if (!userId) throw new Error('Failed to resolve user')
-        const res = await fetch('/api/billing/balance', {
-          method: 'GET',
-          headers: { 'x-user-id': String(userId) },
-        })
-        const data = await res.json()
-        if (!res.ok) throw new Error(data?.error || 'Failed to fetch balance')
-        setBalance(typeof data.balance === 'number' ? data.balance : Number(data.balance) || 0)
-      } catch (e: any) {
-        setBalanceError(e?.message || 'Failed to fetch balance')
-      } finally {
-        setBalanceLoading(false)
-      }
-    }
-    fetchBalance()
-  }, [session])
-
   const summariesDisplayed = commits.length
 
   return (
@@ -93,25 +59,6 @@ export default function MetricsBar() {
         <div className="flex flex-col items-center justify-center text-center min-h-[120px]">
           <div className="text-2xl font-semibold text-gray-900">{summariesDisplayed}</div>
           <div className="text-md text-gray-500 mt-1">Features Shipped</div>
-        </div>
-      </div>
-
-      <div className="bg-white border border-gray-200 rounded-xl p-6">
-        <div className="flex flex-col items-center justify-center text-center min-h-[120px]">
-          {session ? (
-            balanceLoading ? (
-              <div className="text-gray-500">Loading…</div>
-            ) : balanceError ? (
-              <div className="text-red-600 text-sm">{balanceError}</div>
-            ) : (
-              <div className="text-2xl font-semibold text-gray-900">{balance ?? '—'}</div>
-            )
-          ) : (
-            <div className="text-sm text-gray-600">
-              <Link href="/billing" className="text-blue-600 hover:underline">Sign in</Link> to view and top up credits
-            </div>
-          )}
-          <div className="text-md text-gray-500 mt-1">Credits Remaining</div>
         </div>
       </div>
     </div>

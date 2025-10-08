@@ -203,6 +203,41 @@ export class GenerateSummaryHandler implements JobHandler<GenerateSummaryJobData
         }
       }
 
+      // Immediately enqueue send_email if project has configured recipients
+      try {
+        if (this.supabaseClient && job.project_id && !commit.email_sent) {
+          const { data: proj } = await this.supabaseClient
+            .from('projects')
+            .select('email_distribution_list')
+            .eq('id', job.project_id)
+            .maybeSingle()
+
+          const recipients: string[] = Array.isArray((proj as any)?.email_distribution_list)
+            ? (proj as any).email_distribution_list.filter((e: any) => typeof e === 'string' && e.trim())
+            : []
+
+          if (recipients.length > 0) {
+            await this.jobQueueService.createJob({
+              type: 'send_email',
+              priority: 30,
+              data: {
+                commit_ids: [data.commit_id],
+                recipients,
+                template_type: 'single_commit',
+              },
+              commit_id: data.commit_id,
+              project_id: job.project_id,
+              scheduled_for: new Date().toISOString(),
+              max_attempts: 1,
+            })
+          }
+        }
+      } catch (e) {
+        // Non-fatal: summary succeeded; email scheduling failed
+        // eslint-disable-next-line no-console
+        console.warn('[GenerateSummary] Failed to enqueue send_email job:', (e as any)?.message || e)
+      }
+
       return {
         success: true,
         data: {

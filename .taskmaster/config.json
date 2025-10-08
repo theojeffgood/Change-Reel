@@ -1,20 +1,20 @@
 {
   "models": {
     "main": {
-      "provider": "anthropic",
-      "modelId": "claude-opus-4-20250514",
+      "provider": "openai",
+      "modelId": "gpt-5",
       "maxTokens": 32000,
       "temperature": 0.2
     },
     "research": {
       "provider": "openai",
-      "modelId": "o3",
+      "modelId": "gpt-5",
       "maxTokens": 100000,
       "temperature": 0.1
     },
     "fallback": {
-      "provider": "anthropic",
-      "modelId": "claude-3-7-sonnet-20250219",
+      "provider": "openai",
+      "modelId": "gpt-5",
       "maxTokens": 120000,
       "temperature": 0.1
     }

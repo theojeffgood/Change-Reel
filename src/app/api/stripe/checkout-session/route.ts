@@ -2,6 +2,8 @@ import { NextRequest, NextResponse } from 'next/server';
 import { getStripeClient, getCreditPackPriceId } from '@/lib/stripe/client';
 import { getStripeEnvConfig } from '@/lib/stripe/config';
 import { getServiceRoleSupabaseService } from '@/lib/supabase/client';
+import { getServerSession } from 'next-auth';
+import { authConfig } from '@/lib/auth/config';
 
 export const runtime = 'nodejs';
 
@@ -21,20 +23,13 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: 'Unsupported or unconfigured credit pack' }, { status: 400 });
     }
 
-    // Require a real UUID and verify it exists in users table
-    const userId = req.headers.get('x-user-id')?.trim();
-    const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
-    if (!userId || !uuidRegex.test(userId)) {
-      return NextResponse.json({ error: 'Invalid or missing x-user-id (must be a UUID)' }, { status: 422 });
+    // Resolve the authenticated user via server session and Supabase
+    const session = await getServerSession(authConfig);
+    if (!session?.user?.githubId) {
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
-
-    // Verify user exists (prevents webhook FK/format failures later)
-    const supa = getServiceRoleSupabaseService().getClient();
-    const { data: userRow, error: userErr } = await supa
-      .from('users')
-      .select('id')
-      .eq('id', userId)
-      .maybeSingle();
+    const supaService = getServiceRoleSupabaseService();
+    const { data: userRow, error: userErr } = await supaService.users.getUserByGithubId(String(session.user.githubId));
     if (userErr) {
       return NextResponse.json({ error: 'User lookup failed' }, { status: 500 });
     }
@@ -51,16 +46,16 @@ export async function POST(req: NextRequest) {
     // Include session_id placeholder per Stripe docs for Embedded Checkout
     const returnUrl = `${successPath}${successPath.includes('?') ? '&' : '?'}session_id={CHECKOUT_SESSION_ID}`;
 
-    const session = await stripe.checkout.sessions.create({
+    const checkoutSession = await stripe.checkout.sessions.create({
       mode: 'payment',
       ui_mode: 'embedded',
       line_items: [{ price: priceId, quantity: 1 }],
       return_url: returnUrl,
       payment_method_types: ['card'],
-      metadata: { user_id: userId, credit_pack: body.credit_pack },
+      metadata: { user_id: userRow.id, credit_pack: body.credit_pack },
       payment_intent_data: {
         metadata: {
-          user_id: userId,
+          user_id: userRow.id,
           credit_pack: body.credit_pack,
           // Explicit credits purchased for webhook logic (removes need for creditsPerUsd)
           credits: body.credit_pack === 'credits1000' ? '1500' : '100',
@@ -69,7 +64,7 @@ export async function POST(req: NextRequest) {
     });
 
     // For Embedded Checkout we return client_secret used by the client SDK
-    return NextResponse.json({ client_secret: session.client_secret }, { status: 200 });
+    return NextResponse.json({ client_secret: checkoutSession.client_secret }, { status: 200 });
   } catch (err: unknown) {
     const message = err instanceof Error ? err.message : 'Unknown error';
     return NextResponse.json({ error: message }, { status: 500 });

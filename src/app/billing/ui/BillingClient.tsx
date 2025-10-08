@@ -29,24 +29,21 @@ export default function BillingClient() {
     setLoading(true)
     setError(null)
     try {
-      // Resolve internal UUID via server endpoint
-      const me = await fetch('/api/users/me')
-      if (!me.ok) throw new Error('Not signed in')
-      const meJson = await me.json()
-      const userId = meJson?.id
-      if (!userId) throw new Error('Not signed in')
-
       const res = await fetch('/api/stripe/checkout-session', {
         method: 'POST',
+        credentials: 'include',
         headers: {
           'Content-Type': 'application/json',
-          'x-user-id': String(userId),
         },
         body: JSON.stringify({ credit_pack }),
       })
       const data = await res.json()
       if (!res.ok) throw new Error(data.error || 'Failed to create checkout session')
-      setClientSecret(data.client_secret)
+      const secret = data?.client_secret
+      if (!secret || typeof secret !== 'string') {
+        throw new Error('Checkout session missing client secret')
+      }
+      setClientSecret(secret)
       setShowCheckout(true)
     } catch (e: any) {
       setError(e.message || 'Unknown error')
@@ -176,6 +173,9 @@ export default function BillingClient() {
               Back to plans
             </button>
             <div id="checkout" className="bg-white rounded-xl p-4 border border-gray-200 shadow-sm">
+              {!clientSecret && (
+                <div className="text-sm text-gray-500">{loading ? 'Initializing checkout…' : 'Unable to initialize checkout. Please go back and retry.'}</div>
+              )}
               {clientSecret && (
                 <EmbeddedCheckoutProvider stripe={stripePromise} options={{ clientSecret }}>
                   <EmbeddedCheckout />

@@ -198,19 +198,26 @@ export class SendEmailHandler implements JobHandler<SendEmailJobData> {
   ): { subject: string; body: string } {
     switch (templateType) {
       case 'single_commit':
-        return this.formatSingleCommitEmail(commits[0], projectName)
+        // Unified subject line per request
+        {
+          const sc = this.formatSingleCommitEmail(commits[0], projectName)
+          return { subject: `We saw a change to ${projectName}` , body: sc.body }
+        }
       
       case 'digest':
-        return this.formatDigestEmail(commits, projectName, templateData)
+        {
+          const dg = this.formatDigestEmail(commits, projectName, templateData)
+          return { subject: `We saw a change to ${projectName}`, body: dg.body }
+        }
       
       case 'weekly_summary':
-        return this.formatWeeklySummaryEmail(commits, projectName, templateData)
+        {
+          const ws = this.formatWeeklySummaryEmail(commits, projectName, templateData)
+          return { subject: `We saw a change to ${projectName}`, body: ws.body }
+        }
       
       default:
-        return {
-          subject: `Changes in ${projectName}`,
-          body: `${commits.length} commits processed.`,
-        }
+        return { subject: `We saw a change to ${projectName}`, body: `${commits.length} commits processed.` }
     }
   }
 

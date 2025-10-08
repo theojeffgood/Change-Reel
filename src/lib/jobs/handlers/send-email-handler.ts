@@ -20,9 +20,6 @@ import { createEmailTrackingService, IEmailTrackingService } from '@/lib/supabas
  * 2. Formats the email content based on template type
  * 3. Sends emails to the specified recipients
  * 4. Marks commits as email_sent if successful
- * 
- * Note: For MVP, this is a placeholder implementation
- * In production, this would integrate with an email service like SendGrid or SES
  */
 export class SendEmailHandler implements JobHandler<SendEmailJobData> {
   type = 'send_email' as const
@@ -61,25 +58,6 @@ export class SendEmailHandler implements JobHandler<SendEmailJobData> {
         commits.push(commitResult.data)
       }
 
-      // Validate that all commits have summaries
-      const commitsWithoutSummary = commits.filter(commit => !commit.summary)
-      if (commitsWithoutSummary.length > 0) {
-        try {
-          console.warn('[send_email] aborting: commits without summary', {
-            jobId: job.id,
-            missing: commitsWithoutSummary.map(c => c.id),
-          })
-        } catch {}
-        return {
-          success: false,
-          error: 'Some commits do not have summaries generated yet',
-          metadata: {
-            reason: 'missing_summaries',
-            commitsWithoutSummary: commitsWithoutSummary.map(c => c.id),
-          },
-        }
-      }
-
       // Get project information for email context
       let projectName = 'Unknown Project'
       if (commits[0]?.project_id) {
@@ -92,12 +70,19 @@ export class SendEmailHandler implements JobHandler<SendEmailJobData> {
       const from = process.env.RESEND_FROM_EMAIL || 'no-reply@changereel.local'
       let sentCount = 0
       for (const commit of commits) {
+        if (!commit.summary) {
+          return {
+            success: false,
+            error: 'Some commits do not have summaries generated yet',
+          }
+        }
+
         const content = renderSingleCommitEmail({
           projectName,
           commit: {
-            summary: commit.summary ?? null,
+            summary: commit.summary ?? '',
             author: commit.author ?? null,
-            sha: commit.sha,
+            // sha: commit.sha,
             timestamp: commit.timestamp,
           },
         })

@@ -3,7 +3,7 @@ export interface SingleCommitEmailInput {
   commit: {
     summary: string
     author: string | null
-    sha: string
+    // sha: string
     timestamp: string
   }
 }

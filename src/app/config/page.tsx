@@ -377,22 +377,6 @@ function ConfigurationPageContent() {
       </div>
 
       <div className="max-w-3xl mx-auto px-4 sm:px-6 lg:px-8 pb-12 mb-20">
-        {/* Credits Remaining */}
-        <div className="bg-white border border-gray-200 rounded-xl p-6 mb-6">
-          <div className="flex items-center justify-between">
-            <div>
-              <div className="text-sm font-medium text-gray-700">Credits Remaining</div>
-              {balanceLoading ? (
-                <div className="text-gray-600 mt-1">Loading…</div>
-              ) : balanceError ? (
-                <div className="text-red-700 mt-1 text-sm">{balanceError}</div>
-              ) : (
-                <div className="text-2xl font-semibold text-gray-900 mt-1">{balance ?? '—'}</div>
-              )}
-            </div>
-          </div>
-        </div>
-
         {(authError || installationError || repoError) && (
           <div className="mb-6 rounded-lg border border-yellow-200 bg-yellow-50 px-4 py-3 text-sm text-yellow-900">
             <p>
@@ -526,13 +510,12 @@ function ConfigurationPageContent() {
                       </div>
                     )}
 
-                    <div className="mt-4">
-                      <div className="p-4 mb-4 border border-gray-200 rounded-xl bg-white">
+                    <div className="mt-4 grid grid-cols-1 md:grid-cols-2 gap-6">
+                      <div className="p-4 border border-gray-200 rounded-xl bg-white">
+                        <div className="flex items-center justify-between mb-3">
                         <label className="block text-sm font-medium text-gray-700 mb-2">
                           Get Change Summaries in your Inbox
                         </label>
-                        <div className="flex items-center justify-between mb-3">
-                          <span className="text-sm text-gray-700">Enable Email Notifications</span>
                           <button
                             type="button"
                             onClick={() => setEmailsEnabled(v => !v)}
@@ -559,10 +542,28 @@ function ConfigurationPageContent() {
                           className="w-full rounded-lg border-gray-300 focus:border-black focus:ring-black text-gray-900 shadow-sm"
                         />
                         <p className="mt-2 text-xs text-gray-500">
-                          We send emails when new summaries are created. No spam ever. You can cancel anytime.
+                          We send emails when new summaries are created. We don't send spam. 
                         </p>
                       </div>
-                      <button
+
+                      {/* Credits Remaining */}
+                      <div className="bg-white border border-gray-200 rounded-xl p-6">
+                        <div className="flex items-center justify-between">
+                          <div>
+                            <div className="text-sm font-medium text-gray-700">Credits Remaining</div>
+                            {balanceLoading ? (
+                            <div className="text-gray-600 mt-1">Loading…</div>
+                          ) : balanceError ? (
+                          <div className="text-red-700 mt-1 text-sm">{balanceError}</div>
+                          ) : (
+                          <div className="text-2xl font-semibold text-gray-900 mt-1">{balance ?? '—'}</div>
+                          )}
+                          </div>
+                        </div>
+                      </div>
+
+                      <div className="md:col-span-2">
+                        <button
                         onClick={async () => {
                           if (selectedRepoFullNames.length === 0) {
                             setSaveError('Please select at least one repository.');
@@ -581,9 +582,10 @@ function ConfigurationPageContent() {
                         }}
                         disabled={saving}
                         className="inline-flex items-center px-6 py-4 text-md font-medium text-white bg-black rounded-lg hover:bg-gray-800 transition-colors disabled:opacity-50"
-                      >
-                        See Dashboard →
-                      </button>
+                        >
+                          See Dashboard →
+                        </button>
+                      </div>
                     </div>
                   </div>
 

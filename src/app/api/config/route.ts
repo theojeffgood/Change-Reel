@@ -36,7 +36,12 @@ export async function POST(request: NextRequest): Promise<NextResponse<ConfigRes
 
     // Parse request body
     const body: ConfigRequest = await request.json();
-    const { repositoryFullName, installationId, emailRecipients = [], trackedRepositories = [] } = body; // Default to empty array
+    // Normalize/validate emails server-side
+    const rawEmails = Array.isArray((body as any)?.emailRecipients) ? (body as any).emailRecipients : [];
+    const normalizedEmails = rawEmails
+      .map((e: any) => (typeof e === 'string' ? e.trim() : ''))
+      .filter((e: string) => e.length > 0);
+    const { repositoryFullName, installationId, trackedRepositories = [] } = body; // Default to empty array
 
     if (!repositoryFullName) {
       return NextResponse.json(
@@ -107,7 +112,7 @@ export async function POST(request: NextRequest): Promise<NextResponse<ConfigRes
       repo_name: repositoryFullName,
       provider: 'github' as const,
       installation_id: installationId,
-      email_distribution_list: emailRecipients,
+      email_distribution_list: normalizedEmails,
     };
     console.log('Project data prepared:', projectData);
 
@@ -149,6 +154,16 @@ export async function POST(request: NextRequest): Promise<NextResponse<ConfigRes
       }
       project = createResult.data;
       console.log('Project created successfully:', project?.id);
+    }
+
+    // Ensure email list persisted explicitly (defensive in case of future changes)
+    if (project?.id) {
+      const ensureEmail = await supabaseService.projects.updateProject(project.id, {
+        email_distribution_list: normalizedEmails,
+      } as any);
+      if (!ensureEmail.error && ensureEmail.data) {
+        project = ensureEmail.data;
+      }
     }
     // Update tracked flag across user's repos if provided (guard against accidental clearing)
     try {

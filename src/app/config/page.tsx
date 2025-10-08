@@ -538,7 +538,7 @@ function ConfigurationPageContent() {
 
                     <div className="mt-4 grid grid-cols-1 md:grid-cols-2 gap-6">
                       <div className="p-4 border border-gray-200 rounded-xl bg-white">
-                        <div className="flex items-center justify-between mb-3">
+                        <div className="flex items-start mb-3">
                           <label className="block text-sm font-medium text-gray-700 mb-2">Get Change Summaries in your Inbox</label>
                           <p className="mt-2 text-xs text-gray-500">
                           We send emails when new summaries are created. We don't send spam. 

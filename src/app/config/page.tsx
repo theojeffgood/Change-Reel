@@ -70,6 +70,7 @@ function ConfigurationPageContent() {
   const [loading, setLoading] = useState(false);
   const [repoError, setRepoError] = useState('');
   const [emailRecipientsInput, setEmailRecipientsInput] = useState('');
+  const [emailsEnabled, setEmailsEnabled] = useState(false);
   const [balance, setBalance] = useState<number | null>(null);
   const [balanceLoading, setBalanceLoading] = useState(false);
   const [balanceError, setBalanceError] = useState('');
@@ -181,6 +182,7 @@ function ConfigurationPageContent() {
 
         setSelectedRepository(repoName);
         setEmailRecipientsInput(emails.join(', '));
+        setEmailsEnabled(emails.length > 0);
 
         if (installationId) {
           const idString = String(installationId);
@@ -318,6 +320,7 @@ function ConfigurationPageContent() {
           repositoryFullName: repoName,
           installationId: Number(installationIdValue),
           emailRecipients: parsedEmails,
+          sendEmailsOnSummary: emailsEnabled,
           trackedRepositories: selectedRepoFullNames,
         }),
       });
@@ -528,10 +531,30 @@ function ConfigurationPageContent() {
                         <label className="block text-sm font-medium text-gray-700 mb-2">
                           Get Change Summaries in your Inbox
                         </label>
+                        <div className="flex items-center justify-between mb-3">
+                          <span className="text-sm text-gray-700">Enable Email Notifications</span>
+                          <button
+                            type="button"
+                            onClick={() => setEmailsEnabled(v => !v)}
+                            className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors ${emailsEnabled ? 'bg-black' : 'bg-gray-300'}`}
+                            aria-pressed={emailsEnabled}
+                            aria-label="Toggle email notifications"
+                          >
+                            <span
+                              className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${emailsEnabled ? 'translate-x-6' : 'translate-x-1'}`}
+                            />
+                          </button>
+                        </div>
                         <input
                           type="text"
                           value={emailRecipientsInput}
-                          onChange={(e) => setEmailRecipientsInput(e.target.value)}
+                          onChange={(e) => {
+                            const val = e.target.value;
+                            setEmailRecipientsInput(val);
+                            if (!emailsEnabled && val.trim().length > 0) {
+                              setEmailsEnabled(true);
+                            }
+                          }}
                           placeholder="team@example.com"
                           className="w-full rounded-lg border-gray-300 focus:border-black focus:ring-black text-gray-900 shadow-sm"
                         />

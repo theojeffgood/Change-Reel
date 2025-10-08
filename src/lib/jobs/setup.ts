@@ -16,6 +16,8 @@ import {
   WebhookProcessingHandler,
   createJobProcessor,
 } from './index'
+import { createResendClient } from '@/lib/email/resend-client'
+import { createEmailTrackingService } from '@/lib/supabase/services/emails'
 
 // Service dependencies for handlers
 export interface JobSystemDependencies {
@@ -27,6 +29,7 @@ export interface JobSystemDependencies {
   projectService?: any // Will be injected when available
   webhookService?: any // Will be injected when available
   userService?: any // Will be injected when available
+  emailClient?: any // Optional email client override
 }
 
 /**
@@ -58,7 +61,9 @@ export function createJobProcessingSystem(dependencies: JobSystemDependencies) {
     ),
     sendEmail: new SendEmailHandler(
       dependencies.commitService,
-      dependencies.projectService
+      dependencies.projectService,
+      (dependencies.emailClient || createResendClient()),
+      createEmailTrackingService(supabaseClient)
     ),
     webhookProcessing: new WebhookProcessingHandler(
       jobQueueService,

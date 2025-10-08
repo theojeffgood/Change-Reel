@@ -8,6 +8,9 @@ import {
 import { ICommitService } from '../../supabase/services/commits'
 import { IProjectService } from '../../supabase/services/projects'
 import { Commit } from '../../types/supabase'
+import { IEmailClient } from '@/lib/email/types'
+import { renderDailyDigestHtml } from '@/lib/email/templates/digest'
+import { createEmailTrackingService, IEmailTrackingService } from '@/lib/supabase/services/emails'
 
 /**
  * Handler for sending email notifications with commit summaries
@@ -26,7 +29,9 @@ export class SendEmailHandler implements JobHandler<SendEmailJobData> {
 
   constructor(
     private commitService: ICommitService,
-    private projectService: IProjectService
+    private projectService: IProjectService,
+    private emailClient: IEmailClient,
+    private emailTracking: IEmailTrackingService
   ) {}
 
   async handle(job: Job, data: SendEmailJobData): Promise<JobResult> {
@@ -78,13 +83,35 @@ export class SendEmailHandler implements JobHandler<SendEmailJobData> {
         }
       }
 
-      // Format email content based on template type
+      // Build subject/body (plain) and HTML
       const emailContent = this.formatEmailContent(commits, data.template_type, projectName, data.template_data)
+      const html = this.renderHtml(commits, data.template_type, projectName, data.template_data)
 
-      // MVP: Log email content instead of actually sending
-      // In production, this would use a real email service
-      console.log('📧 Email would be sent to:', data.recipients)
-      console.log('📧 Email content:', emailContent)
+      const from = process.env.RESEND_FROM_EMAIL || 'no-reply@changereel.local'
+
+      // Record email send attempt (queued)
+      const record = await this.emailTracking.recordEmailSend({
+        project_id: commits[0]?.project_id || null,
+        commit_ids: commits.map(c => c.id),
+        recipients: data.recipients,
+        template_type: data.template_type,
+        provider: 'resend',
+        status: 'queued',
+      })
+      const recordId = record.data?.id || ''
+
+      // Send via client
+      const sendRes = await this.emailClient.sendEmail({
+        to: data.recipients,
+        from,
+        subject: emailContent.subject,
+        html,
+      })
+
+      // Update tracking status
+      if (recordId) {
+        await this.emailTracking.markEmailSendStatus(recordId, 'sent')
+      }
 
       // Mark commits as email sent
       const markResults = []
@@ -245,12 +272,65 @@ This is your automated digest from Change Reel.
       body: body.trim(),
     }
   }
+
+  private renderHtml(
+    commits: Commit[],
+    templateType: string,
+    projectName: string,
+    templateData?: Record<string, any>
+  ): string {
+    switch (templateType) {
+      case 'single_commit': {
+        const c = commits[0]
+        const data = {
+          projectName,
+          commits: [
+            {
+              summary: (c.summary ?? null),
+              author: (c.author ?? null),
+              sha: c.sha,
+              timestamp: c.timestamp,
+            },
+          ],
+        }
+        return renderDailyDigestHtml(data)
+      }
+      case 'digest':
+      case 'weekly_summary': {
+        const data = {
+          projectName,
+          commits: commits.map(c => ({
+            summary: (c.summary ?? null),
+            author: (c.author ?? null),
+            sha: c.sha,
+            timestamp: c.timestamp,
+          })),
+        }
+        return renderDailyDigestHtml(data)
+      }
+      default: {
+        const data = {
+          projectName,
+          commits: commits.map(c => ({
+            summary: (c.summary ?? null),
+            author: (c.author ?? null),
+            sha: c.sha,
+            timestamp: c.timestamp,
+          })),
+        }
+        return renderDailyDigestHtml(data)
+      }
+    }
+  }
 }
 
 // Factory function for dependency injection
 export function createSendEmailHandler(
   commitService: ICommitService,
-  projectService: IProjectService
+  projectService: IProjectService,
+  emailClient: IEmailClient,
+  supabaseClient: any
 ): SendEmailHandler {
-  return new SendEmailHandler(commitService, projectService)
-} 
+  const tracking = createEmailTrackingService(supabaseClient)
+  return new SendEmailHandler(commitService, projectService, emailClient, tracking)
+}

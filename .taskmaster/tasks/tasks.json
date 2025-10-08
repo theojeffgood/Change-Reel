@@ -471,7 +471,7 @@
         "id": 9,
         "title": "Implement Resend Email Integration",
         "description": "Develop functionality to send templated changelog emails using the Resend API.",
-        "status": "deferred",
+        "status": "in-progress",
         "dependencies": [
           7,
           8
@@ -484,7 +484,7 @@
             "id": 1,
             "title": "Create Resend API client",
             "description": "Implement Resend client with proper configuration",
-            "status": "pending",
+            "status": "done",
             "dependencies": [],
             "details": "Follow dependency injection pattern for testability.",
             "testStrategy": "Test client initialization with mocked environment variables. Verify error handling for invalid configuration."
@@ -493,7 +493,7 @@
             "id": 2,
             "title": "Implement email template system",
             "description": "Create HTML email templates with variable substitution",
-            "status": "pending",
+            "status": "done",
             "dependencies": [],
             "details": "Create modular template system with reusable components.",
             "testStrategy": "Test template rendering with various inputs. Verify correct HTML generation."
@@ -502,7 +502,7 @@
             "id": 3,
             "title": "Develop email sending service",
             "description": "Create service to send emails via Resend API",
-            "status": "pending",
+            "status": "done",
             "dependencies": [],
             "details": "Follow dependency injection pattern for testability.",
             "testStrategy": "Test with mocked Resend API responses. Verify correct handling of various response formats."
@@ -511,7 +511,7 @@
             "id": 4,
             "title": "Implement email batching",
             "description": "Add support for combining multiple commits in one email",
-            "status": "pending",
+            "status": "deferred",
             "dependencies": [],
             "details": "Create efficient batching algorithm with configurable limits.",
             "testStrategy": "Test with various batch sizes. Verify correct content aggregation."
@@ -520,7 +520,7 @@
             "id": 5,
             "title": "Create email scheduling system",
             "description": "Implement daily digest email scheduling",
-            "status": "pending",
+            "status": "done",
             "dependencies": [],
             "details": "Create configurable scheduling with timezone support.",
             "testStrategy": "Test scheduling logic with various time configurations. Verify correct trigger timing."
@@ -529,7 +529,7 @@
             "id": 6,
             "title": "Implement email tracking",
             "description": "Add functionality to track sent emails",
-            "status": "pending",
+            "status": "done",
             "dependencies": [],
             "details": "Create comprehensive tracking with metadata.",
             "testStrategy": "Test tracking for various email scenarios. Verify correct status recording."
@@ -538,10 +538,64 @@
             "id": 7,
             "title": "Create test fixtures for email testing",
             "description": "Develop sample email data for testing",
-            "status": "pending",
+            "status": "done",
             "dependencies": [],
             "details": "Create realistic email content for different scenarios.",
             "testStrategy": "Verify fixtures cover various email types and formats."
+          },
+          {
+            "id": 8,
+            "title": "Implement retry logic for failed email deliveries",
+            "description": "Add retry with exponential backoff and idempotency keys",
+            "details": "Use exponential backoff and idempotency keys to avoid duplicate sends.",
+            "status": "deferred",
+            "dependencies": [],
+            "parentTaskId": 9
+          },
+          {
+            "id": 9,
+            "title": "Create preview functionality for email templates",
+            "description": "Safe preview endpoint with auth; no actual send",
+            "details": "Authenticated preview that renders HTML; disable outbound email.",
+            "status": "deferred",
+            "dependencies": [],
+            "parentTaskId": 9
+          },
+          {
+            "id": 10,
+            "title": "Create unit tests for email integration",
+            "description": "Cover client, templating, sending, tracking, scheduling with MSW/mocks",
+            "details": "Unit tests for client, templates, sender, tracking, scheduler",
+            "status": "done",
+            "dependencies": [],
+            "parentTaskId": 9
+          },
+          {
+            "id": 11,
+            "title": "Create integration tests for email sending workflow",
+            "description": "End-to-end with mocked Resend; optional live gated by env",
+            "details": "Integration tests for full flow; live tests behind flag",
+            "status": "done",
+            "dependencies": [],
+            "parentTaskId": 9
+          },
+          {
+            "id": 12,
+            "title": "Add email recipient configuration UI on /config",
+            "description": "Create UI input to configure recipient email(s) for digests",
+            "details": "Add UI to `/config` to capture one or more recipient emails. Persist appropriately for project context.",
+            "status": "done",
+            "dependencies": [],
+            "parentTaskId": 9
+          },
+          {
+            "id": 13,
+            "title": "Write documentation for email capabilities",
+            "description": "Create docs describing setup, env vars, scheduling, and usage",
+            "details": "Add docs/EMAIL_NOTIFICATIONS.md covering RESEND_API_KEY, RESEND_FROM_EMAIL, scheduling endpoint, and job processor.",
+            "status": "done",
+            "dependencies": [],
+            "parentTaskId": 9
           }
         ]
       },
@@ -1838,7 +1892,7 @@
     ],
     "metadata": {
       "created": "2025-06-24T18:47:19.240Z",
-      "updated": "2025-09-01T05:02:00.200Z",
+      "updated": "2025-10-08T02:57:48.152Z",
       "description": "Tasks for master context"
     }
   }

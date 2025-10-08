@@ -69,6 +69,7 @@ function ConfigurationPageContent() {
   const [showInstallPicker, setShowInstallPicker] = useState(false);
   const [loading, setLoading] = useState(false);
   const [repoError, setRepoError] = useState('');
+  const [emailRecipientsInput, setEmailRecipientsInput] = useState('');
 
   const handleReauthenticate = () => {
     hasRedirectedRef.current = true;
@@ -173,8 +174,10 @@ function ConfigurationPageContent() {
         setHasExistingConfiguration(true);
         const repoName = result.configuration.repositoryFullName || '';
         const installationId = result.configuration.installationId;
+        const emails: string[] = Array.isArray(result.configuration.emailRecipients) ? result.configuration.emailRecipients : [];
 
         setSelectedRepository(repoName);
+        setEmailRecipientsInput(emails.join(', '));
 
         if (installationId) {
           const idString = String(installationId);
@@ -269,6 +272,10 @@ function ConfigurationPageContent() {
     setSaving(true);
 
     try {
+      const parsedEmails = emailRecipientsInput
+        .split(',')
+        .map(s => s.trim())
+        .filter(Boolean);
       // Persist tracked repos selection
       const response = await fetch('/api/config', {
         method: 'POST',
@@ -278,6 +285,7 @@ function ConfigurationPageContent() {
         body: JSON.stringify({
           repositoryFullName: repoName,
           installationId: Number(installationIdValue),
+          emailRecipients: parsedEmails,
           trackedRepositories: selectedRepoFullNames,
         }),
       });
@@ -468,6 +476,21 @@ function ConfigurationPageContent() {
                     )}
 
                     <div className="mt-4">
+                      <div className="p-4 mb-4 border border-gray-200 rounded-xl bg-white">
+                        <label className="block text-sm font-medium text-gray-700 mb-2">
+                          Email Recipients (comma-separated)
+                        </label>
+                        <input
+                          type="text"
+                          value={emailRecipientsInput}
+                          onChange={(e) => setEmailRecipientsInput(e.target.value)}
+                          placeholder="team@example.com, you@example.com"
+                          className="w-full rounded-lg border-gray-300 focus:border-black focus:ring-black text-gray-900 shadow-sm"
+                        />
+                        <p className="mt-2 text-xs text-gray-500">
+                          We’ll send daily digests to these addresses. You can update anytime.
+                        </p>
+                      </div>
                       <button
                         onClick={async () => {
                           if (selectedRepoFullNames.length === 0) {

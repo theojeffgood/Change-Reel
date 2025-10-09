@@ -33,7 +33,7 @@ export interface Commit {
   timestamp: string
   installation_id: number // GitHub App installation ID for realtime filtering
   summary?: string // AI-generated summary
-  type?: 'feature' | 'fix' | 'refactor' | 'chore'
+  type?: 'feature' | 'bugfix'
   is_published: boolean
   email_sent: boolean
   created_at: string
@@ -116,14 +116,14 @@ export interface CreateCommitData {
   timestamp: string
   installation_id: number // Required for realtime filtering
   summary?: string
-  type?: 'feature' | 'fix' | 'refactor' | 'chore'
+  type?: 'feature' | 'bugfix'
   is_published?: boolean
   email_sent?: boolean
 }
 
 export interface UpdateCommitData {
   summary?: string
-  type?: 'feature' | 'fix' | 'refactor' | 'chore'
+  type?: 'feature' | 'bugfix'
   is_published?: boolean
   email_sent?: boolean
 }
@@ -132,7 +132,7 @@ export interface UpdateCommitData {
 export interface CommitFilter {
   project_id?: string
   author?: string
-  type?: 'feature' | 'fix' | 'refactor' | 'chore'
+  type?: 'feature' | 'fix'
   is_published?: boolean
   email_sent?: boolean
   date_from?: string

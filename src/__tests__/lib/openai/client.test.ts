@@ -145,7 +145,7 @@ describe('OpenAIClient', () => {
 
     it('should generate summary with custom context', async () => {
       const customContext = 'Custom prompt: focus on API behavior';
-      const payload = { summary: 'Custom summary result', change_type: 'fix' };
+      const payload = { summary: 'Custom summary result', change_type: 'bugfix' };
       const mockResponse = {
         output_text: JSON.stringify(payload),
         output: [
@@ -161,7 +161,7 @@ describe('OpenAIClient', () => {
 
       const result = await client.generateSummary(mockDiff, { customContext });
 
-      expect(result).toEqual({ summary: 'Custom summary result', changeType: 'fix' });
+      expect(result).toEqual({ summary: 'Custom summary result', changeType: 'bugfix' });
       const callArgs = mockResponsesCreate.mock.calls[mockResponsesCreate.mock.calls.length - 1][0];
       expect(typeof callArgs.input).toBe('string');
       expect(callArgs.input).toContain(customContext);

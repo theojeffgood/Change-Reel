@@ -642,7 +642,7 @@ index abc1234..def5678 100644
 +  return user && user.email && user.id && validateEmail(user.email);
  }`,
     expectedSummary: 'Fix null pointer exception in user profile validation',
-    expectedChangeType: 'fix',
+    expectedChangeType: 'bugfix',
     response: bugFixSummaryResponse,
   },
 
@@ -918,11 +918,11 @@ export const OPENAI_RESPONSES = {
       ],
     },
     CHANGE_TYPE_FIX: {
-      output_text: 'fix',
+      output_text: 'bugfix',
       output: [
         {
           role: 'assistant',
-          content: [{ type: 'output_text', text: 'fix' }],
+          content: [{ type: 'output_text', text: 'bugfix' }],
         },
       ],
     },
@@ -1138,7 +1138,7 @@ export const EXPECTED_RESULTS = {
 
     BUG_FIX: {
       summary: 'Fix date formatting to return empty string for invalid dates',
-      changeType: 'fix',
+      changeType: 'bugfix',
       confidence: expect.any(Number),
       metadata: {
         diffLength: expect.any(Number),
@@ -1150,7 +1150,7 @@ export const EXPECTED_RESULTS = {
 
   CHANGE_TYPES: {
     FEATURE: 'feature',
-    FIX: 'fix',
+    FIX: 'bugfix',
   } as const,
 };
 
@@ -1234,7 +1234,7 @@ export function createMockTemplateEngine() {
  * Creates a realistic diff with specified characteristics
  */
 export function createTestDiff(options: {
-  type?: 'feature' | 'fix';
+  type?: 'feature' | 'bugfix';
   files?: number;
   size?: 'small' | 'medium' | 'large';
   hasNoise?: boolean;
@@ -1252,7 +1252,7 @@ export function createTestDiff(options: {
       case 'feature':
         diff += i === 0 ? SAMPLE_DIFFS.SIMPLE_FEATURE : SAMPLE_DIFFS.MULTI_FILE;
         break;
-      case 'fix':
+      case 'bugfix':
         diff += SAMPLE_DIFFS.BUG_FIX;
         break;
       default:

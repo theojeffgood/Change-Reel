@@ -234,7 +234,7 @@ ${Array(20).fill('// structured content line').join('\n')}`;
     it('should process multiple diffs sequentially', async () => {
       mockOpenAIClient.generateSummary
         .mockResolvedValueOnce({ summary: 'Summary for file1', changeType: 'feature' })
-        .mockResolvedValueOnce({ summary: 'Summary for file2', changeType: 'fix' });
+        .mockResolvedValueOnce({ summary: 'Summary for file2', changeType: 'bugfix' });
 
       const results = await service.processMultipleDiffs(diffs);
 
@@ -314,7 +314,7 @@ ${Array(20).fill('// structured content line').join('\n')}`;
 
       mockOpenAIClient.generateSummary.mockResolvedValue({
         summary: 'Short',
-        changeType: 'chore',
+        changeType: 'bugfix',
       });
 
       const diff = 'diff --git a/file.js b/file.js\n@@ -1,1 +1,2 @@\n+line';

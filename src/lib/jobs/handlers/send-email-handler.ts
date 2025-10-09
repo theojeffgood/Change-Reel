@@ -84,6 +84,7 @@ export class SendEmailHandler implements JobHandler<SendEmailJobData> {
             author: commit.author ?? null,
             // sha: commit.sha,
             timestamp: commit.timestamp,
+            type: commit.type,
           },
         })
 

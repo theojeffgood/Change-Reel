@@ -5,7 +5,7 @@ import { useEffect, useState } from 'react'
 type Commit = {
   id: string
   author: string
-  type?: 'feature' | 'fix' | 'refactor' | 'chore'
+  type?: 'feature' | 'bugfix'
   timestamp: string
 }
 

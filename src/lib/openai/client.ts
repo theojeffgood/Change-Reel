@@ -17,7 +17,7 @@ const DIFF_SUMMARY_RESPONSE_SCHEMA = {
     change_type: {
       type: 'string',
       description: 'Categorization of the change.',
-      enum: ['feature', 'fix'],
+      enum: ['feature', 'bugfix'],
     },
   },
   required: ['summary', 'change_type'],
@@ -38,7 +38,7 @@ type ResponseCreateParamsWithSchema = ResponseCreateParams & {
 /**
  * Interface for OpenAI client to enable dependency injection and testing
  */
-export type ChangeTypeCategory = 'feature' | 'fix';
+export type ChangeTypeCategory = 'feature' | 'bugfix';
 
 export interface GenerateSummaryResult {
   summary: string;
@@ -86,7 +86,7 @@ export class OpenAIClient implements IOpenAIClient {
 
     this.model = config.model || process.env.OPENAI_MODEL || 'gpt-5';
     const envMax = parseInt(process.env.OPENAI_MAX_TOKENS || '', 10);
-    this.maxTokens = config.maxTokens || (Number.isFinite(envMax) ? envMax : 2000);
+    this.maxTokens = config.maxTokens || (Number.isFinite(envMax) ? envMax : 3000);
     this.templateEngine = config.templateEngine || new PromptTemplateEngine();
     this.rateLimiter = config.rateLimiter || defaultRateLimiter;
     this.errorHandler = config.errorHandler || defaultErrorHandler;
@@ -136,7 +136,7 @@ export class OpenAIClient implements IOpenAIClient {
               strict: true,
             },
           },
-          store: true,
+          store: false,
         };
         response = await this.openai.responses.create(requestPayload);
       } catch (e) {
@@ -306,7 +306,9 @@ export class OpenAIClient implements IOpenAIClient {
       case 'feature':
         return 'feature';
       case 'fix':
-        return 'fix';
+      case 'bugfix':
+      case 'bug fix':
+        return 'bugfix';
       default:
         return undefined;
     }

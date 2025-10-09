@@ -103,9 +103,9 @@ export class CommitService implements ICommitService {
 
       // Validate type if provided
       if (commitData.type) {
-        const validTypes = ['feature', 'fix', 'refactor', 'chore']
+        const validTypes = ['feature', 'bugfix']
         if (!validTypes.includes(commitData.type)) {
-          return { data: null, error: new Error('Invalid commit type. Must be one of: feature, fix, refactor, chore') }
+          return { data: null, error: new Error('Invalid commit type. Must be one of: feature, bugfix') }
         }
       }
 
@@ -143,9 +143,9 @@ export class CommitService implements ICommitService {
     try {
       // Validate type if provided
       if (commitData.type) {
-        const validTypes = ['feature', 'fix', 'refactor', 'chore']
+        const validTypes = ['feature', 'bugfix']
         if (!validTypes.includes(commitData.type)) {
-          return { data: null, error: new Error('Invalid commit type. Must be one of: feature, fix, refactor, chore') }
+          return { data: null, error: new Error('Invalid commit type. Must be one of: feature, bugfix') }
         }
       }
 
@@ -364,11 +364,11 @@ export class CommitService implements ICommitService {
 
   async getCommitsByType(projectId: string, type: string, limit = 50): Promise<DatabaseResults<Commit>> {
     try {
-      const validTypes = ['feature', 'fix', 'refactor', 'chore']
+      const validTypes = ['feature', 'bugfix']
       if (!validTypes.includes(type)) {
         return {
           data: null,
-          error: new Error('Invalid commit type. Must be one of: feature, fix, refactor, chore'),
+          error: new Error('Invalid commit type. Must be one of: feature, bugfix'),
           count: 0,
         }
       }

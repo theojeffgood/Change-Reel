@@ -14,7 +14,7 @@ Use both to craft the summary.\n\n
 Write in layman's terms for a non-technical audience. Focus on user-facing or functional impacts. 
 Explain the benefit of the change only if it is not apparent, or when the change lacks a clear user-facing impact. 
 Skip low-level details like syntax or implementation unless they materially affect behavior. 
-Also, classify the diff as either 'feature' or 'fix'. 
+Also, classify the diff as either 'feature' or 'bugfix'. 
 Return content that aligns with the enforced response schema.\n\n
 
 Provide concise prose. Prefer shorter sentences to longer ones. 

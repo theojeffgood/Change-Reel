@@ -131,6 +131,7 @@ describe('Database Schema Design Tests', () => {
         sha: 'a1b2c3d4e5f6789',
         author: 'John Doe',
         timestamp: '2023-01-01T12:00:00Z',
+        installation_id: 12345,
         is_published: false,
         email_sent: false,
         created_at: '2023-01-01T00:00:00Z',
@@ -153,6 +154,7 @@ describe('Database Schema Design Tests', () => {
         sha: 'a1b2c3d4e5f6789',
         author: 'Jane Developer',
         timestamp: '2023-01-01T12:00:00Z',
+        installation_id: 12345,
         summary: 'Added user authentication with email and password validation',
         type: 'feature',
         is_published: true,
@@ -162,12 +164,12 @@ describe('Database Schema Design Tests', () => {
       }
 
       expect(processedCommit.summary).toBeDefined()
-      expect(['feature', 'fix', 'refactor', 'chore']).toContain(processedCommit.type)
+      expect(['feature', 'bugfix']).toContain(processedCommit.type)
       expect(processedCommit.is_published).toBe(true)
     })
 
     it('should validate type enum values', () => {
-      const validTypes: Commit['type'][] = ['feature', 'fix', 'refactor', 'chore']
+      const validTypes: Commit['type'][] = ['feature', 'bugfix']
       
       validTypes.forEach(type => {
         const commit: Commit = {
@@ -176,6 +178,7 @@ describe('Database Schema Design Tests', () => {
           sha: 'a1b2c3d4e5f6789',
           author: 'Test Author',
           timestamp: '2023-01-01T12:00:00Z',
+          installation_id: 12345,
           type,
           is_published: false,
           email_sent: false,
@@ -183,7 +186,7 @@ describe('Database Schema Design Tests', () => {
           updated_at: '2023-01-01T00:00:00Z',
         }
         
-        expect(['feature', 'fix', 'refactor', 'chore']).toContain(commit.type)
+        expect(['feature', 'bugfix']).toContain(commit.type)
       })
     })
 
@@ -193,6 +196,7 @@ describe('Database Schema Design Tests', () => {
         sha: 'abc123def456',
         author: 'Developer Name',
         timestamp: '2023-01-01T15:30:00Z',
+        installation_id: 12345,
         type: 'feature',
         is_published: false,
       }
@@ -218,7 +222,7 @@ describe('Database Schema Design Tests', () => {
 
       expect(filter.project_id).toBeDefined()
       expect(filter.author).toBeDefined()
-      expect(['feature', 'fix', 'refactor', 'chore']).toContain(filter.type)
+      expect(['feature', 'bugfix']).toContain(filter.type)
       expect(typeof filter.is_published).toBe('boolean')
       expect(typeof filter.email_sent).toBe('boolean')
     })
@@ -265,6 +269,7 @@ describe('Database Schema Design Tests', () => {
         sha: 'abc123',
         author: 'Test Author',
         timestamp: '2023-01-01T12:00:00Z',
+        installation_id: 12345,
         is_published: false,
         email_sent: false,
         created_at: '2023-01-01T00:00:00Z',

@@ -20,6 +20,7 @@ export function createMockGitHubApiClient(): jest.Mocked<IGitHubApiClient> {
     getRepository: jest.fn(),
     getCommit: jest.fn(),
     getCommitDiff: jest.fn(),
+    getCommitDiffRaw: jest.fn(),
     getRateLimit: jest.fn()
   } as jest.Mocked<IGitHubApiClient>;
 }

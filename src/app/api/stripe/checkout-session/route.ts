@@ -51,7 +51,13 @@ export async function POST(req: NextRequest) {
     const cfg = getStripeEnvConfig();
 
     // Build absolute return URL for Embedded Checkout (Stripe requires absolute URLs)
-    const origin = req.nextUrl?.origin || req.headers.get('origin') || '';
+    // Prefer forwarded headers (behind proxy) and avoid 0.0.0.0/localhost in production
+    const forwardedProto = req.headers.get('x-forwarded-proto');
+    const forwardedHost = req.headers.get('x-forwarded-host') || req.headers.get('host');
+    let origin = (forwardedProto && forwardedHost) ? `${forwardedProto}://${forwardedHost}` : (req.nextUrl?.origin || req.headers.get('origin') || '');
+    if (!origin || origin.includes('0.0.0.0') || origin.includes('localhost')) {
+      origin = process.env.NEXTAUTH_URL || origin;
+    }
     const successPath = cfg.successUrl.startsWith('http') ? cfg.successUrl : `${origin}${cfg.successUrl}`;
     // Include session_id placeholder per Stripe docs for Embedded Checkout
     const returnUrl = `${successPath}${successPath.includes('?') ? '&' : '?'}session_id={CHECKOUT_SESSION_ID}`;

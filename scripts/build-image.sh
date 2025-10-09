@@ -31,18 +31,12 @@ if [[ -n "${CI:-}" ]]; then
   # Build argument string using environment variables (GitHub Actions secrets)
   BUILD_ARGS=""
   
-  # List of required environment variables
+  # List of required environment variables (build-time only - NEXT_PUBLIC_* vars)
   REQUIRED_VARS=(
-    "TOKEN_ENCRYPTION_KEY"
-    "OPENAI_API_KEY"
     "NEXT_PUBLIC_SUPABASE_URL"
     "NEXT_PUBLIC_SUPABASE_ANON_KEY"
     "NEXT_PUBLIC_GITHUB_APP_INSTALL_URL"
-    "SUPABASE_SERVICE_ROLE_KEY"
-    "OAUTH_CLIENT_ID"
-    "OAUTH_CLIENT_SECRET"
-    "NEXTAUTH_SECRET"
-    "NEXTAUTH_URL"
+    "NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY"
   )
   
   # Check that all required variables are set

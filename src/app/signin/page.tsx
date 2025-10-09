@@ -7,7 +7,8 @@ import GithubSignInButton from './GithubSignInButton'
 
 export default async function SignInPage() {
   const session = await getServerSession(authConfig);
-  if (session) {
+  // Only redirect if session exists and has no auth error (e.g., not expired)
+  if (session && !(session as any)?.error) {
     redirect('/config');
   }
 

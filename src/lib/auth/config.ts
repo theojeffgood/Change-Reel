@@ -191,7 +191,7 @@ export const authConfig: NextAuthOptions = {
     },
   },
   pages: {
-    signIn: '/config',
+    signIn: '/signin',
     error: '/config',
   },
   events: {

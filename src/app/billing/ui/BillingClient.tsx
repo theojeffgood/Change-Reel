@@ -28,6 +28,7 @@ export default function BillingClient() {
   async function createSession(credit_pack: CreditPack) {
     setLoading(true)
     setError(null)
+    console.log('[billing] Creating session for credit pack:', credit_pack)
     try {
       const res = await fetch('/api/stripe/checkout-session', {
         method: 'POST',
@@ -37,15 +38,19 @@ export default function BillingClient() {
         },
         body: JSON.stringify({ credit_pack }),
       })
+      console.log('[billing] Checkout session response status:', res.status)
       const data = await res.json()
+      console.log('[billing] Checkout session response data:', data)
       if (!res.ok) throw new Error(data.error || 'Failed to create checkout session')
       const secret = data?.client_secret
       if (!secret || typeof secret !== 'string') {
         throw new Error('Checkout session missing client secret')
       }
+      console.log('[billing] Client secret received, showing checkout')
       setClientSecret(secret)
       setShowCheckout(true)
     } catch (e: any) {
+      console.error('[billing] Error creating session:', e)
       setError(e.message || 'Unknown error')
     } finally {
       setLoading(false)

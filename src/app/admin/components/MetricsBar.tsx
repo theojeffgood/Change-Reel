@@ -45,6 +45,7 @@ export default function MetricsBar() {
   }, [])
 
   const summariesDisplayed = commits.length
+  const uniqueDevelopers = new Set(commits.map(commit => commit.author)).size
 
   return (
     <div className="flex flex-col gap-4">
@@ -59,6 +60,13 @@ export default function MetricsBar() {
         <div className="flex flex-col items-center justify-center text-center min-h-[120px]">
           <div className="text-2xl font-semibold text-gray-900">{summariesDisplayed}</div>
           <div className="text-md text-gray-500 mt-1">Features Shipped</div>
+        </div>
+      </div>
+
+      <div className="bg-white border border-gray-200 rounded-xl p-6">
+        <div className="flex flex-col items-center justify-center text-center min-h-[120px]">
+          <div className="text-2xl font-semibold text-gray-900">{uniqueDevelopers}</div>
+          <div className="text-md text-gray-500 mt-1">Developers</div>
         </div>
       </div>
     </div>

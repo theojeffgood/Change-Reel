@@ -9,6 +9,7 @@ import { loadStripe } from '@stripe/stripe-js'
 const stripePublishableKey = process.env.NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY
 console.log('[billing] Stripe publishable key configured:', !!stripePublishableKey)
 console.log('[billing] Stripe publishable key value:', stripePublishableKey ? `${stripePublishableKey.slice(0, 20)}...` : 'undefined')
+console.log('[billing] All NEXT_PUBLIC env vars:', Object.keys(process.env).filter(key => key.startsWith('NEXT_PUBLIC')))
 
 const stripePromise = stripePublishableKey ? loadStripe(stripePublishableKey) : Promise.resolve(null)
 

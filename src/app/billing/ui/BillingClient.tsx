@@ -5,7 +5,12 @@ import { useSession } from 'next-auth/react'
 import { EmbeddedCheckout, EmbeddedCheckoutProvider } from '@stripe/react-stripe-js'
 import { loadStripe } from '@stripe/stripe-js'
 
-const stripePromise = loadStripe(process.env.NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY as string)
+// Debug Stripe configuration
+const stripePublishableKey = process.env.NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY
+console.log('[billing] Stripe publishable key configured:', !!stripePublishableKey)
+console.log('[billing] Stripe publishable key value:', stripePublishableKey ? `${stripePublishableKey.slice(0, 20)}...` : 'undefined')
+
+const stripePromise = stripePublishableKey ? loadStripe(stripePublishableKey) : Promise.resolve(null)
 
 type PlanKey = 'growth' | 'enterprise'
 type CreditPack = 'credits100' | 'credits1000'
@@ -181,10 +186,13 @@ export default function BillingClient() {
               {!clientSecret && (
                 <div className="text-sm text-gray-500">{loading ? 'Initializing checkout…' : 'Unable to initialize checkout. Please go back and retry.'}</div>
               )}
-              {clientSecret && (
+              {clientSecret && stripePublishableKey && (
                 <EmbeddedCheckoutProvider stripe={stripePromise} options={{ clientSecret }}>
                   <EmbeddedCheckout />
                 </EmbeddedCheckoutProvider>
+              )}
+              {clientSecret && !stripePublishableKey && (
+                <div className="text-sm text-red-600">Error: Stripe publishable key not configured. Please set NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY environment variable.</div>
               )}
             </div>
           </div>

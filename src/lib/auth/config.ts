@@ -66,23 +66,29 @@ async function refreshGitHubAccessToken(token: GithubJwt): Promise<GithubJwt> {
   }
 }
 
-if (!process.env.OAUTH_CLIENT_ID) {
-  throw new Error('Missing OAUTH_CLIENT_ID environment variable');
-}
+// Only validate environment variables at runtime, not during build
+const isRuntime = typeof window === 'undefined' && process.env.NODE_ENV !== 'test';
+const isBuild = process.env.NODE_ENV === 'production' && !process.env.OAUTH_CLIENT_ID;
 
-if (!process.env.OAUTH_CLIENT_SECRET) {
-  throw new Error('Missing OAUTH_CLIENT_SECRET environment variable');
-}
+if (isRuntime && !isBuild) {
+  if (!process.env.OAUTH_CLIENT_ID) {
+    throw new Error('Missing OAUTH_CLIENT_ID environment variable');
+  }
 
-if (!process.env.NEXTAUTH_SECRET) {
-  throw new Error('Missing NEXTAUTH_SECRET environment variable');
+  if (!process.env.OAUTH_CLIENT_SECRET) {
+    throw new Error('Missing OAUTH_CLIENT_SECRET environment variable');
+  }
+
+  if (!process.env.NEXTAUTH_SECRET) {
+    throw new Error('Missing NEXTAUTH_SECRET environment variable');
+  }
 }
 
 export const authConfig: NextAuthOptions = {
   providers: [
     GitHubProvider({
-      clientId: process.env.OAUTH_CLIENT_ID,
-      clientSecret: process.env.OAUTH_CLIENT_SECRET,
+      clientId: process.env.OAUTH_CLIENT_ID!,
+      clientSecret: process.env.OAUTH_CLIENT_SECRET!,
       authorization: {
         params: {
           scope: 'read:user user:email read:org',

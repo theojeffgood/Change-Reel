@@ -13,7 +13,6 @@ export default function AdminLayout({
 }) {
   const { data: session, status } = useSession();
   const router = useRouter();
-  // Avoid useSearchParams to prevent Suspense requirement at build time
   const [showThanks, setShowThanks] = useState(false);
 
   useEffect(() => {
@@ -29,8 +28,14 @@ export default function AdminLayout({
     const hasStripeSession = !!params?.get('session_id');
     const purchaseSuccess = (params?.get('purchase') || '').toLowerCase() === 'success';
     // Always attempt to retry previously failed (insufficient credits) jobs on load
+    // After retrying, signal commits list to refresh so cards flip to "processing" state immediately
     fetch('/api/jobs/retry-insufficient', { method: 'POST', credentials: 'include' })
       .then(() => fetch('/api/jobs/process', { method: 'POST', credentials: 'include' }))
+      .then(() => {
+        if (typeof window !== 'undefined') {
+          window.dispatchEvent(new CustomEvent('commits:refresh'))
+        }
+      })
       .catch(() => {});
 
     if (hasStripeSession || purchaseSuccess) {

@@ -113,6 +113,22 @@ export function useCommitHistory(pageSize: number = 10, initialInstallationIds: 
     fetchCommits(1);
   }, [fetchCommits]);
 
+  // Listen for explicit refresh signals (e.g., after retrying failed jobs)
+  useEffect(() => {
+    const handler = () => {
+      // Fetch non-silently so per-card processing state becomes visible
+      fetchCommits(state.page, false);
+    };
+    if (typeof window !== 'undefined') {
+      window.addEventListener('commits:refresh', handler);
+    }
+    return () => {
+      if (typeof window !== 'undefined') {
+        window.removeEventListener('commits:refresh', handler);
+      }
+    };
+  }, [state.page, fetchCommits]);
+
   const setPage = (newPage: number) => {
     if (newPage > 0 && newPage <= state.totalPages) {
       fetchCommits(newPage);

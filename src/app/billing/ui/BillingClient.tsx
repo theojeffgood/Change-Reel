@@ -5,12 +5,7 @@ import { useSession } from 'next-auth/react'
 import { EmbeddedCheckout, EmbeddedCheckoutProvider } from '@stripe/react-stripe-js'
 import { loadStripe } from '@stripe/stripe-js'
 
-// Debug Stripe configuration
 const stripePublishableKey = process.env.NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY
-console.log('[billing] Stripe publishable key configured:', !!stripePublishableKey)
-console.log('[billing] Stripe publishable key value:', stripePublishableKey ? `${stripePublishableKey.slice(0, 20)}...` : 'undefined')
-console.log('[billing] All NEXT_PUBLIC env vars:', Object.keys(process.env).filter(key => key.startsWith('NEXT_PUBLIC')))
-
 const stripePromise = stripePublishableKey ? loadStripe(stripePublishableKey) : Promise.resolve(null)
 
 type PlanKey = 'growth' | 'enterprise'
@@ -34,7 +29,6 @@ export default function BillingClient() {
   async function createSession(credit_pack: CreditPack) {
     setLoading(true)
     setError(null)
-    console.log('[billing] Creating session for credit pack:', credit_pack)
     try {
       const res = await fetch('/api/stripe/checkout-session', {
         method: 'POST',
@@ -44,19 +38,15 @@ export default function BillingClient() {
         },
         body: JSON.stringify({ credit_pack }),
       })
-      console.log('[billing] Checkout session response status:', res.status)
       const data = await res.json()
-      console.log('[billing] Checkout session response data:', data)
       if (!res.ok) throw new Error(data.error || 'Failed to create checkout session')
       const secret = data?.client_secret
       if (!secret || typeof secret !== 'string') {
         throw new Error('Checkout session missing client secret')
       }
-      console.log('[billing] Client secret received, showing checkout')
       setClientSecret(secret)
       setShowCheckout(true)
     } catch (e: any) {
-      console.error('[billing] Error creating session:', e)
       setError(e.message || 'Unknown error')
     } finally {
       setLoading(false)
@@ -185,15 +175,15 @@ export default function BillingClient() {
             </button>
             <div id="checkout" className="bg-white rounded-xl p-4 border border-gray-200 shadow-sm">
               {!clientSecret && (
-                <div className="text-sm text-gray-500">{loading ? 'Initializing checkout…' : 'Unable to initialize checkout. Please go back and retry.'}</div>
+                <div className="text-sm text-gray-600">{loading ? 'Loading secure checkout…' : 'We couldn’t start checkout. Please try again, or find me on Twitter @theojeffgood. '}</div>
               )}
               {clientSecret && stripePublishableKey && (
                 <EmbeddedCheckoutProvider stripe={stripePromise} options={{ clientSecret }}>
                   <EmbeddedCheckout />
                 </EmbeddedCheckoutProvider>
               )}
-              {clientSecret && !stripePublishableKey && (
-                <div className="text-sm text-red-600">Error: Stripe publishable key not configured. Please set NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY environment variable.</div>
+              {!stripePublishableKey && (
+                <div className="mt-2 text-sm text-red-600">Checkout is temporarily unavailable. Please try again, or find me on Twitter @theojeffgood.</div>
               )}
             </div>
           </div>

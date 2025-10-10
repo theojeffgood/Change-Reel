@@ -4,7 +4,7 @@ import { AdminUIProvider } from '@/lib/context/AdminUIContext';
 import { useSession } from 'next-auth/react';
 import { useRouter } from 'next/navigation';
 import { useEffect } from 'react';
-import React from 'react';
+import React, { useState } from 'react';
 
 export default function AdminLayout({
   children,
@@ -13,6 +13,8 @@ export default function AdminLayout({
 }) {
   const { data: session, status } = useSession();
   const router = useRouter();
+  // Avoid useSearchParams to prevent Suspense requirement at build time
+  const [showThanks, setShowThanks] = useState(false);
 
   useEffect(() => {
     if (status === 'loading') return; // Still loading
@@ -21,6 +23,21 @@ export default function AdminLayout({
       // Not authenticated, redirect to config page
       router.push('/config');
       return;
+    }
+    // If returning from Stripe checkout with session_id or purchase flag, kick off pending job processing
+    const params = typeof window !== 'undefined' ? new URLSearchParams(window.location.search) : null
+    const hasStripeSession = !!params?.get('session_id');
+    const purchaseSuccess = (params?.get('purchase') || '').toLowerCase() === 'success';
+    // Always attempt to retry previously failed (insufficient credits) jobs on load
+    fetch('/api/jobs/retry-insufficient', { method: 'POST', credentials: 'include' })
+      .then(() => fetch('/api/jobs/process', { method: 'POST', credentials: 'include' }))
+      .catch(() => {});
+
+    if (hasStripeSession || purchaseSuccess) {
+      setShowThanks(true);
+      setTimeout(() => setShowThanks(false), 2000);
+      // Clean the URL to remove sensitive params
+      router.replace('/admin');
     }
   }, [session, status, router]);
 
@@ -39,5 +56,16 @@ export default function AdminLayout({
     return null; // Will redirect
   }
 
-  return <AdminUIProvider>{children}</AdminUIProvider>;
+  return (
+    <AdminUIProvider>
+      {showThanks && (
+        <div className="fixed top-4 left-1/2 -translate-x-1/2 z-50">
+          <div className="rounded-lg bg-green-600 text-white px-4 py-2 shadow-lg">
+            Thank you for your purchase!
+          </div>
+        </div>
+      )}
+      {children}
+    </AdminUIProvider>
+  );
 } 

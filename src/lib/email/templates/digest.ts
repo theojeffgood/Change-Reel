@@ -16,9 +16,9 @@ export function renderSingleCommitEmail(input: SingleCommitEmailInput): { subjec
   const changeLabel = commit.type === 'bugfix'
     ? 'Bugfix'
     : 'Feature'
-  const badgeStyles = changeLabel === 'Bugfix'
-    ? 'display:inline-block;padding:2px 8px;border-radius:9999px;font-size:11px;font-weight:600;color:#065f46;background:#ecfdf5;border:1px solid #fecaca'
-    : 'display:inline-block;padding:2px 8px;border-radius:9999px;font-size:11px;font-weight:600;color:#7f1d1d;background:#fef2f2;border:1px solid #a7f3d0;;'
+  const badgeStyles = commit.type === 'bugfix'
+    ? 'display:inline-block;padding:2px 8px;border-radius:9999px;font-size:11px;font-weight:600;color:#7f1d1d;background:#ecfdf5;border:1px solid #fecaca'
+    : 'display:inline-block;padding:2px 8px;border-radius:9999px;font-size:11px;font-weight:600;color:#065f46;background:#fef2f2;border:1px solid #a7f3d0;'
 
   const html = `
   <div style="font-family:Inter,system-ui,-apple-system,Segoe UI,Roboto,Arial,sans-serif;background:#f7f7f8;padding:24px;">
@@ -26,8 +26,10 @@ export function renderSingleCommitEmail(input: SingleCommitEmailInput): { subjec
       <tr>
         <td style="padding:24px 24px 8px 24px;">
           <div style="margin:0;font-size:12px;display:flex;align-items:center;gap:8px;">
-            <span>Repo: ${escapeHtml(projectName)}</span>
             <span style="${badgeStyles}">${changeLabel}</span>
+            <br/>
+            <br/>
+            <span>Repo: ${escapeHtml(projectName)}</span>
           </div>
         </td>
       </tr>
@@ -43,7 +45,7 @@ export function renderSingleCommitEmail(input: SingleCommitEmailInput): { subjec
       </tr>
       <tr>
         <td style="padding:16px 24px 24px 24px;color:#555;font-size:12px;">
-          Sent by
+          Sent by,
           <br/>
           Change Reel
         </td>

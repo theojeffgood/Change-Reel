@@ -11,7 +11,7 @@ const stripePromise = stripePublishableKey ? loadStripe(stripePublishableKey) : 
 type PlanKey = 'growth' | 'enterprise'
 type CreditPack = 'credits100' | 'credits1000'
 
-export default function BillingClient() {
+export default function BillingClient({ isCheckoutActive }: { isCheckoutActive?: (isCheckout: boolean) => void }) {
   const { data: session } = useSession()
   const [clientSecret, setClientSecret] = useState<string | null>(null)
   const [error, setError] = useState<string | null>(null)
@@ -46,6 +46,7 @@ export default function BillingClient() {
       }
       setClientSecret(secret)
       setShowCheckout(true)
+      isCheckoutActive?.(true)
     } catch (e: any) {
       setError(e.message || 'Unknown error')
     } finally {
@@ -68,6 +69,7 @@ export default function BillingClient() {
   const handleBackToPlans = () => {
     setShowCheckout(false)
     setClientSecret(null)
+    isCheckoutActive?.(false)
   }
 
   return (
@@ -169,11 +171,11 @@ export default function BillingClient() {
       <div className={`${showCheckout ? 'opacity-100 translate-y-0' : 'opacity-0 pointer-events-none -translate-y-2'} transition-all duration-300`}>
         {showCheckout && (
           <div className="space-y-3">
-            <button onClick={handleBackToPlans} className="inline-flex items-center text-sm text-blue-600 hover:text-blue-700">
+            <button onClick={handleBackToPlans} className="inline-flex items-center text-sm text-gray-900 hover:text-black">
               <svg className="mr-1 h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M15 19l-7-7 7-7"/></svg>
-              Back to plans
+              Change Reel
             </button>
-            <div id="checkout" className="bg-white rounded-xl p-4 border border-gray-200 shadow-sm">
+            <div id="checkout" className="bg-white rounded-xl p-4 shadow-sm">
               {!clientSecret && (
                 <div className="text-sm text-gray-600">{loading ? 'Loading secure checkout…' : 'We couldn’t start checkout. Please try again, or find me on Twitter @theojeffgood. '}</div>
               )}

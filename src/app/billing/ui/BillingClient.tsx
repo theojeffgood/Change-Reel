@@ -175,7 +175,7 @@ export default function BillingClient({ isCheckoutActive }: { isCheckoutActive?:
               <svg className="mr-1 h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M15 19l-7-7 7-7"/></svg>
               Change Reel
             </button>
-            <div id="checkout" className="bg-white rounded-xl p-4 shadow-sm">
+            <div id="checkout" className="w-full">
               {!clientSecret && (
                 <div className="text-sm text-gray-600">{loading ? 'Loading secure checkout…' : 'We couldn’t start checkout. Please try again, or find me on Twitter @theojeffgood. '}</div>
               )}

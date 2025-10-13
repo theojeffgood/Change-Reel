@@ -10,7 +10,7 @@ export default function BillingPage() {
   return (
     <div className="min-h-screen bg-white">
       {!showCheckout && <SiteHeader className="bg-white" />}
-      <div className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 py-10">
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-10">
         <Suspense fallback={<div>Loading…</div>}>
           <BillingClient isCheckoutActive={setIsCheckout} />
         </Suspense>

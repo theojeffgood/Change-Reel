@@ -171,11 +171,11 @@ export default function BillingClient({ isCheckoutActive }: { isCheckoutActive?:
       <div className={`${showCheckout ? 'opacity-100 translate-y-0' : 'opacity-0 pointer-events-none -translate-y-2'} transition-all duration-300`}>
         {showCheckout && (
           <div className="space-y-3">
-            <button onClick={handleBackToPlans} className="inline-flex items-center text-sm text-gray-900 hover:text-black">
+            <button onClick={handleBackToPlans} className="inline-flex items-center sm:pl-4 sm:mt-6 font-medium text-sm text-gray-900 hover:text-black">
               <svg className="mr-1 h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M15 19l-7-7 7-7"/></svg>
               Change Reel
             </button>
-            <div id="checkout" className="w-full">
+            <div id="checkout" className="w-full py-4">
               {!clientSecret && (
                 <div className="text-sm text-gray-600">{loading ? 'Loading secure checkout…' : 'We couldn’t start checkout. Please try again, or find me on Twitter @theojeffgood. '}</div>
               )}

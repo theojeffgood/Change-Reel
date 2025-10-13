@@ -169,7 +169,7 @@ export default function Home() {
               </div>
               <div>
                 <h3 className="text-lg font-semibold text-gray-900">Plugs Into Your Tech Stack</h3>
-                <p className="text-gray-600">We're everywhere your engineers are</p>
+                <p className="text-gray-600">Any tech. Every language. All stacks</p>
               </div>
             </div>
 
@@ -183,7 +183,7 @@ export default function Home() {
               </div>
               <div>
                 <h3 className="text-lg font-semibold text-gray-900">No Integration Needed</h3>
-                <p className="text-gray-600">Zero.</p>
+                <p className="text-gray-600">Zero</p>
               </div>
             </div>
 
@@ -197,7 +197,7 @@ export default function Home() {
               </div>
               <div>
                 <h3 className="text-lg font-semibold text-gray-900">Proprietary Insights</h3>
-                <p className="text-gray-600">4-factor analysis including code changes, comments, commit messages, history</p>
+                <p className="text-gray-600">4-factor analysis including raw code diffs, comments, commit messages, history</p>
               </div>
             </div>
 
@@ -226,7 +226,7 @@ export default function Home() {
                 </svg>
               </div>
               <div>
-                <h3 className="text-lg font-semibold text-gray-900">Smart Alerts <span className="ml-2 text-xs font-medium text-blue-600 uppercase">Coming soon</span></h3>
+                <h3 className="text-lg font-semibold text-gray-900">Smart Alerts <span className="ml-2 text-xs font-medium text-blue-600 uppercase">New!</span></h3>
                 <p className="text-gray-600">Get notified when your team ships</p>
               </div>
             </div>

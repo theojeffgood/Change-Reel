@@ -30,16 +30,17 @@ export function renderSingleCommitEmail(input: SingleCommitEmailInput): { subjec
             <br/>
             <br/>
             <span>Repo: ${escapeHtml(projectName)}</span>
+            <br/>
           </div>
         </td>
       </tr>
       <tr>
         <td style="padding:8px 24px 16px 24px;border-bottom:1px solid #eee;">
-          <div style="font-size:12px;color:#555;">By: ${escapeHtml(commit.author || 'Unknown')}</div>
-          <br/>
           <div style="font-size:12px;color:#111;">${escapeHtml(commit.summary)}</div>
           <br/>
           <div style="font-size:12px;color:#555;">On: ${escapeHtml(dateStr)}</div>
+          <br/>
+          <div style="font-size:12px;color:#555;">By: ${escapeHtml(commit.author || 'Unknown')}</div>
           <br/>
         </td>
       </tr>

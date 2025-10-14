@@ -15,7 +15,7 @@ export function renderSingleCommitEmail(input: SingleCommitEmailInput): { subjec
   const dateStr = date.toLocaleDateString('en-US', { day: 'numeric', month: 'short', year: 'numeric' })
   const changeLabel = commit.type === 'bugfix'
     ? 'Bugfix'
-    : 'Feature'
+    : 'New Feature'
   const badgeStyles = commit.type === 'bugfix'
     ? 'display:inline-block;padding:2px 8px;border-radius:9999px;font-size:11px;font-weight:600;color:#7f1d1d;background:#ecfdf5;border:1px solid #fecaca'
     : 'display:inline-block;padding:2px 8px;border-radius:9999px;font-size:11px;font-weight:600;color:#065f46;background:#fef2f2;border:1px solid #a7f3d0;'
@@ -36,10 +36,10 @@ export function renderSingleCommitEmail(input: SingleCommitEmailInput): { subjec
       </tr>
       <tr>
         <td style="padding:8px 24px 16px 24px;border-bottom:1px solid #eee;">
+          <br/>
           <div style="font-size:12px;color:#111;">${escapeHtml(commit.summary)}</div>
           <br/>
           <div style="font-size:12px;color:#555;">On: ${escapeHtml(dateStr)}</div>
-          <br/>
           <div style="font-size:12px;color:#555;">By: ${escapeHtml(commit.author || 'Unknown')}</div>
           <br/>
         </td>

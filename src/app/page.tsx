@@ -10,12 +10,7 @@ export default function Home() {
       {/* Hero Section */}
       <div className="px-4 sm:px-6 lg:px-8 py-20">
         <div className="max-w-4xl mx-auto text-center">
-                      {/* Toast */}
-            <div className="inline-flex items-center px-4 py-1 mb-8 text-black text-sm font-medium rounded-full border-1 border-gray-300">
-              <span className="mr-2 animate-pulse">✨</span>
-              AI-Powered Product Updates
-            </div>
-          <h1 className="text-5xl md:text-6xl font-bold text-gray-900 mb-6">
+          <h1 className="text-5xl md:text-6xl font-bold text-gray-900 mb-6 py-8">
             {/* Code Updates in Plain-English */}
             Notifications <br/> from your codebase. <br/> In plain English
           </h1>
@@ -41,7 +36,7 @@ export default function Home() {
           </div>
           
           {/* Feature Toasts */}
-          <div className="flex flex-col sm:flex-row gap-6 justify-center mt-12">
+          <div className="flex flex-col sm:flex-row gap-14 justify-center mt-12">
             <div className="inline-flex items-center px-4 py-2 text-gray-600 text-sm font-medium">
               <span className="mr-2">🎟️</span>
               No Subscription
@@ -198,21 +193,6 @@ export default function Home() {
               <div>
                 <h3 className="text-lg font-semibold text-gray-900">Proprietary Insights</h3>
                 <p className="text-gray-600">4-factor analysis including raw code diffs, comments, commit messages, history</p>
-              </div>
-            </div>
-
-            {/* Development network */}
-            <div className="bg-white rounded-xl p-6 shadow-sm border border-gray-200 flex items-start space-x-4">
-              <div className="w-12 h-12 rounded-lg border border-blue-100 flex items-center justify-center text-blue-600">
-                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                  <circle cx="12" cy="12" r="9"></circle>
-                  <line x1="3" y1="12" x2="21" y2="12"></line>
-                  <line x1="12" y1="3" x2="12" y2="21"></line>
-                </svg>
-              </div>
-              <div>
-                <h3 className="text-lg font-semibold text-gray-900">Development Network <span className="ml-2 text-xs font-medium text-blue-600 uppercase">Coming soon</span></h3>
-                <p className="text-gray-600">Compare your engineering team against its peers</p>
               </div>
             </div>
 

@@ -4,6 +4,7 @@ import { Suspense, useState, useEffect, useRef, useCallback } from 'react';
 import Image from 'next/image';
 import { useSession, signIn } from 'next-auth/react';
 import { useRouter, useSearchParams } from 'next/navigation';
+import posthog from 'posthog-js';
 import SiteHeader from '@/components/layout/SiteHeader'
 import SiteFooter from '@/components/layout/SiteFooter'
 import Link from 'next/link';
@@ -508,11 +509,19 @@ function ConfigurationPageContent() {
                                   key={repo.id}
                                   type="button"
                                   onClick={() => {
+                                    const wasSelected = selectedRepoFullNames.includes(fullName);
                                     setSelectedRepoFullNames(prev =>
                                       prev.includes(fullName)
                                         ? prev.filter(n => n !== fullName)
                                         : [...prev, fullName]
                                     );
+                                    
+                                    // Track repository selection (only on selection, not deselection)
+                                    if (!wasSelected && posthog.__loaded) {
+                                      posthog.capture('repository_selected', {
+                                        repository_name: fullName,
+                                      });
+                                    }
                                   }}
                                   className={`text-left p-4 rounded-xl border transition-colors ${selected ? 'border-green-600 bg-green-50' : 'border-gray-200 hover:bg-gray-50'}`}
                                 >
@@ -606,6 +615,12 @@ function ConfigurationPageContent() {
                           }
                           const saved = await saveConfiguration(selectedRepoFullNames, selectedInstallationId, { silent: false });
                           if (saved) {
+                            // Track successful configuration completion (critical conversion!)
+                            if (posthog.__loaded) {
+                              posthog.capture('onboarding_completed', {
+                                repository_count: selectedRepoFullNames.length,
+                              });
+                            }
                             hasRedirectedRef.current = true;
                             router.push('/admin');
                           }

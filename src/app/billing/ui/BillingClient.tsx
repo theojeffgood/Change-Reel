@@ -4,7 +4,7 @@ import { useEffect, useMemo, useState } from 'react'
 import { useSession } from 'next-auth/react'
 import { EmbeddedCheckout, EmbeddedCheckoutProvider } from '@stripe/react-stripe-js'
 import { loadStripe } from '@stripe/stripe-js'
-import { trackEvent } from '@/lib/analytics'
+import { trackEvent, trackError } from '@/lib/analytics/index'
 
 const stripePublishableKey = process.env.NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY
 const stripePromise = stripePublishableKey ? loadStripe(stripePublishableKey) : Promise.resolve(null)
@@ -56,7 +56,14 @@ export default function BillingClient({ isCheckoutActive }: { isCheckoutActive?:
         price: credit_pack === 'credits1000' ? 249 : 29,
       });
     } catch (e: any) {
-      setError(e.message || 'Unknown error')
+      const errorMessage = e.message || 'Unknown error';
+      setError(errorMessage);
+      
+      // Track payment error
+      trackError('payment_error', e, {
+        action: 'checkout_session_creation',
+        credit_pack: credit_pack,
+      });
     } finally {
       setLoading(false)
     }

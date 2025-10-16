@@ -3,6 +3,7 @@
 import React, { useEffect, Suspense } from 'react';
 import { usePathname, useSearchParams } from 'next/navigation';
 import posthog from 'posthog-js';
+import { trackError } from './index';
 
 interface PostHogProviderProps {
   children: React.ReactNode;
@@ -38,6 +39,29 @@ export function PostHogProvider({ children }: PostHogProviderProps) {
       capture_pageview: false,
       capture_pageleave: true,
     });
+
+    // Set up global error handlers for unhandled errors
+    const handleError = (event: ErrorEvent) => {
+      trackError('client_error', event.error || event.message, {
+        filename: event.filename,
+        lineno: event.lineno,
+        colno: event.colno,
+      });
+    };
+
+    const handleUnhandledRejection = (event: PromiseRejectionEvent) => {
+      trackError('client_error', event.reason, {
+        type: 'unhandled_promise_rejection',
+      });
+    };
+
+    window.addEventListener('error', handleError);
+    window.addEventListener('unhandledrejection', handleUnhandledRejection);
+
+    return () => {
+      window.removeEventListener('error', handleError);
+      window.removeEventListener('unhandledrejection', handleUnhandledRejection);
+    };
   }, []);
 
   return (

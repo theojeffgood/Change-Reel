@@ -51,3 +51,31 @@ export function isAnalyticsAvailable(): boolean {
   return typeof window !== 'undefined' && posthog.__loaded;
 }
 
+/**
+ * Track an error event with context
+ * Use for client-side errors, API failures, and other exceptions
+ */
+export function trackError(
+  errorType: 'client_error' | 'api_error' | 'auth_error' | 'payment_error',
+  error: Error | string,
+  context?: EventProperties
+): void {
+  if (typeof window === 'undefined') return; // Server-side guard
+  
+  const errorMessage = error instanceof Error ? error.message : error;
+  const errorStack = error instanceof Error ? error.stack : undefined;
+  
+  if (posthog.__loaded) {
+    posthog.capture('error_occurred', {
+      error_type: errorType,
+      error_message: errorMessage,
+      error_stack: errorStack,
+      ...context,
+    });
+  }
+  
+  // Also log to console in development
+  if (process.env.NODE_ENV === 'development') {
+    console.error(`[Analytics Error] ${errorType}:`, error, context);
+  }
+}

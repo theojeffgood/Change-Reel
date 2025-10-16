@@ -1,6 +1,6 @@
 'use client';
 
-import posthog from 'posthog-js';
+import { trackEvent } from '@/lib/analytics';
 
 interface GitHubConnectButtonProps {
   installUrl?: string;
@@ -8,9 +8,7 @@ interface GitHubConnectButtonProps {
 
 export function GitHubConnectButton({ installUrl }: GitHubConnectButtonProps) {
   const handleClick = () => {
-    if (posthog.__loaded) {
-      posthog.capture('github_connect_clicked');
-    }
+    trackEvent('github_connect_clicked');
   };
 
   return (

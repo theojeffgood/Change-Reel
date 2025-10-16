@@ -1,11 +1,16 @@
 "use client"
-import { Suspense, useState } from 'react'
+import { Suspense, useState, useEffect } from 'react'
+import { trackEvent } from '@/lib/analytics'
 import BillingClient from './ui/BillingClient'
 import SiteHeader from '@/components/layout/SiteHeader'
 import SiteFooter from '@/components/layout/SiteFooter'
 
 export default function BillingPage() {
   const [showCheckout, setIsCheckout] = useState(false)
+
+  useEffect(() => {
+    trackEvent('billing_page_viewed')
+  }, [])
 
   return (
     <div className="min-h-screen bg-white">

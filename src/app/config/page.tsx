@@ -4,7 +4,7 @@ import { Suspense, useState, useEffect, useRef, useCallback } from 'react';
 import Image from 'next/image';
 import { useSession, signIn } from 'next-auth/react';
 import { useRouter, useSearchParams } from 'next/navigation';
-import posthog from 'posthog-js';
+import { trackEvent } from '@/lib/analytics';
 import SiteHeader from '@/components/layout/SiteHeader'
 import SiteFooter from '@/components/layout/SiteFooter'
 import Link from 'next/link';
@@ -517,8 +517,8 @@ function ConfigurationPageContent() {
                                     );
                                     
                                     // Track repository selection (only on selection, not deselection)
-                                    if (!wasSelected && posthog.__loaded) {
-                                      posthog.capture('repository_selected', {
+                                    if (!wasSelected) {
+                                      trackEvent('repository_selected', {
                                         repository_name: fullName,
                                       });
                                     }
@@ -616,11 +616,9 @@ function ConfigurationPageContent() {
                           const saved = await saveConfiguration(selectedRepoFullNames, selectedInstallationId, { silent: false });
                           if (saved) {
                             // Track successful configuration completion (critical conversion!)
-                            if (posthog.__loaded) {
-                              posthog.capture('onboarding_completed', {
-                                repository_count: selectedRepoFullNames.length,
-                              });
-                            }
+                            trackEvent('onboarding_completed', {
+                              repository_count: selectedRepoFullNames.length,
+                            });
                             hasRedirectedRef.current = true;
                             router.push('/admin');
                           }

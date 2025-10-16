@@ -5,6 +5,7 @@ import { useSession } from 'next-auth/react';
 import { useRouter } from 'next/navigation';
 import { useEffect } from 'react';
 import React, { useState } from 'react';
+import { trackEvent } from '@/lib/analytics';
 
 export default function AdminLayout({
   children,
@@ -41,6 +42,10 @@ export default function AdminLayout({
     if (hasStripeSession || purchaseSuccess) {
       setShowThanks(true);
       setTimeout(() => setShowThanks(false), 2000);
+      
+      // Track purchase completion
+      trackEvent('purchase_completed');
+      
       // Clean the URL to remove sensitive params
       router.replace('/admin');
     }

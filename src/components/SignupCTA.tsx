@@ -1,7 +1,7 @@
 'use client';
 
 import Link from 'next/link';
-import posthog from 'posthog-js';
+import { trackEvent } from '@/lib/analytics';
 
 interface SignupCTAProps {
   location: 'hero' | 'pricing' | 'footer' | 'header';
@@ -12,12 +12,10 @@ interface SignupCTAProps {
 
 export function SignupCTA({ location, text, className, showIcon = true }: SignupCTAProps) {
   const handleClick = () => {
-    if (posthog.__loaded) {
-      posthog.capture('signup_cta_clicked', {
-        location,
-        cta_text: text,
-      });
-    }
+    trackEvent('signup_cta_clicked', {
+      location,
+      cta_text: text,
+    });
   };
 
   return (

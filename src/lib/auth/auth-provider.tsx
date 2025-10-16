@@ -2,7 +2,7 @@
 
 import { useEffect } from 'react';
 import { SessionProvider, useSession } from 'next-auth/react';
-import posthog from 'posthog-js';
+import { identifyUser, resetAnalytics } from '@/lib/analytics';
 
 interface AuthProviderProps {
   children: React.ReactNode;
@@ -14,19 +14,19 @@ function PostHogIdentifier() {
   useEffect(() => {
     if (status === 'loading') return;
 
-    if (session?.user && posthog.__loaded) {
+    if (session?.user) {
       // Identify the user with their GitHub ID as the stable identifier
       const userId = session.user.githubId?.toString() || session.user.id;
       
-      posthog.identify(userId, {
+      identifyUser(userId, {
         email: session.user.email,
         name: session.user.name,
         github_login: session.user.login,
         github_id: session.user.githubId,
       });
-    } else if (!session && posthog.__loaded) {
+    } else if (!session) {
       // User signed out; reset to anonymous
-      posthog.reset();
+      resetAnalytics();
     }
   }, [session, status]);
 

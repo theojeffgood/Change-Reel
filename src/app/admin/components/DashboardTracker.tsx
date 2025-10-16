@@ -1,13 +1,11 @@
 'use client';
 
 import { useEffect } from 'react';
-import posthog from 'posthog-js';
+import { trackEvent } from '@/lib/analytics';
 
 export function DashboardTracker() {
   useEffect(() => {
-    if (posthog.__loaded) {
-      posthog.capture('dashboard_viewed');
-    }
+    trackEvent('dashboard_viewed');
   }, []);
 
   return null;

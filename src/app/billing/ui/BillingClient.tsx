@@ -4,6 +4,7 @@ import { useEffect, useMemo, useState } from 'react'
 import { useSession } from 'next-auth/react'
 import { EmbeddedCheckout, EmbeddedCheckoutProvider } from '@stripe/react-stripe-js'
 import { loadStripe } from '@stripe/stripe-js'
+import { trackEvent, trackError } from '@/lib/analytics/index'
 
 const stripePublishableKey = process.env.NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY
 const stripePromise = stripePublishableKey ? loadStripe(stripePublishableKey) : Promise.resolve(null)
@@ -47,8 +48,22 @@ export default function BillingClient({ isCheckoutActive }: { isCheckoutActive?:
       setClientSecret(secret)
       setShowCheckout(true)
       isCheckoutActive?.(true)
+      
+      // Track checkout initiated
+      trackEvent('checkout_initiated', {
+        credit_pack: credit_pack,
+        credits: credit_pack === 'credits1000' ? 1500 : 100,
+        price: credit_pack === 'credits1000' ? 249 : 29,
+      });
     } catch (e: any) {
-      setError(e.message || 'Unknown error')
+      const errorMessage = e.message || 'Unknown error';
+      setError(errorMessage);
+      
+      // Track payment error
+      trackError('payment_error', e, {
+        action: 'checkout_session_creation',
+        credit_pack: credit_pack,
+      });
     } finally {
       setLoading(false)
     }
@@ -62,6 +77,15 @@ export default function BillingClient({ isCheckoutActive }: { isCheckoutActive?:
       if (typeof window !== 'undefined') window.location.assign('/config')
       return
     }
+    
+    // Track plan selection
+    trackEvent('plan_selected', {
+      plan: plan,
+      credit_pack: creditPackForPlan[plan],
+      credits: plan === 'growth' ? 100 : 1500,
+      price: plan === 'growth' ? 29 : 249,
+    });
+    
     setSelectedPlan(plan)
     createSession(creditPackForPlan[plan])
   }

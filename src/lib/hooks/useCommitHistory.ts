@@ -3,6 +3,7 @@
 import { useState, useEffect, useCallback } from 'react';
 import { createClient } from '@supabase/supabase-js';
 import { Commit } from '@/lib/types/supabase';
+import { trackError } from '@/lib/analytics';
 
 interface CommitHistoryState {
   commits: Commit[];
@@ -48,11 +49,20 @@ export function useCommitHistory(pageSize: number = 10, initialInstallationIds: 
         error: null,
       }));
     } catch (error) {
+      const errorMessage = error instanceof Error ? error.message : 'An unknown error occurred';
+      
       setState(prevState => ({
         ...prevState,
         isLoading: false,
-        error: error instanceof Error ? error.message : 'An unknown error occurred',
+        error: errorMessage,
       }));
+      
+      // Track commit history fetch error
+      trackError('api_error', error as Error, {
+        action: 'fetch_commit_history',
+        page: currentPage,
+        page_size: pageSize,
+      });
     }
   }, [pageSize]);
 

@@ -4,6 +4,7 @@ import { Suspense, useState, useEffect, useRef, useCallback } from 'react';
 import Image from 'next/image';
 import { useSession, signIn } from 'next-auth/react';
 import { useRouter, useSearchParams } from 'next/navigation';
+import { trackEvent, trackError } from '@/lib/analytics/index';
 import SiteHeader from '@/components/layout/SiteHeader'
 import SiteFooter from '@/components/layout/SiteFooter'
 import Link from 'next/link';
@@ -148,6 +149,12 @@ function ConfigurationPageContent() {
       setRepositories([]);
       setSelectedRepoFullNames([]);
       setRepoError('Failed to load repositories');
+      
+      // Track repository loading error
+      trackError('api_error', e as Error, {
+        action: 'load_repositories',
+        installation_id: installationId,
+      });
     } finally {
       setLoadingRepos(false);
     }
@@ -343,6 +350,14 @@ function ConfigurationPageContent() {
     } catch (error) {
       console.error('Error saving repository configuration:', error);
       setSaveError('An unexpected error occurred while saving repository');
+      
+      // Track configuration save error
+      trackError('api_error', error as Error, {
+        action: 'save_repository_configuration',
+        repository_count: repositoriesToSave.length,
+        installation_id: installationIdValue,
+      });
+      
       return false;
     } finally {
       savingRef.current = false;
@@ -508,11 +523,19 @@ function ConfigurationPageContent() {
                                   key={repo.id}
                                   type="button"
                                   onClick={() => {
+                                    const wasSelected = selectedRepoFullNames.includes(fullName);
                                     setSelectedRepoFullNames(prev =>
                                       prev.includes(fullName)
                                         ? prev.filter(n => n !== fullName)
                                         : [...prev, fullName]
                                     );
+                                    
+                                    // Track repository selection (only on selection, not deselection)
+                                    if (!wasSelected) {
+                                      trackEvent('repository_selected', {
+                                        repository_name: fullName,
+                                      });
+                                    }
                                   }}
                                   className={`text-left p-4 rounded-xl border transition-colors ${selected ? 'border-green-600 bg-green-50' : 'border-gray-200 hover:bg-gray-50'}`}
                                 >
@@ -606,6 +629,10 @@ function ConfigurationPageContent() {
                           }
                           const saved = await saveConfiguration(selectedRepoFullNames, selectedInstallationId, { silent: false });
                           if (saved) {
+                            // Track successful configuration completion (critical conversion!)
+                            trackEvent('onboarding_completed', {
+                              repository_count: selectedRepoFullNames.length,
+                            });
                             hasRedirectedRef.current = true;
                             router.push('/admin');
                           }

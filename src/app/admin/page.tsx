@@ -9,6 +9,7 @@ import Link from 'next/link';
 import SiteHeader from '@/components/layout/SiteHeader'
 import SiteFooter from '@/components/layout/SiteFooter'
 import MetricsBar from './components/MetricsBar'
+import { DashboardTracker } from '@/app/admin/components/DashboardTracker';
 
 export default async function AdminPage() {
   // Determine if current user has credits and get installation IDs
@@ -53,6 +54,7 @@ export default async function AdminPage() {
 
   return (
     <div className="min-h-screen bg-gray-50">
+      <DashboardTracker />
       <SiteHeader isAuthenticated={true}/>
 
       {/* Main Content */}

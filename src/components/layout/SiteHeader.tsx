@@ -1,6 +1,7 @@
 "use client";
 
 import Link from 'next/link'
+import { SignupCTA } from '@/components/SignupCTA'
 
 interface SiteHeaderProps {
   className?: string
@@ -29,12 +30,12 @@ const SiteHeader = ({
             {ctaLabel}
           </Link>
           {!isAuthenticated && (
-            <Link
-              href="/signup"
+            <SignupCTA
+              location="header"
+              text="Sign Up"
               className="inline-flex items-center px-4 py-2 bg-black text-white rounded-lg hover:bg-gray-800 transition-colors"
-            >
-              Sign Up
-            </Link>
+              showIcon={false}
+            />
           )}
         </div>
       </div>

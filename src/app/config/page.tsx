@@ -562,7 +562,7 @@ function ConfigurationPageContent() {
                     <div className="mt-4 grid grid-cols-1 md:grid-cols-2 gap-6">
                       <div className="p-4 border border-gray-200 rounded-xl bg-white">
                         <div className="mb-3">
-                          <label className="block text-sm font-medium text-gray-700 mb-2">Get Change Summaries Delivered to your Inbox</label>
+                          <label className="block text-sm font-medium text-gray-700 mb-2">Get Notifications in your Inbox</label>
                         </div>
                         <div className="flex items-center gap-2">
                           <input

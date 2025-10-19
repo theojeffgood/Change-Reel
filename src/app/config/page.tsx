@@ -496,17 +496,79 @@ function ConfigurationPageContent() {
                       </select>
                     )}
 
+<div className="p-4 border border-gray-200 rounded-xl bg-white">
+                        <div className="mb-3">
+                          <label className="block text-md font-medium text-gray-800 mb-2">Get Notifications in your Inbox</label>
+                        </div>
+                        <div className="flex items-center gap-2">
+                          <input
+                            type="text"
+                            value={emailRecipientsInput}
+                            onChange={(e) => setEmailRecipientsInput(e.target.value)}
+                            placeholder="team@example.com"
+                            className="flex-1 ml-2 rounded-lg border-gray-300 focus:border-black focus:ring-black text-gray-900 shadow-sm"
+                            onKeyDown={(e) => { if (e.key === 'Enter') { e.preventDefault(); void addEmail(); } }}
+                          />
+                          <button
+                            type="button"
+                            onClick={() => void addEmail()}
+                            className="px-3 py-2 text-sm font-medium text-white bg-black rounded-lg hover:bg-gray-800"
+                          >
+                            Add
+                          </button>
+                        </div>
+                        {emails.length > 0 && (
+                          <div className="mt-3 flex flex-wrap gap-2">
+                            {emails.map(email => (
+                              <span key={email} className="inline-flex items-center gap-2 px-2.5 py-1 text-xs bg-gray-100 border border-gray-200 text-gray-800 rounded-full">
+                                {email}
+                                <button
+                                  type="button"
+                                  aria-label={`Remove ${email}`}
+                                  onClick={() => void removeEmail(email)}
+                                  className="ml-1 text-gray-500 hover:text-black"
+                                >
+                                  ×
+                                </button>
+                              </span>
+                            ))}
+                          </div>
+                        )}
+                      </div>
+
+                      {/* Credits Remaining */}
+                      <div className="bg-white border border-gray-200 rounded-xl p-6">
+                        <div className="flex items-center justify-between">
+                          <div>
+                            <div className="text-md font-medium text-gray-800">Credits Remaining</div>
+                            {balanceLoading ? (
+                            <div className="text-gray-600 mt-1">Loading…</div>
+                          ) : balanceError ? (
+                          <div className="text-red-700 mt-1 text-sm">{balanceError}</div>
+                          ) : (
+                          <div className="text-2xl font-semibold text-gray-900 mt-1">{balance ?? '—'}</div>
+                          )}
+                          </div>
+                          <Link
+                            href="/billing"
+                            className="text-blue-600 hover:text-blue-700 hover:underline text-sm font-medium"
+                          >
+                            add
+                          </Link>
+                        </div>
+                      </div>
+
                     {installations.length === 0 ? (
                       <div className="px-6 pb-6">
                         <div className="p-4 border border-gray-200 rounded-xl bg-white">
-                          <p className="text-sm text-gray-800">No installations found.</p>
+                          <p className="text-md text-gray-800">No installations found.</p>
                         </div>
                       </div>
                     ) : (
                       <div className="bg-white border border-gray-200 mt-2 rounded-xl overflow-hidden">
                         <div className="p-6">
                           <div className="flex items-center justify-between mb-4">
-                            <h3 className="text-sm font-medium text-gray-700">Repositories</h3>
+                            <h3 className="text-md font-medium text-gray-800">Repositories</h3>
                             {loadingRepos && (
                               <div className="flex items-center space-x-2 text-sm text-gray-600">
                                 <div className="w-4 h-4 border-2 border-black border-t-transparent rounded-full animate-spin"></div>
@@ -554,68 +616,23 @@ function ConfigurationPageContent() {
                                 </button>
                               );
                             })}
+                            <a
+                              href={`https://github.com/apps/change-reel/installations/${selectedInstallationId}`}
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              className="flex items-center justify-center p-4 rounded-xl border-2 border-dashed border-gray-300 hover:border-black hover:bg-gray-50 transition-colors"
+                            >
+                              <div className="text-center">
+                                <div className="text-2xl mb-2">+</div>
+                                <div className="text-sm font-medium text-gray-900">Add a repository</div>
+                              </div>
+                            </a>
                           </div>
                         </div>
                       </div>
                     )}
 
                     <div className="mt-4 grid grid-cols-1 md:grid-cols-2 gap-6">
-                      <div className="p-4 border border-gray-200 rounded-xl bg-white">
-                        <div className="mb-3">
-                          <label className="block text-sm font-medium text-gray-700 mb-2">Get Notifications in your Inbox</label>
-                        </div>
-                        <div className="flex items-center gap-2">
-                          <input
-                            type="text"
-                            value={emailRecipientsInput}
-                            onChange={(e) => setEmailRecipientsInput(e.target.value)}
-                            placeholder="team@example.com"
-                            className="flex-1 rounded-lg border-gray-300 focus:border-black focus:ring-black text-gray-900 shadow-sm"
-                            onKeyDown={(e) => { if (e.key === 'Enter') { e.preventDefault(); void addEmail(); } }}
-                          />
-                          <button
-                            type="button"
-                            onClick={() => void addEmail()}
-                            className="px-3 py-2 text-sm font-medium text-white bg-black rounded-lg hover:bg-gray-800"
-                          >
-                            Add
-                          </button>
-                        </div>
-                        {emails.length > 0 && (
-                          <div className="mt-3 flex flex-wrap gap-2">
-                            {emails.map(email => (
-                              <span key={email} className="inline-flex items-center gap-2 px-2.5 py-1 text-xs bg-gray-100 border border-gray-200 text-gray-800 rounded-full">
-                                {email}
-                                <button
-                                  type="button"
-                                  aria-label={`Remove ${email}`}
-                                  onClick={() => void removeEmail(email)}
-                                  className="ml-1 text-gray-500 hover:text-black"
-                                >
-                                  ×
-                                </button>
-                              </span>
-                            ))}
-                          </div>
-                        )}
-                      </div>
-
-                      {/* Credits Remaining */}
-                      <div className="bg-white border border-gray-200 rounded-xl p-6">
-                        <div className="flex items-center justify-between">
-                          <div>
-                            <div className="text-sm font-medium text-gray-700">Credits Remaining</div>
-                            {balanceLoading ? (
-                            <div className="text-gray-600 mt-1">Loading…</div>
-                          ) : balanceError ? (
-                          <div className="text-red-700 mt-1 text-sm">{balanceError}</div>
-                          ) : (
-                          <div className="text-2xl font-semibold text-gray-900 mt-1">{balance ?? '—'}</div>
-                          )}
-                          </div>
-                        </div>
-                      </div>
-
                       <div className="md:col-span-2">
                         <button
                         onClick={async () => {

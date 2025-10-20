@@ -496,7 +496,7 @@ function ConfigurationPageContent() {
                       </select>
                     )}
 
-                    <div className="mt-4 grid grid-cols-1 md:grid-cols-2 gap-6">
+                    <div className="mt-4 grid grid-cols-2 gap-6">
                       <div className="p-4 border border-gray-200 rounded-xl bg-white">
                         <div className="mb-3">
                           <label className="block text-md font-medium text-gray-800 mb-2">Get Notifications in your Inbox</label>
@@ -507,7 +507,7 @@ function ConfigurationPageContent() {
                             value={emailRecipientsInput}
                             onChange={(e) => setEmailRecipientsInput(e.target.value)}
                             placeholder="team@example.com"
-                            className="flex-1 rounded-lg border-gray-300 focus:border-black focus:ring-black text-gray-900 shadow-sm"
+                            className="flex-1 rounded-lg border-gray-300 focus:border-black focus:ring-black text-gray-900 shadow-sm pl-2"
                             onKeyDown={(e) => { if (e.key === 'Enter') { e.preventDefault(); void addEmail(); } }}
                           />
                           <button
@@ -536,30 +536,26 @@ function ConfigurationPageContent() {
                           </div>
                         )}
                       </div>
-                      </div>
 
-                      {/* Credits Remaining */}
                       <div className="bg-white border border-gray-200 rounded-xl p-6">
-                        {/* <div className="flex items-center justify-between"> */}
-                          <div>
-                            <div className="text-md font-medium text-gray-800">Credits Remaining</div>
-                            {balanceLoading ? (
+                        <div>
+                          <div className="text-md font-medium text-gray-800">Credits Remaining</div>
+                          {balanceLoading ? (
                             <div className="text-gray-600 mt-1">Loading…</div>
                           ) : balanceError ? (
-                          <div className="text-red-700 mt-1 text-sm">{balanceError}</div>
+                            <div className="text-red-700 mt-1 text-sm">{balanceError}</div>
                           ) : (
-                          <div className="text-2xl font-semibold text-gray-900 mt-1">{balance ?? '—'}
+                            <div className="text-2xl font-semibold text-gray-900 mt-1">{balance ?? '—'}</div>
+                          )}
                           <Link
                             href="/billing"
-                            className="text-blue-600 hover:text-blue-700 hover:underline text-sm font-medium"
+                            className="block mt-1 text-blue-600 hover:text-blue-700 hover:underline text-sm font-medium"
                           >
                             Add credits
                           </Link>
-                          </div>
-                          )}
-                          </div>
-                        {/* </div> */}
+                        </div>
                       </div>
+                    </div>
 
                     {installations.length === 0 ? (
                       <div className="px-6 pb-6">
@@ -623,7 +619,7 @@ function ConfigurationPageContent() {
                               href={`https://github.com/apps/change-reel/installations/${selectedInstallationId}`}
                               target="_blank"
                               rel="noopener noreferrer"
-                              className="flex items-center justify-center p-4 rounded-xl border-2 border-dashed border-gray-300 hover:border-black hover:bg-gray-50 transition-colors"
+                              className="text-left p-4 rounded-xl border transition-colors border-gray-200 hover:bg-gray-50"
                             >
                               <div className="text-center">
                                 <div className="text-2xl text-gray-900">+</div>

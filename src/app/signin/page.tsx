@@ -39,7 +39,7 @@ export default async function SignInPage() {
         </div>
       </div>
 
-      <SiteFooter />
+      <SiteFooter className="sm:mt-10 mt-0" />
     </div>
   );
 }

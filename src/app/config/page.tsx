@@ -549,7 +549,7 @@ function ConfigurationPageContent() {
                           )}
                           <Link
                             href="/billing"
-                            className="block mt-1 text-blue-600 hover:text-blue-700 hover:underline text-sm font-medium"
+                            className="block mt-4 text-blue-600 hover:text-blue-700 hover:underline text-sm font-medium"
                           >
                             Add credits
                           </Link>
@@ -564,7 +564,7 @@ function ConfigurationPageContent() {
                         </div>
                       </div>
                     ) : (
-                      <div className="bg-white border border-gray-200 mt-2 rounded-xl overflow-hidden">
+                      <div className="bg-white border border-gray-200 mt-4 rounded-xl overflow-hidden">
                         <div className="p-6">
                           <div className="flex items-center justify-between mb-4">
                             <h3 className="text-md font-medium text-gray-800">Repositories</h3>

@@ -19,15 +19,15 @@ export default async function SignInPage() {
       <div className="px-4 sm:px-6 lg:px-8 py-12">
         <div className="max-w-4xl mx-auto text-center">
           <h1 className="text-4xl md:text-5xl font-bold text-gray-900 mt-4 mb-8">
-            Sign in to continue.
+            Sign in again
           </h1>
-          <p className="text-xl text-gray-600 max-w-2xl mx-auto mb-8">
+          <p className="text-xl text-gray-600 max-w-2xl mx-auto mb-4">
             Welcome back. Sign into your account.
           </p>
         </div>
       </div>
 
-      <div className="max-w-3xl mx-auto px-4 sm:px-6 lg:px-8 pb-12 mb-20">
+      <div className="max-w-3xl mx-auto px-4 sm:px-6 lg:px-8 pb-12 mb-10">
         <div className="grid grid-cols-1 gap-8">
           <div className="lg:col-span-1">
             <div className="text-center">

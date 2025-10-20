@@ -496,7 +496,8 @@ function ConfigurationPageContent() {
                       </select>
                     )}
 
-<div className="p-4 border border-gray-200 rounded-xl bg-white">
+                    <div className="mt-4 grid grid-cols-1 md:grid-cols-2 gap-6">
+                      <div className="p-4 border border-gray-200 rounded-xl bg-white">
                         <div className="mb-3">
                           <label className="block text-md font-medium text-gray-800 mb-2">Get Notifications in your Inbox</label>
                         </div>
@@ -506,7 +507,7 @@ function ConfigurationPageContent() {
                             value={emailRecipientsInput}
                             onChange={(e) => setEmailRecipientsInput(e.target.value)}
                             placeholder="team@example.com"
-                            className="flex-1 ml-2 rounded-lg border-gray-300 focus:border-black focus:ring-black text-gray-900 shadow-sm"
+                            className="flex-1 rounded-lg border-gray-300 focus:border-black focus:ring-black text-gray-900 shadow-sm"
                             onKeyDown={(e) => { if (e.key === 'Enter') { e.preventDefault(); void addEmail(); } }}
                           />
                           <button
@@ -535,10 +536,11 @@ function ConfigurationPageContent() {
                           </div>
                         )}
                       </div>
+                      </div>
 
                       {/* Credits Remaining */}
                       <div className="bg-white border border-gray-200 rounded-xl p-6">
-                        <div className="flex items-center justify-between">
+                        {/* <div className="flex items-center justify-between"> */}
                           <div>
                             <div className="text-md font-medium text-gray-800">Credits Remaining</div>
                             {balanceLoading ? (
@@ -546,16 +548,17 @@ function ConfigurationPageContent() {
                           ) : balanceError ? (
                           <div className="text-red-700 mt-1 text-sm">{balanceError}</div>
                           ) : (
-                          <div className="text-2xl font-semibold text-gray-900 mt-1">{balance ?? '—'}</div>
-                          )}
-                          </div>
+                          <div className="text-2xl font-semibold text-gray-900 mt-1">{balance ?? '—'}
                           <Link
                             href="/billing"
                             className="text-blue-600 hover:text-blue-700 hover:underline text-sm font-medium"
                           >
-                            add
+                            Add credits
                           </Link>
-                        </div>
+                          </div>
+                          )}
+                          </div>
+                        {/* </div> */}
                       </div>
 
                     {installations.length === 0 ? (
@@ -623,8 +626,8 @@ function ConfigurationPageContent() {
                               className="flex items-center justify-center p-4 rounded-xl border-2 border-dashed border-gray-300 hover:border-black hover:bg-gray-50 transition-colors"
                             >
                               <div className="text-center">
-                                <div className="text-2xl mb-2">+</div>
-                                <div className="text-sm font-medium text-gray-900">Add a repository</div>
+                                <div className="text-2xl text-gray-900">+</div>
+                                <div className="text-sm font-medium text-gray-900">Add a Repo</div>
                               </div>
                             </a>
                           </div>

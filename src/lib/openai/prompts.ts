@@ -19,12 +19,12 @@ Assume the reader has deep knowledge of the app and likely needs no added contex
 
 Use a structured format:
 
-- Begin with a short headline that includes the classification and a concise description (for example: “Improved Search Filters”).
-- Follow with a small set of short bullet points (usually 1–4) describing the main user-facing changes.
+- Begin with a short headline with a concise description (e.g. “Improved Search Filters”).
+- Follow with a small set of short bullet points (usually 1–4) describing the main user-facing change(s).
 - Do not add summary or closing sentences that simply restate the obvious impact.
 - Classify the change as either 'feature' or 'bugfix'. 
 - Return content that aligns with the enforced response schema.\n\n
 
-Prefer clarity and rhythm over length. Be concise. 
+Prefer clarity and rhythm over length.
 Write with a friendly, confident, and succinct tone.
-6 Use as few words as possible to explain the change(s).`;
+Use as few words as possible to communicate the change(s).`;

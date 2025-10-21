@@ -15,11 +15,8 @@ export function renderSingleCommitEmail(input: SingleCommitEmailInput): { subjec
   const date = new Date(commit.timestamp)
   const dateStr = date.toLocaleDateString('en-US', { day: 'numeric', month: 'short', year: 'numeric' })
   const changeLabel = commit.type === 'bugfix'
-    ? 'Bugfix'
-    : 'New Feature'
-  const badgeStyles = commit.type === 'bugfix'
-    ? 'display:inline-block;padding:2px 8px;border-radius:9999px;font-size:11px;font-weight:600;color:#7f1d1d;background:#ecfdf5;border:1px solid #fecaca'
-    : 'display:inline-block;padding:2px 8px;border-radius:9999px;font-size:11px;font-weight:600;color:#065f46;background:#fef2f2;border:1px solid #a7f3d0;'
+    ? '🪲 Bugfix'
+    : '🆕 Feature'
 
   const headline = (commit.header && commit.header.trim()) || `${changeLabel}: Update in ${projectName}`
   const html = `
@@ -28,7 +25,7 @@ export function renderSingleCommitEmail(input: SingleCommitEmailInput): { subjec
       <tr>
         <td style="padding:24px 24px 8px 24px;">
           <div style="margin:0;font-size:12px;display:flex;align-items:center;gap:8px;">
-            <span style="${badgeStyles}">${changeLabel}</span>
+            <span style="display:inline-block;padding:2px 8px;border-radius:9999px;font-size:11px;font-weight:600;color:#111;">${changeLabel}</span>
             <br/>
             <br/>
             <span>Repo: ${escapeHtml(projectName)}</span>

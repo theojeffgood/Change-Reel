@@ -505,7 +505,7 @@ function ConfigurationPageContent() {
                     <div className="mt-4 grid grid-cols-2 gap-6">
                       <div className="p-4 border border-gray-200 rounded-xl bg-white">
                         <div className="mb-3">
-                          <label className="block text-md font-medium text-gray-800 mb-2">We'll Send Change Alerts to:</label>
+                          <label className="block text-md font-medium text-gray-800 mb-2">Send Changes To:</label>
                         </div>
                         <div className="flex items-center gap-2">
                           <input
@@ -625,7 +625,7 @@ function ConfigurationPageContent() {
                               href={`https://github.com/apps/change-reel/installations/${selectedInstallationId}`}
                               target="_blank"
                               rel="noopener noreferrer"
-                              className="text-left p-2 rounded-xl border transition-colors border-gray-200 hover:bg-gray-50"
+                              className="text-left p-1 rounded-xl border transition-colors border-gray-200 hover:bg-gray-50"
                             >
                               <div className="text-center">
                                 <div className="text-2xl text-gray-900">+</div>

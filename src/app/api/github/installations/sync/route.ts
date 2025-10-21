@@ -41,7 +41,7 @@ export async function POST(request: NextRequest) {
     if (!user) {
       const create = await supa.users.createUser({
         github_id: String(session.user.githubId),
-        email: session.user.email || '',
+        email: typeof session.user.email === 'string' && session.user.email.trim() ? session.user.email.trim() : undefined,
         name: session.user.name || '',
       })
       if (create.error || !create.data) {

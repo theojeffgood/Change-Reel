@@ -133,7 +133,7 @@ export const authConfig: NextAuthOptions = {
   // Use NextAuth defaults for cookies/state handling
   debug: process.env.NODE_ENV === 'development',
   callbacks: {
-    async jwt({ token, account, profile }) {
+    async jwt({ token, account, profile, user }) {
       const githubToken = token as GithubJwt;
 
       if (profile?.id) {
@@ -161,6 +161,17 @@ export const authConfig: NextAuthOptions = {
           ? Date.now() + refreshExpiresInMs
           : githubToken.refreshTokenExpires;
         githubToken.accessTokenError = undefined;
+
+        // Ensure token.email is populated at sign-in time
+        if (!token.email) {
+          try {
+            const oauthAccessToken = (account as any)?.access_token as string | undefined;
+            const resolvedEmail = (user as any)?.email || (await fetchGithubPrimaryVerifiedEmail(oauthAccessToken));
+            if (resolvedEmail) {
+              token.email = resolvedEmail;
+            }
+          } catch {}
+        }
       }
 
       const expiresAt = githubToken.accessTokenExpires;
@@ -197,6 +208,9 @@ export const authConfig: NextAuthOptions = {
       if (session.user) {
         session.user.githubId = token.githubId;
         session.user.login = token.login;
+        if (!session.user.email && typeof token.email === 'string') {
+          session.user.email = token.email as string;
+        }
         // Ensure we have a proper user ID for token storage
         if (token.githubId) {
           session.user.id = String(token.githubId);
@@ -244,8 +258,8 @@ export const authConfig: NextAuthOptions = {
           if (!existingUser) {
             // Resolve a reliable email: use provided one or fetch from /user/emails
             const oauthAccessToken = (account as any)?.access_token as string | undefined;
-            const resolvedEmail = user.email || (await fetchGithubPrimaryVerifiedEmail(oauthAccessToken)) || '';
-            resolvedUserEmail = resolvedEmail || undefined;
+            const resolvedEmail = user.email || (await fetchGithubPrimaryVerifiedEmail(oauthAccessToken)) || undefined;
+            resolvedUserEmail = resolvedEmail;
 
             // Create new user record
             const { data: newUser, error: createError } = await supabaseService.users.createUser({
@@ -271,6 +285,20 @@ export const authConfig: NextAuthOptions = {
                 console.error('Failed to grant starter credits:', creditErr);
               }
             }
+          }
+
+          // Backfill user email if existing user has blank email
+          try {
+            if (existingUser?.id && !existingUser.email) {
+              const oauthAccessToken = (account as any)?.access_token as string | undefined;
+              const resolvedEmail = user.email || (await fetchGithubPrimaryVerifiedEmail(oauthAccessToken));
+              if (resolvedEmail) {
+                await supabaseService.users.updateUser(existingUser.id, { email: resolvedEmail });
+                resolvedUserEmail = resolvedEmail;
+              }
+            }
+          } catch (e) {
+            console.warn('[auth] email backfill skipped', (e as any)?.message)
           }
 
           // Auto-register installations and repos on sign-in (no UI change)

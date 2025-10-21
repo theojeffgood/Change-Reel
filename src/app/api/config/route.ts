@@ -83,20 +83,10 @@ export async function POST(request: NextRequest): Promise<NextResponse<ConfigRes
     
     if (!user) {
       console.log('User not found, creating new user...');
-      // Require a non-empty email to satisfy UNIQUE NOT NULL constraint
-      const sessionEmail = typeof session.user.email === 'string' ? session.user.email.trim() : '';
-      if (!sessionEmail) {
-        console.error('Cannot create user without a resolved email; prompt re-auth to grant user:email');
-        return NextResponse.json(
-          { success: false, message: 'Missing email; please re-authenticate to grant email access', error: 'email_required' },
-          { status: 400 }
-        );
-      }
-
-      // Create user if doesn't exist
+      // Create user without requiring email; email may be backfilled later
       const newUser = {
         github_id: String(session.user.githubId),
-        email: sessionEmail,
+        email: typeof session.user.email === 'string' && session.user.email.trim() ? session.user.email.trim() : undefined,
         name: session.user.name || '',
       };
       console.log('Creating user with data:', newUser);

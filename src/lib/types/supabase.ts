@@ -3,7 +3,7 @@ import { SupabaseClient } from '@supabase/supabase-js'
 // Database table interfaces based on PRD data models
 export interface User {
   id: string
-  email: string
+  email?: string
   name?: string
   github_id?: string
   access_token?: string
@@ -75,7 +75,7 @@ export interface DatabaseResults<T> {
 
 // CRUD operation interfaces
 export interface CreateUserData {
-  email: string
+  email?: string
   name?: string
   github_id?: string
   access_token?: string

@@ -22,7 +22,7 @@ export function renderSingleCommitEmail(input: SingleCommitEmailInput): { subjec
   const firstLineOfSummary = (commit.summary || '').split('\n')[0]?.trim() || ''
   const headline = (commit.header && commit.header.trim()) || firstLineOfSummary || `${changeLabel}: Update in ${projectName}`
 
-  const appBaseUrl = process.env.NEXT_PUBLIC_APP_URL || process.env.APP_BASE_URL || 'https://changereel.app'
+  const appBaseUrl = process.env.NEXT_PUBLIC_APP_URL || process.env.APP_BASE_URL || 'https://changereel.com'
   const dashboardUrl = `${appBaseUrl.replace(/\/$/, '')}/admin`
   const logoUrl = process.env.EMAIL_LOGO_URL || `${appBaseUrl.replace(/\/$/, '')}/favicon.ico`
   const html = `

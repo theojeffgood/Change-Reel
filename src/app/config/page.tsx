@@ -225,6 +225,14 @@ function ConfigurationPageContent() {
       void checkGitHubStatus();
       void fetchInstallations();
       void loadExistingConfiguration();
+      // If email prefills were empty and session email appears later, refresh config
+      const id = setInterval(() => {
+        const sessionEmail = typeof session?.user?.email === 'string' ? session.user.email : '';
+        if (emails.length === 0 && sessionEmail && !sessionEmail.endsWith('@users.noreply.github.com')) {
+          setEmails([sessionEmail]);
+        }
+      }, 1500);
+      return () => clearInterval(id);
     } else if (sessionStatus === 'unauthenticated') {
       setGithubStatusLoading(false);
       setInstallationsLoaded(true);

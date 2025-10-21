@@ -18,7 +18,7 @@ async function fetchGithubPrimaryVerifiedEmail(accessToken: string | undefined):
   try {
     const res = await fetch('https://api.github.com/user/emails', {
       headers: {
-        Authorization: `token ${accessToken}`,
+        Authorization: `Bearer ${accessToken}`,
         Accept: 'application/vnd.github.v3+json',
         'User-Agent': 'change-reel/1.0.0',
       },
@@ -272,6 +272,18 @@ export const authConfig: NextAuthOptions = {
               console.error('Failed to create user record:', createError);
             } else {
               console.log('User record created successfully:', newUser?.email);
+              // If we didn't get an email earlier but now have token, backfill immediately
+              try {
+                if (!resolvedEmail && oauthAccessToken) {
+                  const fetched = await fetchGithubPrimaryVerifiedEmail(oauthAccessToken)
+                  if (fetched && newUser?.id) {
+                    await supabaseService.users.updateUser(newUser.id, { email: fetched });
+                    resolvedUserEmail = fetched;
+                  }
+                }
+              } catch (e) {
+                console.warn('[auth] immediate email backfill skipped', (e as any)?.message)
+              }
               // Grant starter credits (3) to newly created users
               try {
                 if (newUser?.id) {

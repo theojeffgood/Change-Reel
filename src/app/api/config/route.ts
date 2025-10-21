@@ -83,10 +83,20 @@ export async function POST(request: NextRequest): Promise<NextResponse<ConfigRes
     
     if (!user) {
       console.log('User not found, creating new user...');
+      // Require a non-empty email to satisfy UNIQUE NOT NULL constraint
+      const sessionEmail = typeof session.user.email === 'string' ? session.user.email.trim() : '';
+      if (!sessionEmail) {
+        console.error('Cannot create user without a resolved email; prompt re-auth to grant user:email');
+        return NextResponse.json(
+          { success: false, message: 'Missing email; please re-authenticate to grant email access', error: 'email_required' },
+          { status: 400 }
+        );
+      }
+
       // Create user if doesn't exist
       const newUser = {
         github_id: String(session.user.githubId),
-        email: session.user.email || '',
+        email: sessionEmail,
         name: session.user.name || '',
       };
       console.log('Creating user with data:', newUser);
@@ -150,6 +160,8 @@ export async function POST(request: NextRequest): Promise<NextResponse<ConfigRes
 
       if (hasEmailField) {
         baseProjectData.email_distribution_list = normalizedEmails;
+      } else if (typeof user.email === 'string' && user.email && !user.email.endsWith('@users.noreply.github.com')) {
+        baseProjectData.email_distribution_list = [user.email];
       }
 
       const existingProject = projectMap.get(repositoryFullName);
@@ -166,10 +178,13 @@ export async function POST(request: NextRequest): Promise<NextResponse<ConfigRes
           );
         }
       } else {
+        const defaultEmails = baseProjectData.email_distribution_list && Array.isArray(baseProjectData.email_distribution_list)
+          ? baseProjectData.email_distribution_list
+          : [];
         const createResult = await supabaseService.projects.createProject({
           ...baseProjectData,
           user_id: user.id,
-          email_distribution_list: hasEmailField ? normalizedEmails : [],
+          email_distribution_list: defaultEmails,
         });
         if (createResult.error) {
           console.error('Project creation failed:', createResult.error);

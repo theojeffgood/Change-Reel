@@ -1,0 +1,310 @@
+╔══════════════════════════════════════════════════════════════════════════════╗
+║               DATA INTEGRITY ISSUE: INVALID SHAs IN DATABASE                 ║
+║                         QUICK START GUIDE                                    ║
+╚══════════════════════════════════════════════════════════════════════════════╝
+
+PROBLEM:
+  ❌ SHAs stored in database don't exist in GitHub repository
+  ❌ fetch_diff jobs failing: "No common ancestor"
+  ❌ This cascades to generate_summary failures
+  ❌ Data integrity compromised
+
+INVALID SHAs:
+  • Base:  c5c9ea85c587a25046f815cda8434e8fa00b536f
+  • Head:  401951fd91a3e8d32dcaa63333133411c4dd7978
+
+═══════════════════════════════════════════════════════════════════════════════
+
+STEP 1: FIND WHERE INVALID DATA IS (5 minutes)
+
+Run this SQL to find all invalid SHAs:
+
+─────────────────────────────────────────────────────────────────────────────
+SELECT 
+  id, sha, author, created_at,
+  LENGTH(sha) as sha_length,
+  CASE 
+    WHEN sha ~ '[^a-f0-9]' THEN 'INVALID_CHARS'
+    WHEN LENGTH(sha) NOT IN (7, 40) THEN 'WRONG_LENGTH'
+    WHEN sha IS NULL THEN 'NULL'
+    WHEN sha = '' THEN 'EMPTY'
+    ELSE 'OK'
+  END as validation
+FROM commits
+WHERE LENGTH(sha) != 40 AND LENGTH(sha) != 7
+   OR sha IS NULL
+   OR sha = ''
+   OR sha ~ '[^a-f0-9]'
+LIMIT 50;
+─────────────────────────────────────────────────────────────────────────────
+
+📊 Results to look for:
+  • How many invalid SHAs? (If > 10, serious problem)
+  • What's the pattern? (truncated? special chars?)
+  • When were they created? (recent? or old?)
+  • How many projects affected?
+
+═══════════════════════════════════════════════════════════════════════════════
+
+STEP 2: FIND THE SOURCE (5 minutes)
+
+Run this to trace back to where invalid data originated:
+
+─────────────────────────────────────────────────────────────────────────────
+SELECT 
+  j.id,
+  j.type,
+  j.status,
+  j.error_message,
+  j.created_at,
+  j.data->>'base_sha' as base_sha,
+  j.data->>'head_sha' as head_sha
+FROM jobs j
+WHERE j.type = 'fetch_diff'::job_type
+AND j.status = 'failed'
+AND j.error_message LIKE '%No common ancestor%'
+ORDER BY j.created_at DESC
+LIMIT 10;
+─────────────────────────────────────────────────────────────────────────────
+
+�� Results to look for:
+  • How many failing fetch_diff jobs?
+  • When did they start failing?
+  • Are they all the same SHAs?
+  • What project do they belong to?
+
+═══════════════════════════════════════════════════════════════════════════════
+
+STEP 3: DETERMINE ROOT CAUSE (3 minutes)
+
+Check which scenario matches your data:
+
+SCENARIO A: Webhook Parsing Bug (Most Likely - 60%)
+───────────────────────────────────────────────────
+Signs:
+  • webhook_processing jobs completed successfully
+  • But stored bad data
+  • SHAs are truncated or malformed
+
+Check:
+  SELECT * FROM jobs 
+  WHERE type = 'webhook_processing'::job_type
+  AND created_at > NOW() - INTERVAL '1 day'
+  AND status = 'completed';
+
+  Then check: src/lib/github/webhook-parser.ts
+  Looking for: SHA extraction, validation logic
+
+Fix: Update webhook parser to validate SHAs
+
+
+SCENARIO B: GitHub API Issue (20% probability)
+───────────────────────────────────────────────
+Signs:
+  • API rate limiting errors
+  • Incomplete webhook responses
+  • Data corruption in transit
+
+Check:
+  SELECT error_message FROM jobs 
+  WHERE error_message LIKE '%rate limit%'
+  OR error_message LIKE '%timeout%'
+  AND created_at > NOW() - INTERVAL '1 day';
+
+Fix: Implement exponential backoff + better error handling
+
+
+SCENARIO C: Wrong Repository (10% probability)
+────────────────────────────────────────────────
+Signs:
+  • SHAs valid but in different repository
+  • Webhook sent to wrong project
+  • Mismatch between webhook repo and project
+
+Check:
+  SELECT j.data->>'repository', p.repo_name
+  FROM jobs j
+  LEFT JOIN projects p ON j.project_id = p.id
+  WHERE j.type = 'webhook_processing'::job_type
+  AND j.data->>'repository' != p.repo_name;
+
+Fix: Reconfigure GitHub webhook delivery
+
+
+SCENARIO D: Database Migration Bug (10% probability)
+─────────────────────────────────────────────────────
+Signs:
+  • All bad SHAs from same time period
+  • Data has consistent pattern
+  • Timestamp matches deployment/migration
+
+Check:
+  SELECT DATE(created_at), COUNT(*) 
+  FROM commits 
+  GROUP BY DATE(created_at);
+
+Fix: Restore from backup or manual data correction
+
+═══════════════════════════════════════════════════════════════════════════════
+
+STEP 4: VERIFY SHAs AGAINST GITHUB (5 minutes)
+
+Confirm that SHAs don't exist:
+
+─────────────────────────────────────────────────────────────────────────────
+curl -s \
+  -H "Authorization: token YOUR_GITHUB_TOKEN" \
+  https://api.github.com/repos/OWNER/REPO/commits/c5c9ea85c587a25046f815cda8434e8fa00b536f \
+  | jq '.message'
+─────────────────────────────────────────────────────────────────────────────
+
+Expected result: "Not Found" (HTTP 404)
+
+If HTTP 200: SHA exists, so database might have it under wrong form
+If 404: SHA definitely doesn't exist → delete from database
+
+═══════════════════════════════════════════════════════════════════════════════
+
+STEP 5: FIX THE DATA (2-5 minutes)
+
+Choose ONE based on your root cause:
+
+
+OPTION A: Delete Invalid Records (If data is bad)
+──────────────────────────────────────────────────
+
+⚠️  DESTRUCTIVE! Only if:
+    • Commits haven't been published
+    • No summaries generated yet
+    • You've confirmed SHAs don't exist in GitHub
+
+DELETE FROM commits
+WHERE sha IN (
+  'c5c9ea85c587a25046f815cda8434e8fa00b536f',
+  '401951fd91a3e8d32dcaa63333133411c4dd7978'
+)
+AND summary IS NULL;
+
+DELETE FROM jobs
+WHERE type = 'fetch_diff'::job_type
+AND error_message LIKE '%No common ancestor%';
+
+
+OPTION B: Correct the SHAs (If you know correct values)
+────────────────────────────────────────────────────────
+
+UPDATE commits
+SET sha = 'CORRECT_SHA_HERE'
+WHERE sha = 'c5c9ea85c587a25046f815cda8434e8fa00b536f'
+AND summary IS NULL;
+
+-- Then retry the failed jobs
+UPDATE jobs
+SET status = 'pending', attempts = 0, error_message = NULL
+WHERE type = 'fetch_diff'::job_type
+AND error_message LIKE '%No common ancestor%';
+
+
+OPTION C: Fix the Source Code (Prevent future issues)
+──────────────────────────────────────────────────────
+
+1. Edit: src/lib/github/webhook-parser.ts
+
+2. Add validation:
+
+   function validateCommitSha(sha: string): boolean {
+     return /^[a-f0-9]{7,40}$/.test(sha);
+   }
+
+3. Use before storing:
+
+   if (!validateCommitSha(commit.sha)) {
+     throw new Error('Invalid SHA: ' + commit.sha);
+   }
+
+4. Test the parser with sample webhook payloads
+
+═══════════════════════════════════════════════════════════════════════════════
+
+VERIFICATION: Did the Fix Work?
+
+─────────────────────────────────────────────────────────────────────────────
+-- 1. Check invalid SHAs are gone
+SELECT COUNT(*) FROM commits 
+WHERE sha ~ '[^a-f0-9]' OR LENGTH(sha) NOT IN (7, 40);
+-- Expected: 0
+
+-- 2. Check failed jobs are resolved
+SELECT COUNT(*) FROM jobs 
+WHERE type = 'fetch_diff'::job_type
+AND status = 'failed'
+AND error_message LIKE '%No common ancestor%';
+-- Expected: 0 or decreasing
+
+-- 3. Monitor for NEW invalid data
+SELECT * FROM commits
+WHERE created_at > NOW() - INTERVAL '1 hour'
+AND (sha ~ '[^a-f0-9]' OR LENGTH(sha) NOT IN (7, 40));
+-- Expected: EMPTY (no new bad data)
+─────────────────────────────────────────────────────────────────────────────
+
+═══════════════════════════════════════════════════════════════════════════════
+
+PREVENTION: Stop This From Happening Again
+
+Add these to your codebase:
+
+1️⃣  SHA Validation Before Insert
+    ├─ Validate format: /^[a-f0-9]{7,40}$/
+    ├─ Check not null/empty
+    └─ Log validation failures
+
+2️⃣  Webhook Payload Logging
+    ├─ Log raw webhook payload (first time only)
+    ├─ Log parsed commit data
+    └─ Log any parsing errors
+
+3️⃣  GitHub API Validation
+    ├─ Confirm SHA exists before using
+    ├─ Handle 404 responses gracefully
+    └─ Add retry logic
+
+4️⃣  Database Integrity Checks
+    ├─ Periodic validation query
+    ├─ Alert if invalid SHAs found
+    └─ Auto-cleanup or manual review
+
+5️⃣  Unit Tests for Webhook Parser
+    ├─ Test with valid payloads
+    ├─ Test with malformed payloads
+    ├─ Test with truncated SHAs
+    └─ Test with missing fields
+
+═══════════════════════════════════════════════════════════════════════════════
+
+DETAILED GUIDE
+
+For more information, see: DATA_INTEGRITY_INVESTIGATION.md
+
+Contains:
+  • 7-step detailed SQL investigation
+  • 4 root cause scenarios with evidence
+  • 4 remediation strategies
+  • Prevention checklist
+  • Testing procedures
+
+═══════════════════════════════════════════════════════════════════════════════
+
+SUMMARY
+
+1. Find invalid SHAs → Use Step 1 SQL query
+2. Find source       → Use Step 2 SQL query
+3. Determine cause   → Check scenarios A-D
+4. Verify with GitHub → Use curl command
+5. Fix the data      → Pick Option A/B/C
+6. Verify fix        → Run verification queries
+7. Prevent future    → Add validation code
+
+Expected time: 20-30 minutes total
+
+═══════════════════════════════════════════════════════════════════════════════

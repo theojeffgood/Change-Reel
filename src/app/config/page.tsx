@@ -184,9 +184,14 @@ function ConfigurationPageContent() {
           ? result.configuration.repositories.filter((name: unknown): name is string => typeof name === 'string')
           : [];
         const installationId = result.configuration.installationId;
-        const emailsArr: string[] = Array.isArray(result.configuration.emailRecipients)
+        let emailsArr: string[] = Array.isArray(result.configuration.emailRecipients)
           ? result.configuration.emailRecipients
           : [];
+        // Enable notifications by default: if empty, prefill with user's email when available
+        const sessionEmail = typeof session?.user?.email === 'string' ? session.user.email : '';
+        if (emailsArr.length === 0 && sessionEmail && !sessionEmail.endsWith('@users.noreply.github.com')) {
+          emailsArr = [sessionEmail];
+        }
 
         setSelectedRepoFullNames(repoNames);
         setEmailRecipientsInput('');
@@ -202,7 +207,8 @@ function ConfigurationPageContent() {
       } else {
         setHasExistingConfiguration(false);
         setSelectedRepoFullNames([]);
-        setEmails([]);
+        const sessionEmail = typeof session?.user?.email === 'string' ? session.user.email : '';
+        setEmails(sessionEmail && !sessionEmail.endsWith('@users.noreply.github.com') ? [sessionEmail] : []);
       }
     } catch (error) {
       console.error('Error loading existing configuration:', error);
@@ -499,7 +505,7 @@ function ConfigurationPageContent() {
                     <div className="mt-4 grid grid-cols-2 gap-6">
                       <div className="p-4 border border-gray-200 rounded-xl bg-white">
                         <div className="mb-3">
-                          <label className="block text-md font-medium text-gray-800 mb-2">Get Notifications in your Inbox</label>
+                          <label className="block text-md font-medium text-gray-800 mb-2">We'll Send Change Alerts to:</label>
                         </div>
                         <div className="flex items-center gap-2">
                           <input
@@ -539,7 +545,7 @@ function ConfigurationPageContent() {
 
                       <div className="bg-white border border-gray-200 rounded-xl p-6">
                         <div>
-                          <div className="text-md font-medium text-gray-800">Credits Remaining</div>
+                          <div className="text-md font-medium text-gray-800">Credits Balance</div>
                           {balanceLoading ? (
                             <div className="text-gray-600 mt-1">Loading…</div>
                           ) : balanceError ? (
@@ -619,7 +625,7 @@ function ConfigurationPageContent() {
                               href={`https://github.com/apps/change-reel/installations/${selectedInstallationId}`}
                               target="_blank"
                               rel="noopener noreferrer"
-                              className="text-left p-4 rounded-xl border transition-colors border-gray-200 hover:bg-gray-50"
+                              className="text-left p-2 rounded-xl border transition-colors border-gray-200 hover:bg-gray-50"
                             >
                               <div className="text-center">
                                 <div className="text-2xl text-gray-900">+</div>

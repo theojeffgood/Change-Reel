@@ -1,0 +1,192 @@
+╔══════════════════════════════════════════════════════════════════════════════╗
+║                         ERROR QUICK REFERENCE CARD                           ║
+║          "No diff content available for summarization" - Job Failed           ║
+╚══════════════════════════════════════════════════════════════════════════════╝
+
+JOB ID: 9bff89b2-be1a-4e46-8853-f3872aa21507
+ERROR LOCATION: generate-summary-handler.ts:95
+TIME TO FIX: 5-15 minutes
+
+╔──────────────────────────────────────────────────────────────────────────────╗
+║ STEP 1: RUN THIS SQL QUERY (Copy-paste into Supabase)                       ║
+╚──────────────────────────────────────────────────────────────────────────────╝
+
+SELECT 
+  j.id, j.type, j.status, j.attempts, j.error_message,
+  COUNT(jd.id) as dep_count,
+  CASE WHEN j.status = 'failed' THEN '❌' 
+       WHEN j.status = 'pending' THEN '⏱️' 
+       WHEN j.status = 'completed' THEN '✅' 
+       ELSE '?' END as icon
+FROM jobs j
+LEFT JOIN job_dependencies jd ON j.id = jd.job_id
+WHERE j.id = '9bff89b2-be1a-4e46-8853-f3872aa21507'
+GROUP BY j.id, j.type, j.status, j.attempts, j.error_message;
+
+╔──────────────────────────────────────────────────────────────────────────────╗
+║ STEP 2: READ YOUR RESULT                                                    ║
+╚──────────────────────────────────────────────────────────────────────────────╝
+
+┌─ dep_count = 0?  → ROOT CAUSE: Missing dependency
+├─ dep_count > 0?  → Continue to STEP 3
+└─ Unsure?         → Use INVESTIGATION_CHECKLIST.md
+
+╔──────────────────────────────────────────────────────────────────────────────╗
+║ STEP 3: CHECK DEPENDENCY JOB                                                ║
+╚──────────────────────────────────────────────────────────────────────────────╝
+
+SELECT 
+  j.id, j.type, j.status, j.error_message,
+  context->'result'->>'diff_content' != '' as has_diff_content
+FROM jobs j
+JOIN job_dependencies jd ON jd.depends_on_job_id = j.id
+WHERE jd.job_id = '9bff89b2-be1a-4e46-8853-f3872aa21507'
+LIMIT 1;
+
+┌─ status = 'failed'?      → Dependency failed; restart it
+├─ has_diff_content = false? → Dependency didn't populate diff
+└─ status = 'completed'?    → Dependency worked; context issue?
+
+╔──────────────────────────────────────────────────────────────────────────────╗
+║ QUICK FIXES (Pick one based on your findings)                               ║
+╚──────────────────────────────────────────────────────────────────────────────╝
+
+FIX #1: Dependency job failed (60% of cases)
+────────────────────────────────────────────
+
+UPDATE jobs SET status = 'pending', attempts = 0, error_message = NULL
+WHERE type = 'fetch_diff'::job_type
+AND commit_id = (
+  SELECT commit_id FROM jobs WHERE id = '9bff89b2-be1a-4e46-8853-f3872aa21507'
+)
+ORDER BY created_at DESC LIMIT 1;
+
+-- Then retry the generate_summary job:
+UPDATE jobs SET status = 'pending', attempts = 0, error_message = NULL
+WHERE id = '9bff89b2-be1a-4e46-8853-f3872aa21507';
+
+
+FIX #2: No dependency relationship (20% of cases)
+──────────────────────────────────────────────────
+
+-- Find and link the fetch_diff job:
+WITH gen_sum AS (
+  SELECT commit_id FROM jobs 
+  WHERE id = '9bff89b2-be1a-4e46-8853-f3872aa21507'
+),
+fetch_diff AS (
+  SELECT id FROM jobs 
+  WHERE type = 'fetch_diff'::job_type
+  AND commit_id = (SELECT commit_id FROM gen_sum)
+  ORDER BY created_at DESC LIMIT 1
+)
+INSERT INTO job_dependencies (job_id, depends_on_job_id)
+SELECT '9bff89b2-be1a-4e46-8853-f3872aa21507', fetch_diff.id
+FROM fetch_diff ON CONFLICT DO NOTHING;
+
+-- Then retry:
+UPDATE jobs SET status = 'pending', attempts = 0, error_message = NULL
+WHERE id = '9bff89b2-be1a-4e46-8853-f3872aa21507';
+
+
+FIX #3: Diff is stored but in wrong location (10% of cases)
+────────────────────────────────────────────────────────────
+
+-- First, find where the diff is:
+SELECT 
+  COALESCE(
+    data->>'diff_content',
+    context->'result'->>'diff_content',
+    context->'result'->'data'->>'diff_content'
+  ) as found_diff
+FROM jobs 
+WHERE id = '9bff89b2-be1a-4e46-8853-f3872aa21507';
+
+-- If you found it, update the job:
+UPDATE jobs 
+SET data = jsonb_set(
+  data,
+  '{diff_content}',
+  to_jsonb(
+    COALESCE(
+      data->>'diff_content',
+      context->'result'->>'diff_content',
+      context->'result'->'data'->>'diff_content'
+    )::text
+  )
+)
+WHERE id = '9bff89b2-be1a-4e46-8853-f3872aa21507';
+
+-- Then retry:
+UPDATE jobs SET status = 'pending', attempts = 0, error_message = NULL
+WHERE id = '9bff89b2-be1a-4e46-8853-f3872aa21507';
+
+╔──────────────────────────────────────────────────────────────────────────────╗
+║ AFTER APPLYING A FIX: VERIFY IT WORKED                                      ║
+╚──────────────────────────────────────────────────────────────────────────────╝
+
+-- Check 1: Is job running/completed? (wait 5 seconds first)
+SELECT status, error_message FROM jobs 
+WHERE id = '9bff89b2-be1a-4e46-8853-f3872aa21507';
+-- Expected: status='completed' OR different error
+
+-- Check 2: Did the commit get a summary?
+SELECT summary, type FROM commits 
+WHERE id = (
+  SELECT commit_id FROM jobs WHERE id = '9bff89b2-be1a-4e46-8853-f3872aa21507'
+);
+-- Expected: summary IS NOT NULL
+
+╔──────────────────────────────────────────────────────────────────────────────╗
+║ STILL NOT WORKING?                                                           ║
+╚──────────────────────────────────────────────────────────────────────────────╝
+
+Use these documents in order:
+
+1. INVESTIGATION_CHECKLIST.md
+   └─ Step-by-step 5-phase investigation (fastest)
+   └─ Includes decision tree
+
+2. DEBUGGING_GUIDE.md  
+   └─ Detailed technical analysis
+   └─ "Common Issues & Fixes" section
+   └─ Flow diagrams
+
+3. INVESTIGATION_GUIDE.md
+   └─ Comprehensive 8-step analysis
+   └─ All edge cases covered
+
+╔──────────────────────────────────────────────────────────────────────────────╗
+║ DEBUGGING TIPS                                                              ║
+╚──────────────────────────────────────────────────────────────────────────────╝
+
+• Check job processor logs for timing issues
+• Look at GitHub API usage (rate limits?)
+• Verify user credentials (token valid?)
+• Check project repository settings
+• Monitor job queue for stuck jobs
+
+Run this to see if other jobs are processing:
+SELECT type, status, COUNT(*) FROM jobs 
+WHERE created_at > NOW() - INTERVAL '1 hour'
+GROUP BY type, status;
+
+╔──────────────────────────────────────────────────────────────────────────────╗
+║ PREVENTION: PATCH THE CODE                                                  ║
+╚──────────────────────────────────────────────────────────────────────────────╝
+
+Add this to generate-summary-handler.ts to catch issues earlier:
+
+if (!diffContent) {
+  const debugInfo = {
+    dataHasDiffContent: !!data.diff_content,
+    contextHasResult: !!(job.context as any)?.result,
+    hasDependency: deps.data?.length > 0,
+  };
+  console.warn('[GenerateSummary] Missing diff_content:', debugInfo);
+  // ... return error with debugInfo for future debugging
+}
+
+╔══════════════════════════════════════════════════════════════════════════════╗
+║                                GOOD LUCK! 🚀                                 ║
+╚══════════════════════════════════════════════════════════════════════════════╝

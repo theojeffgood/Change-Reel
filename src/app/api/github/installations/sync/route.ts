@@ -72,13 +72,16 @@ export async function POST(request: NextRequest) {
     const repos = await listInstallationRepositories(installationId)
 
     // Upsert projects for each repo under this installation
+    const defaultEmails = (typeof session.user.email === 'string' && session.user.email && !session.user.email.endsWith('@users.noreply.github.com'))
+      ? [session.user.email]
+      : []
     const projectRows = repos.map(r => ({
       user_id: user!.id,
       name: r.full_name,
       repo_name: r.full_name,
       provider: 'github' as const,
       installation_id: installationId,
-      email_distribution_list: [] as string[],
+      email_distribution_list: defaultEmails,
     }))
 
     // Upsert by repo_name; relies on repo_name uniqueness policy in practice

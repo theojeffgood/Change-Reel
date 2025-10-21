@@ -12,6 +12,34 @@ type GithubJwt = JWT & {
   accessTokenError?: string;
 };
 
+// Fetch the user's primary verified email from GitHub if not provided by default profile
+async function fetchGithubPrimaryVerifiedEmail(accessToken: string | undefined): Promise<string | undefined> {
+  if (!accessToken) return undefined;
+  try {
+    const res = await fetch('https://api.github.com/user/emails', {
+      headers: {
+        Authorization: `token ${accessToken}`,
+        Accept: 'application/vnd.github.v3+json',
+        'User-Agent': 'change-reel/1.0.0',
+      },
+    });
+    if (!res.ok) return undefined;
+    const emails = await res.json();
+    if (!Array.isArray(emails)) return undefined;
+    // Prefer primary & verified
+    const primaryVerified = emails.find((e: any) => e?.primary && e?.verified && typeof e?.email === 'string');
+    if (primaryVerified?.email) return primaryVerified.email as string;
+    // Fallback to any verified
+    const anyVerified = emails.find((e: any) => e?.verified && typeof e?.email === 'string');
+    if (anyVerified?.email) return anyVerified.email as string;
+    // Last resort: first email string
+    const first = emails.find((e: any) => typeof e?.email === 'string');
+    return first?.email as string | undefined;
+  } catch {
+    return undefined;
+  }
+}
+
 async function refreshGitHubAccessToken(token: GithubJwt): Promise<GithubJwt> {
   if (!token.refreshToken) {
     return {
@@ -211,11 +239,17 @@ export const authConfig: NextAuthOptions = {
 
           // Create or update user record in database
           const { data: existingUser } = await supabaseService.users.getUserByGithubId(String(profile.id));
+          let resolvedUserEmail: string | undefined = existingUser?.email || undefined;
           
           if (!existingUser) {
+            // Resolve a reliable email: use provided one or fetch from /user/emails
+            const oauthAccessToken = (account as any)?.access_token as string | undefined;
+            const resolvedEmail = user.email || (await fetchGithubPrimaryVerifiedEmail(oauthAccessToken)) || '';
+            resolvedUserEmail = resolvedEmail || undefined;
+
             // Create new user record
             const { data: newUser, error: createError } = await supabaseService.users.createUser({
-              email: user.email || '',
+              email: resolvedEmail,
               name: user.name || '',
               github_id: String(profile.id),
             });
@@ -262,6 +296,9 @@ export const authConfig: NextAuthOptions = {
                 // Upsert all repos as projects
                 try {
                   const repos = await listInstallationRepositories(inst.id)
+                  const defaultEmailList = resolvedUserEmail && !resolvedUserEmail.endsWith('@users.noreply.github.com')
+                    ? [resolvedUserEmail]
+                    : []
                   for (const r of repos) {
                     const existing = await supabaseService.projects.getProjectByRepository(r.full_name)
                     if (!existing.data) {
@@ -271,7 +308,7 @@ export const authConfig: NextAuthOptions = {
                         repo_name: r.full_name,
                         provider: 'github',
                         installation_id: inst.id,
-                        email_distribution_list: [],
+                        email_distribution_list: defaultEmailList,
                       })
                     }
                   }

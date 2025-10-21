@@ -1,0 +1,259 @@
+================================================================================
+ERROR INVESTIGATION SUMMARY
+================================================================================
+
+ERROR: "No diff content available for summarization"
+JOB ID: 9bff89b2-be1a-4e46-8853-f3872aa21507
+USER: Theo Goodman (GitHub ID: 26825549)
+LOCATION: src/lib/jobs/handlers/generate-summary-handler.ts (line 95)
+
+================================================================================
+QUICK FACTS
+================================================================================
+
+1. WHAT HAPPENED:
+   A job processing task failed because it couldn't find the diff content
+   needed to generate an AI summary of a code commit.
+
+2. WHY IT MATTERS:
+   - No summary will be generated for this commit
+   - Email notifications won't be sent
+   - Changelog/release notes will be incomplete
+
+3. ROOT CAUSE (most likely):
+   The job that fetches the diff content (fetch_diff) either:
+   - Never ran
+   - Failed before completing
+   - Completed but didn't store the diff in the expected location
+
+4. TIME TO INVESTIGATE:
+   5-10 minutes using the provided SQL queries
+
+5. TIME TO FIX:
+   2-5 minutes (once root cause is known)
+
+================================================================================
+THREE DOCUMENT GUIDES PROVIDED
+================================================================================
+
+1. INVESTIGATION_GUIDE.md (Comprehensive)
+   ├─ 8 detailed SQL queries to diagnose the issue
+   ├─ Explanation of what each query checks
+   ├─ 4 likely root causes with probabilities
+   ├─ Detailed resolution workflows
+   └─ Prevention monitoring strategies
+
+2. INVESTIGATION_CHECKLIST.md (Fast Path)
+   ├─ 5-phase investigation checklist (5 minutes total)
+   ├─ Decision tree to identify root cause
+   ├─ 3 quick fix options
+   ├─ Copy-paste SQL for each step
+   └─ Investigation output template
+
+3. DEBUGGING_GUIDE.md (Deep Dive)
+   ├─ Job processing flow diagrams (visual)
+   ├─ Code flow analysis with line numbers
+   ├─ 4 debugging techniques (TypeScript + SQL)
+   ├─ 4 common issues with specific fixes
+   └─ Testing procedure to verify the fix works
+
+================================================================================
+RECOMMENDED INVESTIGATION FLOW
+================================================================================
+
+START HERE (5 minutes):
+  └─ Use INVESTIGATION_CHECKLIST.md
+     └─ Run PHASE 1-5 SQL queries
+        └─ Follow decision tree to identify root cause
+
+IF MORE DETAILS NEEDED (10 minutes):
+  └─ Use INVESTIGATION_GUIDE.md
+     └─ Run extended SQL queries from Steps 1-8
+        └─ Review "Likely Root Causes" section
+           └─ Match your findings to probability breakdown
+
+IF STILL UNCLEAR (Debug deeper):
+  └─ Use DEBUGGING_GUIDE.md
+     └─ Run debugging TypeScript code or SQL debug queries
+        └─ Check "Common Issues & Fixes" section
+           └─ Apply specific fix for your scenario
+
+================================================================================
+THE ERROR OCCURS BECAUSE
+================================================================================
+
+The generate_summary job handler looks for diff content in this order:
+
+  1. job.data.diff_content
+  2. job.context.result.diff_content
+  3. job.context.result.data.diff_content
+  4. dependency_job.context.result.diff_content (same checks as 2-3)
+
+When ALL FOUR locations are empty, it fails with your error.
+
+This diff content should have been populated by the fetch_diff job that
+runs BEFORE generate_summary in the job workflow.
+
+If fetch_diff:
+  ✓ Succeeded → it should have populated one of the 4 locations above
+  ✗ Failed    → generate_summary can't run because no diff exists
+  ? Missing   → there's no dependency relationship set up
+
+================================================================================
+MOST COMMON ROOT CAUSES (Ranked by Probability)
+================================================================================
+
+#1 - MISSING OR FAILED fetch_diff JOB (60%)
+     └─ The fetch_diff job either:
+        • Never created or orphaned
+        • Failed with GitHub API error
+        • Failed with rate limiting
+        • Failed with invalid repository/branch
+     └─ SQL CHECK: See INVESTIGATION_CHECKLIST.md PHASE 2
+
+#2 - BROKEN DEPENDENCY CHAIN (20%)
+     └─ The job dependency relationship is missing or malformed
+     └─ SQL CHECK: See INVESTIGATION_CHECKLIST.md PHASE 2
+
+#3 - DIFF CONTENT TOO LARGE OR INVALID (10%)
+     └─ fetch_diff rejected the diff and didn't store it
+     └─ SQL CHECK: Look for errors like "size limit exceeded"
+
+#4 - CONTEXT STRUCTURE MISMATCH (10%)
+     └─ Diff exists but stored under different key name
+     └─ generate_summary looking in wrong place
+     └─ SQL CHECK: See DEBUGGING_GUIDE.md "Issue #2"
+
+================================================================================
+FIRST SQL QUERY TO RUN (Takes 30 seconds)
+================================================================================
+
+Copy-paste this into your Supabase SQL editor to get immediate insights:
+
+---
+
+SELECT 
+  j.id,
+  j.type,
+  j.status,
+  j.attempts,
+  j.error_message,
+  COUNT(CASE WHEN jd.id IS NOT NULL THEN 1 END) as has_dependencies,
+  CASE 
+    WHEN j.status = 'failed' THEN '❌ FAILED'
+    WHEN j.status = 'pending' THEN '⏱️ PENDING'
+    WHEN j.status = 'completed' THEN '✅ COMPLETED'
+    ELSE '❓ ' || j.status
+  END as status_icon
+FROM jobs j
+LEFT JOIN job_dependencies jd ON j.id = jd.job_id
+WHERE j.id = '9bff89b2-be1a-4e46-8853-f3872aa21507'
+GROUP BY j.id, j.type, j.status, j.attempts, j.error_message;
+
+---
+
+Expected results will show:
+• status: should be 'failed'
+• has_dependencies: should be 1 (if > 0, dependency exists)
+• error_message: "No diff content available for summarization"
+
+================================================================================
+QUICK FIXES BY ROOT CAUSE
+================================================================================
+
+If root cause is #1 (fetch_diff failed):
+  └─ UPDATE jobs SET status = 'pending', attempts = 0
+     WHERE type = 'fetch_diff'::job_type
+     AND commit_id = (SELECT commit_id FROM jobs WHERE id = '...');
+
+If root cause is #2 (missing dependency):
+  └─ INSERT INTO job_dependencies (job_id, depends_on_job_id)
+     SELECT '9bff89b2-be1a-4e46-8853-f3872aa21507', fetch_diff_id
+     WHERE ... (see INVESTIGATION_CHECKLIST.md Fix #1)
+
+If root cause is #3 (invalid diff):
+  └─ Check GitHub repository configuration
+     └─ Verify repository exists and is accessible
+     └─ Check GitHub token/credentials
+
+If root cause is #4 (context mismatch):
+  └─ Check src/lib/jobs/handlers/fetch-diff-handler.ts
+     └─ Verify it's storing diff in context.result.diff_content
+
+================================================================================
+AFTER YOU FIX IT
+================================================================================
+
+1. Run this to reset the job:
+
+   UPDATE jobs 
+   SET status = 'pending', attempts = 0, error_message = NULL
+   WHERE id = '9bff89b2-be1a-4e46-8853-f3872aa21507';
+
+2. Wait 5 seconds for job processor to pick it up
+
+3. Verify it completed:
+
+   SELECT status, error_message FROM jobs 
+   WHERE id = '9bff89b2-be1a-4e46-8853-f3872aa21507';
+
+4. Check commit has summary now:
+
+   SELECT summary FROM commits WHERE id = (
+     SELECT commit_id FROM jobs 
+     WHERE id = '9bff89b2-be1a-4e46-8853-f3872aa21507'
+   );
+
+================================================================================
+PREVENT THIS IN THE FUTURE
+================================================================================
+
+1. Add validation that fetch_diff completed before generate_summary runs
+2. Add logging to track diff_content through the job context
+3. Add alerts when generate_summary fails with missing diff_content
+4. Add a fallback: if diff missing, fetch from GitHub directly
+
+See INVESTIGATION_GUIDE.md "Monitoring & Prevention" section for details.
+
+================================================================================
+DOCUMENT FILE LOCATIONS
+================================================================================
+
+📄 INVESTIGATION_GUIDE.md        → Comprehensive 8-step guide with full SQL
+📄 INVESTIGATION_CHECKLIST.md    → Quick 5-phase checklist (fastest path)
+📄 DEBUGGING_GUIDE.md            → Deep dive with diagrams and code analysis
+📄 ERROR_INVESTIGATION_SUMMARY.txt → This file (quick reference)
+
+All files are in: /Users/theo/Desktop/change_reel/
+
+================================================================================
+KEY CONTACTS & RESOURCES
+================================================================================
+
+Code Files to Review:
+  • src/lib/jobs/handlers/generate-summary-handler.ts (line 92-101)
+  • src/lib/jobs/handlers/fetch-diff-handler.ts
+  • src/lib/jobs/processor.ts
+
+Database Tables:
+  • jobs (job processing queue)
+  • job_dependencies (job workflow relationships)
+  • commits (where summaries are stored)
+
+Configuration:
+  • .taskmaster/config.json (if using Taskmaster)
+  • Job processor logs (if available)
+
+================================================================================
+QUESTIONS OR STUCK?
+================================================================================
+
+✓ Use the INVESTIGATION_CHECKLIST.md - it has a decision tree
+✓ Check DEBUGGING_GUIDE.md "Common Issues & Fixes" for your scenario  
+✓ Run the SQL debug queries from DEBUGGING_GUIDE.md "Debugging Techniques"
+✓ Review job processing flow diagram in DEBUGGING_GUIDE.md
+
+The documents are designed to guide you to the fix regardless of which
+scenario you're in. Follow the decision tree and you'll identify the issue.
+
+================================================================================

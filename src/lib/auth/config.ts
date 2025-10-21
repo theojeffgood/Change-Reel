@@ -16,6 +16,7 @@ type GithubJwt = JWT & {
 async function fetchGithubPrimaryVerifiedEmail(accessToken: string | undefined): Promise<string | undefined> {
   if (!accessToken) return undefined;
   try {
+    console.log('[auth] [emails] starting fetch to GitHub user/emails (Bearer token present)');
     const res = await fetch('https://api.github.com/user/emails', {
       headers: {
         Authorization: `Bearer ${accessToken}`,
@@ -23,8 +24,14 @@ async function fetchGithubPrimaryVerifiedEmail(accessToken: string | undefined):
         'User-Agent': 'change-reel/1.0.0',
       },
     });
-    if (!res.ok) return undefined;
+    console.log('[auth] [emails] response status', res.status, 'ok=', res.ok);
+    if (!res.ok) {
+      const text = await res.text().catch(() => '');
+      console.warn('[auth] [emails] non-OK response body:', text?.slice(0, 500));
+      return undefined;
+    }
     const emails = await res.json();
+    console.log('[auth] [emails] parsed emails count:', Array.isArray(emails) ? emails.length : 'n/a');
     if (!Array.isArray(emails)) return undefined;
     // Prefer primary & verified
     const primaryVerified = emails.find((e: any) => e?.primary && e?.verified && typeof e?.email === 'string');
@@ -35,7 +42,8 @@ async function fetchGithubPrimaryVerifiedEmail(accessToken: string | undefined):
     // Last resort: first email string
     const first = emails.find((e: any) => typeof e?.email === 'string');
     return first?.email as string | undefined;
-  } catch {
+  } catch (e) {
+    console.warn('[auth] [emails] fetch failed', (e as any)?.message);
     return undefined;
   }
 }
@@ -144,6 +152,7 @@ export const authConfig: NextAuthOptions = {
       }
 
       if (account?.provider === 'github') {
+        console.log('[auth] [jwt] provider=github, has access_token=', Boolean((account as any)?.access_token));
         const expiresAtMs = typeof (account as any)?.expires_at === 'number'
           ? ((account as any).expires_at as number) * 1000
           : undefined;
@@ -166,11 +175,17 @@ export const authConfig: NextAuthOptions = {
         if (!token.email) {
           try {
             const oauthAccessToken = (account as any)?.access_token as string | undefined;
+            console.log('[auth] [jwt] token.email missing; attempting email resolution via user/emails');
             const resolvedEmail = (user as any)?.email || (await fetchGithubPrimaryVerifiedEmail(oauthAccessToken));
             if (resolvedEmail) {
               token.email = resolvedEmail;
+              console.log('[auth] [jwt] token.email set from resolution:', resolvedEmail);
+            } else {
+              console.log('[auth] [jwt] token.email still missing after resolution attempt');
             }
-          } catch {}
+          } catch (e) {
+            console.warn('[auth] [jwt] email resolution threw', (e as any)?.message);
+          }
         }
       }
 
@@ -254,12 +269,15 @@ export const authConfig: NextAuthOptions = {
           // Create or update user record in database
           const { data: existingUser } = await supabaseService.users.getUserByGithubId(String(profile.id));
           let resolvedUserEmail: string | undefined = existingUser?.email || undefined;
+          console.log('[auth] [signIn] existingUser?', Boolean(existingUser), 'hasEmail=', Boolean(existingUser?.email));
           
           if (!existingUser) {
             // Resolve a reliable email: use provided one or fetch from /user/emails
             const oauthAccessToken = (account as any)?.access_token as string | undefined;
+            console.log('[auth] [signIn] creating user; has access_token=', Boolean(oauthAccessToken));
             const resolvedEmail = user.email || (await fetchGithubPrimaryVerifiedEmail(oauthAccessToken)) || undefined;
             resolvedUserEmail = resolvedEmail;
+            console.log('[auth] [signIn] resolvedEmail before create:', resolvedEmail || '(none)');
 
             // Create new user record
             const { data: newUser, error: createError } = await supabaseService.users.createUser({
@@ -275,10 +293,14 @@ export const authConfig: NextAuthOptions = {
               // If we didn't get an email earlier but now have token, backfill immediately
               try {
                 if (!resolvedEmail && oauthAccessToken) {
+                  console.log('[auth] [signIn] immediate backfill: fetching user/emails');
                   const fetched = await fetchGithubPrimaryVerifiedEmail(oauthAccessToken)
                   if (fetched && newUser?.id) {
                     await supabaseService.users.updateUser(newUser.id, { email: fetched });
                     resolvedUserEmail = fetched;
+                    console.log('[auth] [signIn] immediate backfill set email:', fetched);
+                  } else {
+                    console.log('[auth] [signIn] immediate backfill found no email');
                   }
                 }
               } catch (e) {
@@ -303,10 +325,14 @@ export const authConfig: NextAuthOptions = {
           try {
             if (existingUser?.id && !existingUser.email) {
               const oauthAccessToken = (account as any)?.access_token as string | undefined;
+              console.log('[auth] [signIn] existing user email blank; attempting backfill; has token=', Boolean(oauthAccessToken));
               const resolvedEmail = user.email || (await fetchGithubPrimaryVerifiedEmail(oauthAccessToken));
               if (resolvedEmail) {
                 await supabaseService.users.updateUser(existingUser.id, { email: resolvedEmail });
                 resolvedUserEmail = resolvedEmail;
+                console.log('[auth] [signIn] backfill set email:', resolvedEmail);
+              } else {
+                console.log('[auth] [signIn] backfill found no email');
               }
             }
           } catch (e) {
@@ -339,6 +365,7 @@ export const authConfig: NextAuthOptions = {
                   const defaultEmailList = resolvedUserEmail && !resolvedUserEmail.endsWith('@users.noreply.github.com')
                     ? [resolvedUserEmail]
                     : []
+                  console.log('[auth] [signIn] default email list for projects:', defaultEmailList);
                   for (const r of repos) {
                     const existing = await supabaseService.projects.getProjectByRepository(r.full_name)
                     if (!existing.data) {

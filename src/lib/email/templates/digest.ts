@@ -83,7 +83,7 @@ export function renderSingleCommitEmail(input: SingleCommitEmailInput): { subjec
       </tr>
       <tr>
         <td style="padding:8px 24px 24px 24px;color:#777;font-size:11px;" align="center">
-          You’re receiving this because you enabled change alerts.
+          You’re receiving this because you enabled change alerts. 
         </td>
       </tr>
           </table>

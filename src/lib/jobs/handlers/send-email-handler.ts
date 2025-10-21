@@ -67,7 +67,8 @@ export class SendEmailHandler implements JobHandler<SendEmailJobData> {
         }
       }
 
-      const from = process.env.RESEND_FROM_EMAIL || 'no-reply@changereel.local'
+      const rawFrom = process.env.RESEND_FROM_EMAIL || 'no-reply@changereel.local'
+      const formattedFrom = `Change Reel <${rawFrom}>`
       let sentCount = 0
       for (const commit of commits) {
         if (!commit.summary) {
@@ -100,7 +101,7 @@ export class SendEmailHandler implements JobHandler<SendEmailJobData> {
 
         await this.emailClient.sendEmail({
           to: data.recipients,
-          from,
+          from: formattedFrom,
           subject: content.subject,
           html: content.html,
         })

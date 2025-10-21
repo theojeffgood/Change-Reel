@@ -142,7 +142,7 @@ export class OpenAIClient implements IOpenAIClient {
               strict: true,
             },
           },
-          store: false,
+          store: true,
         };
         response = await this.openai.responses.create(requestPayload);
       } catch (e) {

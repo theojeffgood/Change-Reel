@@ -54,7 +54,20 @@ export default function CommitCard({ commit, repositoryName }: CommitCardProps) 
       <div className="mb-4">
         {commit.summary ? (
           <div className="">
-            <p className="text-gray-800 leading-relaxed">{commit.summary}</p>
+            {/** If the summary contains a first-line header, render it as a bold title */}
+            {(() => {
+              const text = commit.summary || '';
+              const [header, ...summary] = text.split('\n');
+              const hasHeader = header && header.length > 0 && summary.length > 0;
+              return hasHeader ? (
+                <>
+                  <h3 className="text-gray-900 font-semibold mb-2">{header}</h3>
+                  <p className="text-gray-800 leading-relaxed">{summary}</p>
+                </>
+              ) : (
+                <p className="text-gray-800 leading-relaxed">{text}</p>
+              );
+            })()}
           </div>
         ) : isProcessing ? (
           <div className="bg-blue-50 rounded-lg p-8 border border-blue-200">

@@ -9,6 +9,11 @@ const DIFF_SUMMARY_SCHEMA_NAME = 'DiffSummary';
 const DIFF_SUMMARY_RESPONSE_SCHEMA = {
   type: 'object',
   properties: {
+    header: {
+      type: 'string',
+      description: 'A short headline describing the change for end users.',
+      minLength: 1,
+    },
     summary: {
       type: 'string',
       description: 'One short paragraph summarizing the diff for a non-technical audience.',
@@ -20,7 +25,7 @@ const DIFF_SUMMARY_RESPONSE_SCHEMA = {
       enum: ['feature', 'bugfix'],
     },
   },
-  required: ['summary', 'change_type'],
+  required: ['header', 'summary', 'change_type'],
   additionalProperties: false,
 } as const;
 
@@ -41,6 +46,7 @@ type ResponseCreateParamsWithSchema = ResponseCreateParams & {
 export type ChangeTypeCategory = 'feature' | 'bugfix';
 
 export interface GenerateSummaryResult {
+  header: string;
   summary: string;
   changeType: ChangeTypeCategory;
 }
@@ -158,6 +164,7 @@ export class OpenAIClient implements IOpenAIClient {
         : this.extractFirstTextContent(response);
       const parsed = this.parseStructuredSummary(structuredPayload ?? fallbackText ?? '');
       const summary = parsed.summary.trim();
+      let header = (parsed.header || '').trim();
 
       // Debug: log response meta (no content text)
       console.debug('[OpenAIClient] generateSummary response', {
@@ -196,6 +203,12 @@ export class OpenAIClient implements IOpenAIClient {
       }
 
       const changeType = this.normalizeChangeType(parsed.changeType);
+      if (!header) {
+        // Fallback header: Use change type label + first sentence of summary
+        const label = changeType === 'bugfix' ? 'Bugfix' : 'Feature';
+        const firstSentence = summary.split(/\.(\s|$)/)[0]?.trim() || summary.slice(0, 80).trim();
+        header = `${label}: ${firstSentence}`;
+      }
       if (!changeType) {
         console.warn('[OpenAIClient] Invalid or missing change type from summary response, defaulting to "feature"', {
           received: parsed.changeType,
@@ -203,6 +216,7 @@ export class OpenAIClient implements IOpenAIClient {
       }
 
       return {
+        header,
         summary,
         changeType: changeType ?? OpenAIClient.DEFAULT_CHANGE_TYPE,
       };
@@ -230,18 +244,20 @@ export class OpenAIClient implements IOpenAIClient {
     return undefined;
   }
 
-  private parseStructuredSummary(output: unknown): { summary: string; changeType?: string } {
+  private parseStructuredSummary(output: unknown): { header?: string; summary: string; changeType?: string } {
     if (!output) {
       return { summary: '' };
     }
 
     if (typeof output === 'object') {
       const candidate = output as Record<string, unknown>;
+      const headerField = candidate.header;
       const summaryField = candidate.summary;
       const changeTypeField = candidate.change_type ?? candidate.changeType;
 
       if (typeof summaryField === 'string' && summaryField.trim().length > 0) {
         return {
+          header: typeof headerField === 'string' ? headerField.trim() : undefined,
           summary: summaryField.trim(),
           changeType: typeof changeTypeField === 'string' ? changeTypeField : undefined,
         };
@@ -264,9 +280,10 @@ export class OpenAIClient implements IOpenAIClient {
     const parsed = this.tryParseJsonObject(trimmed);
     if (parsed && typeof parsed === 'object') {
       const summary = typeof parsed.summary === 'string' ? parsed.summary.trim() : '';
+      const header = typeof (parsed.header as any) === 'string' ? (parsed.header as any).trim() : undefined;
       const changeType = (parsed.change_type ?? parsed.changeType) as string | undefined;
       if (summary) {
-        return { summary, changeType };
+        return { header, summary, changeType };
       }
     }
 

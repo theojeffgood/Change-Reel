@@ -1,6 +1,7 @@
 export interface SingleCommitEmailInput {
   projectName: string
   commit: {
+    header?: string
     summary: string
     author: string | null
     // sha: string
@@ -20,6 +21,7 @@ export function renderSingleCommitEmail(input: SingleCommitEmailInput): { subjec
     ? 'display:inline-block;padding:2px 8px;border-radius:9999px;font-size:11px;font-weight:600;color:#7f1d1d;background:#ecfdf5;border:1px solid #fecaca'
     : 'display:inline-block;padding:2px 8px;border-radius:9999px;font-size:11px;font-weight:600;color:#065f46;background:#fef2f2;border:1px solid #a7f3d0;'
 
+  const headline = (commit.header && commit.header.trim()) || `${changeLabel}: Update in ${projectName}`
   const html = `
   <div style="font-family:Inter,system-ui,-apple-system,Segoe UI,Roboto,Arial,sans-serif;background:#f7f7f8;padding:24px;">
     <table role="presentation" cellpadding="0" cellspacing="0" width="100%" style="max-width:640px;margin:0 auto;background:#fff;border-radius:8px;box-shadow:0 1px 3px rgba(0,0,0,0.06);">
@@ -37,6 +39,7 @@ export function renderSingleCommitEmail(input: SingleCommitEmailInput): { subjec
       <tr>
         <td style="padding:8px 24px 16px 24px;border-bottom:1px solid #eee;">
           <br/>
+          <div style="font-size:14px;color:#111;font-weight:600;margin-bottom:8px;">${escapeHtml(headline)}</div>
           <div style="font-size:12px;color:#111;">${escapeHtml(commit.summary)}</div>
           <br/>
           <div style="font-size:12px;color:#555;">On: ${escapeHtml(dateStr)}</div>
@@ -55,9 +58,7 @@ export function renderSingleCommitEmail(input: SingleCommitEmailInput): { subjec
   </div>
   `
 
-  const subject = changeLabel === 'Bugfix'
-    ? `There's a Bugfix in ${projectName}`
-    : `There's a New Feature in ${projectName}`
+  const subject = `${headline}`
 
   return { subject, html }
 }

@@ -22,6 +22,7 @@ export interface DiffProcessingConfig {
  * Result of summarization processing
  */
 export interface SummaryResult {
+  header?: string;
   summary: string;
   changeType: ChangeTypeCategory;
   confidence: number;
@@ -109,7 +110,7 @@ export class SummarizationService implements ISummarizationService {
     
     try {
       // Generate summary using OpenAI client
-      const { summary, changeType } = await this.openaiClient.generateSummary(processedDiff, {
+      const { header, summary, changeType } = await this.openaiClient.generateSummary(processedDiff, {
         customContext: mergedConfig.customContext,
         metadata: mergedConfig.summaryMetadata,
       });
@@ -122,6 +123,7 @@ export class SummarizationService implements ISummarizationService {
       const processingTime = Date.now() - startTime;
 
       return {
+        header,
         summary: trimmedSummary,
         changeType,
         confidence,

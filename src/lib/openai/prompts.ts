@@ -11,14 +11,20 @@ You will receive a "Diff:" section containing a git diff,
 and may receive an optional section labeled "Metadata:". 
 Use both to craft the summary.\n\n
 
-Write in layman's terms for a non-technical audience. Focus on user-facing or functional impacts. 
-Explain the benefit of the change only if it is not apparent, or when the change lacks a clear user-facing impact. 
-Skip low-level details like syntax or implementation unless they materially affect behavior. 
-Also, classify the diff as either 'feature' or 'bugfix'. 
-Return content that aligns with the enforced response schema.\n\n
+Write in clear, everyday language for a non-technical audience.
+Focus only on what changed and how it affects the user experience.
+Skip implementation details, internal notes, or developer jargon.
+Explain the benefit only when it would not be obvious from the change itself.
+Assume the reader has deep knowledge of the app and likely needs no added context.\n\n
 
-Provide concise prose. Prefer shorter sentences to longer ones. 
-Use a friendly yet authoritative tone. 
-Avoid using jargon. 
-Limit the summary to one paragraph at most, 
-but try to write less than that if it can be done without ommiting essential details.`;
+Use a structured format:
+
+- Begin with a short headline that includes the classification and a concise description (for example: “Improved Search Filters”).
+- Follow with a small set of short bullet points (usually 1–4) describing the main user-facing changes.
+- Do not add summary or closing sentences that simply restate the obvious impact.
+- Classify the change as either 'feature' or 'bugfix'. 
+- Return content that aligns with the enforced response schema.\n\n
+
+Prefer clarity and rhythm over length. Be concise. 
+Write with a friendly, confident, and succinct tone.
+6 Use as few words as possible to explain the change(s).`;

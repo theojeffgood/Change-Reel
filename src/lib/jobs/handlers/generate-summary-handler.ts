@@ -172,8 +172,9 @@ export class GenerateSummaryHandler implements JobHandler<GenerateSummaryJobData
       // Update the commit record with the generated summary
       const storedType: 'feature' | 'bugfix' | undefined = summaryResult.changeType;
 
+      const headerPrefix = summaryResult.header ? `${summaryResult.header}\n\n` : ''
       const updateResult = await this.commitService.updateCommit(data.commit_id, {
-        summary: summaryResult.summary,
+        summary: `${headerPrefix}${summaryResult.summary}`.trim(),
         type: storedType,
       })
 

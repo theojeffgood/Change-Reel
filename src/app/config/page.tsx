@@ -513,14 +513,14 @@ function ConfigurationPageContent() {
                     <div className="mt-4 grid grid-cols-2 gap-6">
                       <div className="p-4 border border-gray-200 rounded-xl bg-white">
                         <div className="mb-3">
-                          <label className="block text-md font-medium text-gray-800 mb-2">Send Changes To:</label>
+                          <label className="block text-md font-medium text-gray-800 mb-2">Change Reel Recipients:</label>
                         </div>
                         <div className="flex items-center gap-2">
                           <input
                             type="text"
                             value={emailRecipientsInput}
                             onChange={(e) => setEmailRecipientsInput(e.target.value)}
-                            placeholder="team@example.com"
+                            placeholder="john@company.com"
                             className="flex-1 rounded-lg border-gray-300 focus:border-black focus:ring-black text-gray-900 shadow-sm pl-2"
                             onKeyDown={(e) => { if (e.key === 'Enter') { e.preventDefault(); void addEmail(); } }}
                           />
@@ -633,7 +633,7 @@ function ConfigurationPageContent() {
                               href={`https://github.com/apps/change-reel/installations/${selectedInstallationId}`}
                               target="_blank"
                               rel="noopener noreferrer"
-                              className="text-left p-1 rounded-xl border transition-colors border-gray-200 hover:bg-gray-50"
+                              className="text-left rounded-xl border transition-colors border-gray-200 hover:bg-gray-50"
                             >
                               <div className="text-center">
                                 <div className="text-2xl text-gray-900">+</div>

@@ -15,8 +15,8 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: 'Change Reel - An Automated Changelog for your Products',
-  description: 'Know what your engineers ship without asking them',
+  title: 'Change Reel - Notificatinos from your codebase',
+  description: 'Know what your engineers ship without having to ask',
   icons: {
     icon: '/favicon.ico',
     shortcut: '/favicon.ico',

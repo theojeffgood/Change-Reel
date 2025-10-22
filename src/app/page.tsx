@@ -125,10 +125,10 @@ export default function Home() {
 
                   <h3 className="text-xl font-semibold text-gray-900 mb-6">New Feature!</h3>
                   <p className="text-gray-800 text-lg leading-relaxed mb-8">
-                    Users in the free-trial now see a paywall when their video ends.
+                    Users on the free plan now see a paywall when their video ends.
                   </p>
                   <p className="text-gray-800 text-xs leading-relaxed mb-8">
-                    Shipped on: 8-23-25
+                    Shipped on: 8/23
                   </p>
                 </div>
               </div>
@@ -145,28 +145,13 @@ export default function Home() {
               Insights at your fingertips. All without asking
             </h2>
             <p className="text-xl text-gray-600 max-w-3xl mx-auto">
-            When someone pushes to GitHub, Change Reel sends out an update. Keep your sales team aligned.
+            When someone pushes to GitHub, Change Reel sends out an update.
             </p>
           </div>
 
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
-            {/* Plugs directly into your tech stack */}
-            <div className="bg-white rounded-xl p-6 shadow-sm border border-gray-200 flex items-start space-x-4">
-              <div className="w-12 h-12 rounded-lg border border-blue-100 flex items-center justify-center text-blue-600">
-                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                  <line x1="4" y1="7" x2="20" y2="7"></line>
-                  <line x1="4" y1="12" x2="20" y2="12"></line>
-                  <line x1="4" y1="17" x2="20" y2="17"></line>
-                </svg>
-              </div>
-              <div>
-                <h3 className="text-lg font-semibold text-gray-900">Plugs Into Your Tech Stack</h3>
-                <p className="text-gray-600">Any tech. Every language. All stacks</p>
-              </div>
-            </div>
-
             {/* No integration necessary */}
-            <div className="bg-white rounded-xl p-6 shadow-sm border border-gray-200 flex items-start space-x-4">
+            <div className="bg-white rounded-xl py-8 px-6 shadow-sm border border-gray-200 flex items-start space-x-4">
               <div className="w-12 h-12 rounded-lg border border-blue-100 flex items-center justify-center text-blue-600">
                 <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
                   <circle cx="12" cy="12" r="9"></circle>
@@ -174,13 +159,27 @@ export default function Home() {
                 </svg>
               </div>
               <div>
-                <h3 className="text-lg font-semibold text-gray-900">No Integration Needed</h3>
-                <p className="text-gray-600">Zero</p>
+                <h3 className="text-lg font-semibold text-gray-900">Plugs directly into your GitHub</h3>
+                <p className="text-gray-600">Zero-code integration</p>
+              </div>
+            </div>
+
+            {/* Secure */}
+            <div className="bg-white rounded-xl py-8 px-6 shadow-sm border border-gray-200 flex items-start space-x-4">
+              <div className="w-12 h-12 rounded-lg border border-blue-100 flex items-center justify-center text-blue-600">
+                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                  <rect x="5" y="11" width="14" height="8" rx="2"></rect>
+                  <path d="M8 11V8a4 4 0 018 0v3"></path>
+                </svg>
+              </div>
+              <div>
+                <h3 className="text-lg font-semibold text-gray-900">Secure</h3>
+                <p className="text-gray-600">We're read only. And we do NOT store your data</p>
               </div>
             </div>
 
             {/* Insights-tied-to-performance */}
-            <div className="bg-white rounded-xl p-6 shadow-sm border border-gray-200 flex items-start space-x-4">
+            <div className="bg-white rounded-xl py-8 px-6 shadow-sm border border-gray-200 flex items-start space-x-4">
               <div className="w-12 h-12 rounded-lg border border-blue-100 flex items-center justify-center text-blue-600">
                 <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
                   <polyline points="4,14 9,10 13,12 20,6"></polyline>
@@ -189,12 +188,12 @@ export default function Home() {
               </div>
               <div>
                 <h3 className="text-lg font-semibold text-gray-900">Proprietary Insights</h3>
-                <p className="text-gray-600">4-factor analysis including raw code diffs, comments, commit messages, history</p>
+                <p className="text-gray-600">4-factor analysis including code diffs, comments, commit messages, history</p>
               </div>
             </div>
 
             {/* Smart alerts */}
-            <div className="bg-white rounded-xl p-6 shadow-sm border border-gray-200 flex items-start space-x-4">
+            <div className="bg-white rounded-xl py-8 px-6 shadow-sm border border-gray-200 flex items-start space-x-4">
               <div className="w-12 h-12 rounded-lg border border-blue-100 flex items-center justify-center text-blue-600">
                 <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
                   <circle cx="12" cy="12" r="9"></circle>
@@ -205,20 +204,6 @@ export default function Home() {
               <div>
                 <h3 className="text-lg font-semibold text-gray-900">Smart Alerts <span className="ml-2 text-xs font-medium text-blue-600 uppercase">New!</span></h3>
                 <p className="text-gray-600">Get notified when your team ships</p>
-              </div>
-            </div>
-
-            {/* Secure */}
-            <div className="bg-white rounded-xl p-6 shadow-sm border border-gray-200 flex items-start space-x-4">
-              <div className="w-12 h-12 rounded-lg border border-blue-100 flex items-center justify-center text-blue-600">
-                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                  <rect x="5" y="11" width="14" height="8" rx="2"></rect>
-                  <path d="M8 11V8a4 4 0 018 0v3"></path>
-                </svg>
-              </div>
-              <div>
-                <h3 className="text-lg font-semibold text-gray-900">Secure</h3>
-                <p className="text-gray-600">We don't store your data</p>
               </div>
             </div>
           </div>

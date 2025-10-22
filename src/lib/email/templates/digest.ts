@@ -25,12 +25,15 @@ export function renderSingleCommitEmail(input: SingleCommitEmailInput): { subjec
   // Precompute summary HTML: headline once, bullets as list if present
   const lines = (commit.summary || '').split('\n').map(l => l.trim()).filter(Boolean)
   const headerLine = lines[0] || ''
-  const bulletLines = lines.slice(1)
+  const bulletLines = lines
+    .slice(1)
+    .map(l => l.replace(/^-\s/, '').trim())
+    .filter(Boolean)
   const headerHtml = headerLine
     ? '<div style="font-size:15px;color:#111;font-weight:500;margin-bottom:10px;line-height:1.4;">' + escapeHtml(headerLine) + '</div>'
     : ''
   const bulletsHtml = bulletLines.length
-    ? '<ul style="margin:0 0 8px 0;padding-left:18px;list-style:disc;">' + bulletLines.map(line => (
+    ? '<ul style="margin:0 0 8px 0;padding-left:20px;list-style:disc;">' + bulletLines.map(line => (
         '<li style="font-size:13px;color:#111;line-height:1.6;margin-bottom:6px;">' + escapeHtml(line) + '</li>'
       )).join('') + '</ul>'
     : '<div style="font-size:13px;color:#111;line-height:1.6;">' + escapeHtml(commit.summary) + '</div>'
@@ -48,25 +51,25 @@ export function renderSingleCommitEmail(input: SingleCommitEmailInput): { subjec
               <td style="padding:20px 24px;" align="center">
                 <a href="${escapeHtml(appUrl)}" style="text-decoration:none;color:#111;display:inline-flex;align-items:center;gap:8px;">
                   <img src="${escapeHtml(logoUrl)}" width="32" height="32" alt="Change Reel" style="display:block;border-radius:6px;" />
-                  <span style="font-size:17px;font-weight:500;letter-spacing:0.2px;">Change Reel</span>
+                  <span style="font-size:18px;font-weight:500;letter-spacing:0.2px;">Change Reel</span>
                 </a>
               </td>
             </tr>
       <tr>
-        <td style="padding:16px 0px 10px 0px;">
+        <td style="padding:12px 0px 8px 4px;">
           <div style="margin:0;font-size:12px;display:flex;align-items:center;gap:8px;color:#555;">
-            <span style="display:inline-block;padding:2px 8px;border-radius:9999px;font-size:12px;font-weight:600;color:#111;">${escapeHtml(changeLabel)}</span>
+            <span style="display:inline-block;padding:2px 8px;border-radius:9999px;font-size:13px;font-weight:500;color:#111;">${escapeHtml(changeLabel)}</span>
           </div>
         </td>
       </tr>
       <tr>
-        <td style="padding:12px 14px 16px 14px;">
+        <td style="padding:14px 14px 14px 16px;">
           <br/>
           ${summaryHtml}
           <br/>
-          <div style="font-size:13px;color:#555;">${escapeHtml(projectName)}</div>
-          <div style="font-size:13px;color:#555;">On: ${escapeHtml(dateStr)}</div>
-          <div style="font-size:13px;color:#555;">By: ${escapeHtml(commit.author ? extractDisplayName(commit.author) : 'Unknown')}</div>
+          <div style="font-size:13px;color:#111;">${escapeHtml(projectName)}</div>
+          <div style="font-size:13px;color:#111;">On: ${escapeHtml(dateStr)}</div>
+          <div style="font-size:13px;color:#111;">By: ${escapeHtml(commit.author ? extractDisplayName(commit.author) : 'Unknown')}</div>
           <br/>
         </td>
       </tr>
@@ -76,7 +79,7 @@ export function renderSingleCommitEmail(input: SingleCommitEmailInput): { subjec
         </td>
       </tr>      
       <tr>
-        <td style="padding:16px 14px 24px 14px;color:#555;font-size:13px;border-bottom:1px solid #eee;">
+        <td style="padding:16px 14px 24px 16px;color:#111;font-size:13px;border-bottom:1px solid #eee;">
           Sent by,
           <br/>
           Change Reel

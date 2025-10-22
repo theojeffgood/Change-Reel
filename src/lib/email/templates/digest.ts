@@ -27,7 +27,7 @@ export function renderSingleCommitEmail(input: SingleCommitEmailInput): { subjec
   const headerLine = lines[0] || ''
   const bulletLines = lines.slice(1)
   const headerHtml = headerLine
-    ? '<div style="font-size:15px;color:#111;font-weight:700;margin-bottom:8px;line-height:1.4;">' + escapeHtml(headerLine) + '</div>'
+    ? '<div style="font-size:15px;color:#111;font-weight:500;margin-bottom:10px;line-height:1.4;">' + escapeHtml(headerLine) + '</div>'
     : ''
   const bulletsHtml = bulletLines.length
     ? '<ul style="margin:0 0 8px 0;padding-left:18px;list-style:disc;">' + bulletLines.map(line => (
@@ -60,22 +60,23 @@ export function renderSingleCommitEmail(input: SingleCommitEmailInput): { subjec
         </td>
       </tr>
       <tr>
-        <td style="padding:12px 24px 16px 24px;border-bottom:1px solid #eee;">
+        <td style="padding:12px 14px 16px 14px;">
           <br/>
           ${summaryHtml}
-          <div style="font-size:12px;color:#555;">${escapeHtml(projectName)}</div>
-          <div style="font-size:12px;color:#555;">On: ${escapeHtml(dateStr)}</div>
-          <div style="font-size:12px;color:#555;">By: ${escapeHtml(commit.author ? extractDisplayName(commit.author) : 'Unknown')}</div>
+          <br/>
+          <div style="font-size:13px;color:#555;">${escapeHtml(projectName)}</div>
+          <div style="font-size:13px;color:#555;">On: ${escapeHtml(dateStr)}</div>
+          <div style="font-size:13px;color:#555;">By: ${escapeHtml(commit.author ? extractDisplayName(commit.author) : 'Unknown')}</div>
           <br/>
         </td>
       </tr>
       <tr>
-        <td style="padding:16px 24px 8px 24px;" align="center">
+        <td style="padding:10px 24px 8px 24px;" align="center">
           <a href="${escapeHtml(appUrl)}" style="display:inline-block;padding:10px 16px;border:1px solid #111;border-radius:8px;color:#111;text-decoration:none;font-size:13px;font-weight:600;">See in Change Reel</a>
         </td>
       </tr>      
       <tr>
-        <td style="padding:16px 24px 24px 24px;color:#555;font-size:12px;">
+        <td style="padding:16px 14px 24px 14px;color:#555;font-size:13px;border-bottom:1px solid #eee;">
           Sent by,
           <br/>
           Change Reel

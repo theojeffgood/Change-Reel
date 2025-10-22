@@ -12,7 +12,7 @@ export default function UnsubscribePage() {
       <p className="text-gray-700 mb-6">
         Enter your email to unsubscribe from Change Reel notifications.
       </p>
-      <form className="space-y-4" action="#" method="post" onSubmit={(e) => e.preventDefault()}>
+      <form className="space-y-4" action="#" method="post">
         <label className="block">
           <span className="block text-sm font-medium text-gray-700 mb-1">Email</span>
           <input
@@ -24,7 +24,7 @@ export default function UnsubscribePage() {
           />
         </label>
         <button
-          type="submit"
+          type="button"
           className="w-full rounded-md bg-gray-900 text-white px-4 py-2 font-medium hover:bg-black"
         >
           Unsubscribe

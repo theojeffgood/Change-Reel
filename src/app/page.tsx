@@ -159,7 +159,7 @@ export default function Home() {
                 </svg>
               </div>
               <div>
-                <h3 className="text-lg font-semibold text-gray-900">Plugs directly into your GitHub</h3>
+                <h3 className="text-lg font-semibold text-gray-900">Plugs right into GitHub</h3>
                 <p className="text-gray-600">Zero-code integration</p>
               </div>
             </div>
@@ -174,7 +174,7 @@ export default function Home() {
               </div>
               <div>
                 <h3 className="text-lg font-semibold text-gray-900">Secure</h3>
-                <p className="text-gray-600">We're read only. And we do NOT store your data</p>
+                <p className="text-gray-600">We're read-only. And we don't store your data.</p>
               </div>
             </div>
 
@@ -203,7 +203,7 @@ export default function Home() {
               </div>
               <div>
                 <h3 className="text-lg font-semibold text-gray-900">Smart Alerts <span className="ml-2 text-xs font-medium text-blue-600 uppercase">New!</span></h3>
-                <p className="text-gray-600">Get notified when your team ships</p>
+                <p className="text-gray-600">Know what & when your team ships</p>
               </div>
             </div>
           </div>

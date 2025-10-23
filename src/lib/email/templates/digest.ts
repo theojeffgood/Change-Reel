@@ -30,7 +30,15 @@ export function renderSingleCommitEmail(input: SingleCommitEmailInput): { subjec
     .map(l => l.replace(/^-\s/, '').trim())
     .filter(Boolean)
   const headerHtml = headerLine
-    ? '<div style="font-size:15px;color:#111;font-weight:500;margin-bottom:10px;line-height:1.4;">' + escapeHtml(headerLine) + '</div>'
+    ? (
+        // Change label directly above header, no padding/margin between
+        '<div style="margin:0;padding:0;">'
+        + '<span style="display:inline-block;padding:0px 8px;border-radius:9999px;font-size:12px;font-weight:500;color:#111;">'
+        + escapeHtml(changeLabel)
+        + '</span>'
+        + '</div>'
+        + '<div style="font-size:15px;color:#111;font-weight:500;margin:0;line-height:1.4;">' + escapeHtml(headerLine) + '</div>'
+      )
     : ''
   const bulletsHtml = bulletLines.length
     ? '<ul style="margin:0 0 8px 0;padding-left:20px;list-style:disc;">' + bulletLines.map(line => (
@@ -39,8 +47,12 @@ export function renderSingleCommitEmail(input: SingleCommitEmailInput): { subjec
     : '<div style="font-size:13px;color:#111;line-height:1.6;">' + escapeHtml(commit.summary) + '</div>'
   const summaryHtml = headerHtml + bulletsHtml
 
-  const appUrl = 'https://changereel.com/admin'
+  const appUrl = 'https://changereel.com'
+  const privacyPolicyUrl = 'https://changereel.com/privacy-policy'
+  const termsUrl = 'https://changereel.com/terms'
+  const unsubscribeUrl = 'https://changereel.com/unsubscribe'
   const logoUrl = 'https://changereel.com/favicon.ico'
+  
   const html = `
   <div style="font-family:Inter,system-ui,-apple-system,Segoe UI,Roboto,Arial,sans-serif;background:#ffffff;padding:24px;">
     <table role="presentation" cellpadding="0" cellspacing="0" width="100%" style="width:100%;margin:0 auto;border-collapse:collapse;">
@@ -57,9 +69,7 @@ export function renderSingleCommitEmail(input: SingleCommitEmailInput): { subjec
             </tr>
       <tr>
         <td style="padding:12px 0px 8px 4px;">
-          <div style="margin:0;font-size:12px;display:flex;align-items:center;gap:8px;color:#555;">
-            <span style="display:inline-block;padding:2px 8px;border-radius:9999px;font-size:13px;font-weight:500;color:#111;">${escapeHtml(changeLabel)}</span>
-          </div>
+          <div style="margin:0;font-size:13px;color:#111;">Here's what changed:</div>
         </td>
       </tr>
       <tr>
@@ -88,6 +98,12 @@ export function renderSingleCommitEmail(input: SingleCommitEmailInput): { subjec
       <tr>
         <td style="padding:8px 24px 24px 24px;color:#777;font-size:11px;" align="center">
           You’re receiving this because you enabled change alerts. 
+          <br/>
+          <a href="${escapeHtml(privacyPolicyUrl)}" style="color:#777;text-decoration:none;padding-right:2px;">Privacy Policy</a>
+          |
+          <a href="${escapeHtml(termsUrl)}" style="color:#777;text-decoration:none;padding-left:2px;padding-right:2px;">Terms</a>
+          |
+          <a href="${escapeHtml(unsubscribeUrl)}" style="color:#777;text-decoration:none;padding-left:2px;">Unsubscribe</a>
         </td>
       </tr>
           </table>

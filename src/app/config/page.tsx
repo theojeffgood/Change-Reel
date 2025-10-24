@@ -636,7 +636,7 @@ function ConfigurationPageContent() {
                               className="text-left rounded-xl border transition-colors border-gray-200 hover:bg-gray-50"
                             >
                               <div className="text-center">
-                                <div className="text-2xl text-gray-900">+</div>
+                                <div className="text-xl font-medium text-gray-900">+</div>
                                 <div className="text-sm font-medium text-gray-900">Add a Repo</div>
                               </div>
                             </a>

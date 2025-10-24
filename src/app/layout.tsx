@@ -15,7 +15,7 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: 'Change Reel - Notificatinos from your codebase',
+  title: 'Change Reel - Notifications from your codebase',
   description: 'Know what your engineers ship without having to ask',
   icons: {
     icon: '/favicon.ico',

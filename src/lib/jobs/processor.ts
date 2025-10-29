@@ -404,20 +404,31 @@ export class JobProcessor implements IJobProcessor {
     try {
       this.logger.info('Reconciling job state on startup...')
       
-      // Find all jobs marked as 'running' in database
-      const runningJobs = await this.jobQueueService.getStaleRunningJobs(0) // 0ms = get ALL running jobs
+      // Find jobs marked as 'running' in database - use a reasonable timeout (10 seconds)
+      // to catch jobs from crashed processors, but not legitimate running jobs
+      const runningJobs = await this.jobQueueService.getStaleRunningJobs(10000)
       
       if (runningJobs.data && runningJobs.data.length > 0) {
-        this.logger.warn(`Found ${runningJobs.data.length} orphaned running jobs from previous session`)
+        this.logger.warn(`Found ${runningJobs.data.length} stale running jobs from previous session`)
         
         for (const job of runningJobs.data) {
-          // Reset to pending with retry logic
-          await this.handleJobFailure(job as any, 'Job orphaned on processor restart')
+          // For jobs already at max attempts, mark as failed directly without incrementing
+          if (job.attempts >= job.max_attempts) {
+            this.logger.warn(`Job ${job.id} already at max attempts (${job.attempts}/${job.max_attempts}), marking as failed`)
+            await this.jobQueueService.markJobAsFailed(
+              job.id, 
+              'Job was stuck in running state at max attempts',
+              { attempts: job.max_attempts } // Pass current attempts to prevent increment
+            )
+          } else {
+            // Reset to pending with retry logic for jobs with remaining attempts
+            await this.handleJobFailure(job as any, 'Job orphaned on processor restart')
+          }
         }
         
-        this.logger.info(`Reconciled ${runningJobs.data.length} orphaned jobs`)
+        this.logger.info(`Reconciled ${runningJobs.data.length} stale running jobs`)
       } else {
-        this.logger.info('No orphaned jobs found - state is clean')
+        this.logger.info('No stale running jobs found - state is clean')
       }
       
     } catch (error) {
@@ -431,8 +442,9 @@ export class JobProcessor implements IJobProcessor {
    */
   private async syncActiveJobsWithDatabase(): Promise<void> {
     try {
-      // Get all currently running jobs from database
-      const dbRunningJobs = await this.jobQueueService.getStaleRunningJobs(0)
+      // Get all currently running jobs from database - use a short timeout (5 seconds)
+      // Only legitimate recent jobs should be considered "running"
+      const dbRunningJobs = await this.jobQueueService.getStaleRunningJobs(5000)
       const dbRunningIds = new Set(dbRunningJobs.data?.map(job => job.id) || [])
       
       // Check for jobs in activeJobs that aren't running in DB
@@ -444,10 +456,10 @@ export class JobProcessor implements IJobProcessor {
       }
       
       // Check for jobs running in DB that aren't in activeJobs
-      // These should be handled by the main stale job logic, but log for visibility
+      // These will be handled by the main stale job logic in performMaintenance
       const orphanedDbJobs = dbRunningJobs.data?.filter(job => !this.activeJobs.has(job.id)) || []
       if (orphanedDbJobs.length > 0) {
-        this.logger.warn(`Found ${orphanedDbJobs.length} jobs running in DB but not tracked in memory`)
+        this.logger.info(`Found ${orphanedDbJobs.length} stale running jobs - will be reconciled by maintenance`)
       }
       
     } catch (error) {
@@ -480,8 +492,18 @@ export class JobProcessor implements IJobProcessor {
       const stale = await this.jobQueueService.getStaleRunningJobs(this.config.job_timeout_ms!)
       if (stale.data && stale.data.length > 0) {
         for (const j of stale.data) {
-          // Treat as failure due to timeout; mark failed or schedule retry
-          await this.handleJobFailure(j as any, 'Job timed out (maintenance)')
+          // For jobs already at max attempts, mark as failed directly without incrementing
+          if (j.attempts >= j.max_attempts) {
+            this.logger.warn(`Job ${j.id} timed out at max attempts (${j.attempts}/${j.max_attempts}), marking as failed`)
+            await this.jobQueueService.markJobAsFailed(
+              j.id, 
+              'Job timed out (maintenance)',
+              { attempts: j.max_attempts } // Pass current attempts to prevent increment
+            )
+          } else {
+            // Treat as failure due to timeout; mark failed or schedule retry
+            await this.handleJobFailure(j as any, 'Job timed out (maintenance)')
+          }
         }
         this.logger.warn(`Reconciled ${stale.data.length} stale running jobs`)
       }

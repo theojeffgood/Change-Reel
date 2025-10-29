@@ -516,14 +516,18 @@ export class JobQueueService implements IJobService {
 
   async markJobAsFailed(jobId: string, error: string, details?: any): Promise<DatabaseJobResult> {
     try {
-      // Get current job to increment attempts
+      // Get current job to check state
       const jobResult = await this.getJob(jobId)
       if (jobResult.error || !jobResult.data) {
         return jobResult
       }
 
       const job = jobResult.data
-      const newAttempts = job.attempts + 1
+      
+      // Use attempts from details if provided (processor already calculated it), otherwise increment
+      const newAttempts = details?.attempts !== undefined 
+        ? Math.min(details.attempts, job.max_attempts) // Enforce constraint
+        : Math.min(job.attempts + 1, job.max_attempts) // Enforce constraint
 
       const updates: UpdateJobData = {
         status: newAttempts >= job.max_attempts ? 'failed' : 'pending',
